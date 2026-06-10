@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="description" content="ScienceLab OS — Système de révision STE Secondaire 3 Québec. Trilingue FR/EN/ES."/>
+<title>ScienceLab OS · STE Sec 3 · Québec</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06080f;--bg2:#0c1020;--bg3:#121828;--bg4:#181f30;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --text:#e0ecff;--muted:#4e6888;--light:#8aabcc;
+  --accent:#5bc8ff;--accent2:#a78bfa;--green:#4ddc8a;
+  --red:#ff5f6d;--yellow:#ffd166;--orange:#ff8c42;
+  --font:'Syne',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:12px;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+#lang-bar{position:fixed;top:0;right:0;z-index:200;display:flex;gap:5px;padding:.6rem .9rem;background:rgba(6,8,15,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);border-left:1px solid var(--border);border-radius:0 0 0 10px}
+.lb{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:4px 10px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.lb.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.screen{display:none;position:relative;z-index:1;animation:fadeUp .35s ease}
+.screen.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+#app{max-width:680px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
+.landing-hero{text-align:center;padding:3.5rem 0 2rem}
+.lh-badge{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border2);border-radius:20px;padding:4px 14px;margin-bottom:1.25rem}
+.lh-title{font-size:clamp(2.5rem,8vw,4rem);font-weight:900;letter-spacing:-.04em;line-height:1;margin-bottom:.6rem}
+.lh-title .t1{color:var(--text)}
+.lh-title .t2{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.lh-sub{font-size:14px;color:var(--muted);margin-bottom:.5rem}
+.lh-motiv{font-size:13px;color:var(--accent2);font-style:italic;margin-bottom:2rem;min-height:20px;transition:opacity .4s}
+.sec-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:.85rem}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:1.5rem}
+.mod-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.9rem .85rem;cursor:pointer;text-decoration:none;display:block;transition:all .2s;position:relative;overflow:hidden}
+.mod-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 50%,rgba(255,255,255,.02));pointer-events:none}
+.mod-card:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.5)}
+.mc-icon{font-size:22px;margin-bottom:6px;display:block}
+.mc-name{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px;line-height:1.3}
+.mc-sub{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.mc-badge{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;margin-top:5px}
+.mc-done{background:rgba(77,220,138,.15);color:var(--green);border:1px solid rgba(77,220,138,.3)}
+.mc-soon{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border)}
+.quiz-launch{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem}
+.ql-title{font-size:16px;font-weight:700;margin-bottom:.35rem}
+.ql-sub{font-size:13px;color:var(--muted);margin-bottom:1.1rem}
+.univ-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem}
+.univ-card{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:.75rem .85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.univ-card:hover{border-color:var(--border2);background:var(--bg4)}
+.univ-card.sel{border-width:1.5px}
+.univ-card .ui{font-size:18px;flex-shrink:0}
+.univ-card .un{font-size:12px;font-weight:700;flex:1;line-height:1.3}
+.univ-card .uq{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:1rem}
+.mode-btn{padding:9px;font-family:var(--font);font-size:12px;font-weight:600;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;transition:all .2s;text-align:center}
+.mode-btn.active{border-color:var(--accent2);color:var(--accent2);background:rgba(167,139,250,.08)}
+.btn-launch{width:100%;padding:13px;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:800;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;cursor:pointer;letter-spacing:.02em;transition:transform .15s,box-shadow .2s,opacity .2s;box-shadow:0 0 28px rgba(124,58,237,.35);position:relative;overflow:hidden}
+.btn-launch:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 0 40px rgba(124,58,237,.5)}
+.btn-launch:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+.game-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;flex-wrap:wrap;gap:6px}
+.g-univ{font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
+.g-score{font-family:var(--mono);font-size:13px;color:var(--green)}
+.g-streak{font-family:var(--mono);font-size:12px;color:var(--yellow)}
+.prog-wrap{height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-bottom:.4rem;overflow:hidden}
+.prog-bar{height:100%;background:linear-gradient(90deg,#2563eb,#7c3aed);border-radius:2px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.prog-text{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;margin-bottom:1.1rem}
+.motiv-banner{background:rgba(94, 67, 173, 0.733);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:.6rem 1rem;font-size:13px;color:var(--accent2);text-align:center;font-style:italic;margin-bottom:1rem;display:none;animation:fadeUp .3s ease}
+.motiv-banner.show{display:block}
+.question-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;font-size:16px;font-weight:700;line-height:1.55;color:var(--text);margin-bottom:1rem}
+#options{display:grid;gap:7px;margin-bottom:.85rem}
+.opt-btn{display:block;width:100%;text-align:left;padding:11px 15px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13.5px;color:var(--text);cursor:pointer;transition:all .15s;line-height:1.45}
+.opt-btn:hover:not(:disabled){border-color:var(--border2);background:var(--bg3);transform:translateX(4px)}
+.opt-btn:disabled{cursor:default}
+.opt-btn.correct{background:rgba(77,220,138,.12);border-color:var(--green);color:#a7f3ca;animation:popIn .2s ease}
+.opt-btn.wrong{background:rgba(255,95,109,.1);border-color:var(--red);color:#fca5a5}
+.opt-btn.reveal{background:rgba(77,220,138,.07);border-color:rgba(77,220,138,.5);color:#a7f3ca}
+@keyframes popIn{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+.feedback-box{display:none;border-radius:8px;padding:.85rem 1rem;font-size:13px;line-height:1.65;margin-bottom:.75rem}
+.feedback-box.show{display:block;animation:fadeUp .2s ease}
+.feedback-box.ok{background:rgba(77,220,138,.08);color:#a7f3ca;border-left:3px solid var(--green)}
+.feedback-box.bad{background:rgba(255,95,109,.08);color:#fca5a5;border-left:3px solid var(--red)}
+#btn-theory{display:none;align-items:center;gap:6px;padding:7px 13px;background:transparent;border:1px solid var(--border2);border-radius:8px;font-family:var(--font);font-size:12px;color:var(--accent2);cursor:pointer;margin-bottom:8px;transition:all .2s}
+#btn-theory:hover{background:rgba(167,139,250,.08);border-color:var(--accent2)}
+#theory-panel{display:none;background:rgba(12,16,32,.97);border:1px solid rgba(167,139,250,.25);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:.75rem;animation:fadeUp .2s ease}
+#theory-panel pre{font-family:var(--mono);font-size:12px;color:#c4b5fd;white-space:pre-wrap;word-break:break-word;line-height:1.75}
+#btn-next{display:none;width:100%;align-items:center;justify-content:center;gap:8px;padding:12px 20px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);font-family:var(--font);font-size:14px;font-weight:700;color:var(--text);cursor:pointer;transition:all .2s}
+#btn-next:hover{border-color:var(--accent);color:var(--accent);background:rgba(91,200,255,.05)}
+.results-hero{text-align:center;padding:2rem 0 1.5rem}
+.res-icon{font-size:56px;display:block;margin-bottom:.75rem;animation:bounceIn .5s ease}
+@keyframes bounceIn{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+#res-pct{font-size:3.5rem;font-weight:900;letter-spacing:-.04em;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:block;margin-bottom:.4rem}
+#res-msg{font-size:15px;font-weight:700;display:block;margin-bottom:.35rem}
+#res-motiv-final{font-size:13px;color:var(--accent2);font-style:italic;display:block;margin-bottom:1.5rem}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem .75rem;text-align:center}
+.stat-num{font-size:28px;font-weight:800;display:block;margin-bottom:3px}
+.stat-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em}
+.btn-again{width:100%;padding:13px;background:linear-gradient(135deg,#2563eb,#7c3aed);border:none;border-radius:var(--r);font-family:var(--font);font-size:14px;font-weight:800;color:#fff;cursor:pointer;margin-bottom:8px;transition:transform .15s,box-shadow .2s;box-shadow:0 0 24px rgba(124,58,237,.3)}
+.btn-again:hover{transform:translateY(-2px);box-shadow:0 0 36px rgba(124,58,237,.5)}
+.btn-home-res{width:100%;padding:11px;background:transparent;border:1px solid var(--border2);border-radius:var(--r);font-family:var(--font);font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s}
+.btn-home-res:hover{color:var(--text);border-color:var(--text)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div id="lang-bar">
+  <button class="lb active" onclick="setLang('fr')">FR</button>
+  <button class="lb" onclick="setLang('en')">EN</button>
+  <button class="lb" onclick="setLang('es')">ES</button>
+</div>
+<div id="app">
+  <div id="screen-home" class="screen active">
+    <div class="landing-hero">
+      <span class="lh-badge" id="lh-badge"></span>
+      <div class="lh-title"><div class="t1" id="lh-t1"></div><div class="t2" id="lh-t2"></div></div>
+      <p class="lh-sub" id="lh-sub"></p>
+      <p class="lh-motiv" id="lh-motiv"></p>
+    </div>
+    <p class="sec-label" id="lbl-labs"></p>
+    <div class="mod-grid" id="mod-grid-labs"></div>
+    <div class="quiz-launch">
+      <div class="ql-title" id="ql-title"></div>
+      <div class="ql-sub" id="ql-sub"></div>
+      <div class="univ-grid" id="univers-grid"></div>
+      <div class="mode-row">
+        <button class="mode-btn active" id="mode-fr" onclick="setMode('quiz')"></button>
+        <button class="mode-btn" id="mode-ft" onclick="setMode('tout')"></button>
+      </div>
+      <button class="btn-launch" id="btn-start" onclick="startGame()" disabled></button>
+    </div>
+    <p class="sec-label" id="lbl-tools"></p>
+    <div class="mod-grid" id="mod-grid-tools"></div>
+  </div>
+  <div id="screen-game" class="screen">
+    <div class="game-topbar">
+      <span class="g-univ" id="q-univers"></span>
+      <span class="g-score" id="q-score"></span>
+      <span class="g-streak" id="q-streak"></span>
+    </div>
+    <div class="prog-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+    <p class="prog-text" id="prog-text"></p>
+    <div class="motiv-banner" id="motiv-banner"></div>
+    <div class="question-card" id="question-text"></div>
+    <div id="options"></div>
+    <div class="feedback-box" id="feedback-box"></div>
+    <button id="btn-theory" onclick="toggleTheory()"></button>
+    <div id="theory-panel" data-content=""></div>
+    <button id="btn-next" onclick="nextQuestion()"></button>
+  </div>
+  <div id="screen-results" class="screen">
+    <div class="results-hero">
+      <span class="res-icon" id="res-icon">🏆</span>
+      <span id="res-pct">0%</span>
+      <span id="res-msg"></span>
+      <span id="res-motiv-final"></span>
+    </div>
+    <p class="sec-label" id="res-title"></p>
+    <div class="stats-grid">
+      <div class="stat-card"><span class="stat-num" id="res-correct" style="color:var(--green)">0</span><span class="stat-label" id="res-label-c"></span></div>
+      <div class="stat-card"><span class="stat-num" id="res-total">0</span><span class="stat-label" id="res-label-t"></span></div>
+      <div class="stat-card"><span class="stat-num" id="res-streak" style="color:var(--yellow)">0</span><span class="stat-label" id="res-label-s"></span></div>
+    </div>
+    <button class="btn-again" id="btn-again" onclick="resetGame()"></button>
+    <button class="btn-home-res" id="btn-home" onclick="showHome()"></button>
+  </div>
+</div>
+<script>
+const TX={fr:{badge:'STE Sec 3 · Québec · PFEQ',t1:'ScienceLab',t2:'OS',sub:'Système de révision complet · Trilingue FR/EN/ES',lblLabs:'Laboratoires interactifs',lblTools:'Outils',qlTitle:'⚡ Quiz STE',qlSub:'Choisis tes univers et lance le quiz',modeQuiz:'⚡ Quiz rapide (10 q)',modeTout:'🔬 Tout réviser',start:'Lancer la mission 🚀',next:'Question suivante →',finish:'Voir mes résultats →',results:'Résultats',correct:'Bonnes réponses',total:'Questions',streakMax:'Série max 🔥',again:'Rejouer',home:'← Accueil',theory:'📖 Voir le cours',theoryClose:'Fermer',streak:'Série',q:'Question',verdicts:[{min:95,icon:'🏆',msg:'LÉGENDAIRE ! Tu es imbattable !',motiv:'Tu viens de prouver que la science n\'a plus de secrets pour toi. Félicitations !'},{min:80,icon:'🚀',msg:'EXCELLENT ! Presque parfait !',motiv:'Encore un peu de révision et tu décroches la lune. Tu es sur la bonne voie !'},{min:65,icon:'⭐',msg:'BIEN JOUÉ ! Continue !',motiv:'Chaque question révisée te rapproche du succès. Tu y es presque !'},{min:50,icon:'📚',msg:'Pas mal ! On continue ?',motiv:'La persévérance fait la différence. Relis les explications et réessaie !'},{min:0,icon:'💪',msg:'Continue, tu vas y arriver !',motiv:'Chaque erreur est une leçon. Les grands scientifiques ont tous commencé comme ça !'}],motivHome:['💡 "La science sans conscience n\'est que ruine de l\'âme." — Rabelais','🚀 Chaque concept appris est une étoile de plus dans ta galaxie !','⚗️ Marie Curie a découvert deux éléments. Toi, tu peux en apprendre 118 !','🧬 L\'ADN de toute réussite : travail + curiosité + persévérance.','🌍 La Terre a 4,5 milliards d\'années. Tu as tout le temps d\'apprendre !','⚡ "Si tu peux le rêver, tu peux le faire." — Walt Disney'],motivStreak:['🔥 En feu ! Continue comme ça !','⚡ Incroyable ! Tu es dans la zone !','🎯 Parfait ! Tu maîtrises ce sujet !','🚀 Impressionnant ! Continue !'],univNames:{mat:'Univers matériel',viv:'Univers vivant',ter:'Terre & espace',tec:'Technologique'},univIcons:{mat:'⚗️',viv:'🧬',ter:'🌍',tec:'⚙️'},univColors:{mat:'#5bc8ff',viv:'#4ddc8a',ter:'#ffd166',tec:'#ff8c42'}},en:{badge:'STE Grade 9 · Québec · PFEQ',t1:'ScienceLab',t2:'OS',sub:'Complete study system · Trilingual FR/EN/ES',lblLabs:'Interactive labs',lblTools:'Tools',qlTitle:'⚡ STE Quiz',qlSub:'Choose your universes and start the quiz',modeQuiz:'⚡ Quick quiz (10 q)',modeTout:'🔬 Full review',start:'Launch mission 🚀',next:'Next question →',finish:'See my results →',results:'Results',correct:'Correct answers',total:'Questions',streakMax:'Max streak 🔥',again:'Play again',home:'← Home',theory:'📖 View lesson',theoryClose:'Close',streak:'Streak',q:'Question',verdicts:[{min:95,icon:'🏆',msg:'LEGENDARY! You\'re unbeatable!',motiv:'You just proved science holds no secrets for you. Congratulations!'},{min:80,icon:'🚀',msg:'EXCELLENT! Almost perfect!',motiv:'A bit more revision and you\'ll reach the stars. You\'re on the right track!'},{min:65,icon:'⭐',msg:'GREAT JOB! Keep it up!',motiv:'Every question reviewed brings you closer to success. You\'re almost there!'},{min:50,icon:'📚',msg:'Not bad! Keep going?',motiv:'Perseverance makes all the difference. Re-read the explanations and try again!'},{min:0,icon:'💪',msg:'Keep going, you\'ll get there!',motiv:'Every mistake is a lesson. All great scientists started just like you!'}],motivHome:['💡 "Science without conscience is but the ruin of the soul." — Rabelais','🚀 Every concept learned is another star in your galaxy!','⚗️ Marie Curie discovered two elements. You can learn 118!','🧬 The DNA of success: work + curiosity + perseverance.','🌍 Earth is 4.5 billion years old. You have all the time to learn!','⚡ "If you can dream it, you can do it." — Walt Disney'],motivStreak:['🔥 On fire! Keep going!','⚡ Incredible! You\'re in the zone!','🎯 Perfect! You\'ve got this topic!','🚀 Impressive! Keep it up!'],univNames:{mat:'Material universe',viv:'Living universe',ter:'Earth & space',tec:'Technological'},univIcons:{mat:'⚗️',viv:'🧬',ter:'🌍',tec:'⚙️'},univColors:{mat:'#5bc8ff',viv:'#4ddc8a',ter:'#ffd166',tec:'#ff8c42'}},es:{badge:'STE Secundaria 3 · Québec · PFEQ',t1:'ScienceLab',t2:'OS',sub:'Sistema de estudio completo · Trilingüe FR/EN/ES',lblLabs:'Laboratorios interactivos',lblTools:'Herramientas',qlTitle:'⚡ Quiz STE',qlSub:'Elige tus universos y lanza el quiz',modeQuiz:'⚡ Quiz rápido (10 p)',modeTout:'🔬 Revisar todo',start:'Lanzar misión 🚀',next:'Siguiente pregunta →',finish:'Ver mis resultados →',results:'Resultados',correct:'Respuestas correctas',total:'Preguntas',streakMax:'Racha máx 🔥',again:'Jugar de nuevo',home:'← Inicio',theory:'📖 Ver la materia',theoryClose:'Cerrar',streak:'Racha',q:'Pregunta',verdicts:[{min:95,icon:'🏆',msg:'¡LEGENDARIO! ¡Eres invencible!',motiv:'¡Acabas de demostrar que la ciencia no tiene secretos para ti. Felicidades!'},{min:80,icon:'🚀',msg:'¡EXCELENTE! ¡Casi perfecto!',motiv:'Un poco más de repaso y alcanzarás las estrellas. ¡Estás en el camino correcto!'},{min:65,icon:'⭐',msg:'¡MUY BIEN! ¡Sigue así!',motiv:'Cada pregunta repasada te acerca al éxito. ¡Ya casi llegas!'},{min:50,icon:'📚',msg:'¡Nada mal! ¿Continuamos?',motiv:'La perseverancia marca la diferencia. ¡Relee las explicaciones e inténtalo de nuevo!'},{min:0,icon:'💪',msg:'¡Continúa, lo lograrás!',motiv:'Cada error es una lección. ¡Todos los grandes científicos empezaron igual que tú!'}],motivHome:['💡 "La ciencia sin conciencia no es más que ruina del alma." — Rabelais','🚀 ¡Cada concepto aprendido es una estrella más en tu galaxia!','⚗️ Marie Curie descubrió dos elementos. ¡Tú puedes aprender 118!','🧬 El ADN del éxito: trabajo + curiosidad + perseverancia.','🌍 La Tierra tiene 4.500 millones de años. ¡Tienes todo el tiempo para aprender!','⚡ "Si puedes soñarlo, puedes hacerlo." — Walt Disney'],motivStreak:['🔥 ¡En llamas! ¡Sigue así!','⚡ ¡Increíble! ¡Estás en la zona!','🎯 ¡Perfecto! ¡Dominas este tema!','🚀 ¡Impresionante! ¡Continúa!'],univNames:{mat:'Universo material',viv:'Universo viviente',ter:'Tierra y espacio',tec:'Tecnológico'},univIcons:{mat:'⚗️',viv:'🧬',ter:'🌍',tec:'⚙️'},univColors:{mat:'#5bc8ff',viv:'#4ddc8a',ter:'#ffd166',tec:'#ff8c42'}}};
+
+const LABS=[{icon:'🧪',file:'lab-ph.html',fr:{name:'Labo pH',sub:'Acides & bases'},en:{name:'pH Lab',sub:'Acids & bases'},es:{name:'Lab pH',sub:'Ácidos y bases'}},{icon:'🧩',file:'lab-drag.html',fr:{name:'Glisser-Ordonner',sub:'4 processus'},en:{name:'Drag & Order',sub:'4 processes'},es:{name:'Arrastrar',sub:'4 procesos'}},{icon:'⚛️',file:'lab-atom.html',fr:{name:'Atomes',sub:'Constructeur'},en:{name:'Atoms',sub:'Builder'},es:{name:'Átomos',sub:'Constructor'}},{icon:'🦠',file:'lab-cell.html',fr:{name:'Cellule',sub:'Clickeable'},en:{name:'Cell',sub:'Clickable'},es:{name:'Célula',sub:'Clickeable'}},{icon:'⚡',file:'lab-circuit.html',fr:{name:'Circuits',sub:'Loi d\'Ohm'},en:{name:'Circuits',sub:'Ohm\'s Law'},es:{name:'Circuitos',sub:'Ley de Ohm'}},{icon:'📖',file:'lab-theory.html',fr:{name:'Théorie',sub:'Cours complets'},en:{name:'Theory',sub:'Full lessons'},es:{name:'Teoría',sub:'Cursos completos'}}];
+const TOOLS=[{icon:'🧮',file:'lab-formulas.html',done:true,fr:{name:'Formules',sub:'9 formules STE'},en:{name:'Formulas',sub:'9 STE formulas'},es:{name:'Fórmulas',sub:'9 fórmulas STE'}},{icon:'🎯',file:'lab-exam.html',done:false,fr:{name:'Examen final',sub:'25 questions'},en:{name:'Final exam',sub:'25 questions'},es:{name:'Examen final',sub:'25 preguntas'}},{icon:'🎮',file:'lab-fortnite.html',done:true,fr:{name:'Mode Fortnite',sub:'Clavier rapide'},en:{name:'Fortnite mode',sub:'Fast keys'},es:{name:'Modo Fortnite',sub:'Teclas rápidas'}},{icon:'🎸',file:'lab-guitarhero.html',done:true,fr:{name:'Guitar Hero',sub:'Cibles en mouvement'},en:{name:'Guitar Hero',sub:'Moving targets'},es:{name:'Guitar Hero',sub:'Objetivos en movimiento'}}];
+
+const Q_RAW=[
+{u:'mat',fr:{q:'Quelle est la formule chimique de l\'eau ?',o:['H₂O','CO₂','NaCl','O₂'],a:0,e:'L\'eau = 2H + 1O → H₂O.',th:'📘 Chimie moléculaire\n\n• H₂O = eau\n• CO₂ = dioxyde de carbone\n• NaCl = sel de table\n• O₂ = oxygène\n\nFormule chimique = types et nombres d\'atomes dans une molécule.\nTableau périodique : classifie tous les éléments.'},en:{q:'What is the chemical formula for water?',o:['H₂O','CO₂','NaCl','O₂'],a:0,e:'Water = 2H + 1O → H₂O.',th:'📘 Molecular chemistry\n\n• H₂O = water\n• CO₂ = carbon dioxide\n• NaCl = table salt\n• O₂ = oxygen\n\nChemical formula = types and numbers of atoms in a molecule.\nPeriodic table: classifies all elements.'},es:{q:'¿Cuál es la fórmula química del agua?',o:['H₂O','CO₂','NaCl','O₂'],a:0,e:'El agua = 2H + 1O → H₂O.',th:'📘 Química molecular\n\n• H₂O = agua\n• CO₂ = dióxido de carbono\n• NaCl = sal de mesa\n• O₂ = oxígeno\n\nFórmula química = tipos y números de átomos en una molécula.\nTabla periódica: clasifica todos los elementos.'}},
+{u:'mat',fr:{q:'Quel pH indique une solution acide ?',o:['pH < 7','pH = 7','pH > 7','pH = 14'],a:0,e:'pH < 7 = acide. 7 = neutre. > 7 = base.',th:'📘 Échelle de pH\n\n0–6 : acide (citron ≈ 2)\n7 : neutre (eau pure)\n8–14 : basique (bicarbonate ≈ 9)\n\nIndicateur universel = change couleur selon le pH.\nNeutralisation : Acide + Base → Sel + Eau.'},en:{q:'Which pH indicates an acidic solution?',o:['pH < 7','pH = 7','pH > 7','pH = 14'],a:0,e:'pH < 7 = acid. 7 = neutral. > 7 = base.',th:'📘 pH Scale\n\n0–6: acidic (lemon ≈ 2)\n7: neutral (pure water)\n8–14: basic (baking soda ≈ 9)\n\nUniversal indicator changes colour with pH.\nNeutralisation: Acid + Base → Salt + Water.'},es:{q:'¿Qué pH indica una solución ácida?',o:['pH < 7','pH = 7','pH > 7','pH = 14'],a:0,e:'pH < 7 = ácido. 7 = neutro. > 7 = base.',th:'📘 Escala de pH\n\n0–6: ácido (limón ≈ 2)\n7: neutro (agua pura)\n8–14: básico (bicarbonato ≈ 9)\n\nIndicador universal cambia color según el pH.\nNeutralización: Ácido + Base → Sal + Agua.'}},
+{u:'mat',fr:{q:'La masse volumique de l\'eau pure est…',o:['1 g/mL','0,5 g/mL','10 g/mL','2 g/mL'],a:0,e:'ρ eau = 1 g/mL (référence). Si ρ < 1 → flotte.',th:'📘 Masse volumique\n\nρ = m / V (g/mL)\n\nEau pure = 1 g/mL → référence universelle!\nBois (0,6 g/mL) → flotte\nFer (7,9 g/mL) → coule\nGlace (0,92 g/mL) → flotte (icebergs!)\n\nFormule : ρ = m/V  |  m = ρ×V  |  V = m/ρ'},en:{q:'The density of pure water is…',o:['1 g/mL','0.5 g/mL','10 g/mL','2 g/mL'],a:0,e:'Water density = 1 g/mL (reference). If ρ < 1 → floats.',th:'📘 Density\n\nρ = m / V (g/mL)\n\nPure water = 1 g/mL → universal reference!\nWood (0.6 g/mL) → floats\nIron (7.9 g/mL) → sinks\nIce (0.92 g/mL) → floats (icebergs!)\n\nFormula: ρ = m/V  |  m = ρ×V  |  V = m/ρ'},es:{q:'La masa volumétrica del agua pura es…',o:['1 g/mL','0,5 g/mL','10 g/mL','2 g/mL'],a:0,e:'ρ agua = 1 g/mL (referencia). Si ρ < 1 → flota.',th:'📘 Masa Volumétrica\n\nρ = m / V (g/mL)\n\nAgua pura = 1 g/mL → ¡referencia universal!\nMadera (0,6 g/mL) → flota\nHierro (7,9 g/mL) → se hunde\nHielo (0,92 g/mL) → flota (¡icebergs!)\n\nFórmula: ρ = m/V  |  m = ρ×V  |  V = m/ρ'}},
+{u:'mat',fr:{q:'La concentration C = m/V se mesure en…',o:['g/L','g/mL','mol','kg/m³'],a:0,e:'C en g/L : masse du soluté (g) ÷ volume solution (L).',th:'📘 Concentration\n\nC = m / V   (g/L)\nm = masse soluté (g)\nV = volume solution (L) ← toujours en litres!\n\nEx: 30g dans 0,5L → C = 30÷0,5 = 60 g/L\n\nDilution: C₁ × V₁ = C₂ × V₂\n(quantité de soluté conservée)'},en:{q:'Concentration C = m/V is measured in…',o:['g/L','g/mL','mol','kg/m³'],a:0,e:'C in g/L: solute mass (g) ÷ solution volume (L).',th:'📘 Concentration\n\nC = m / V   (g/L)\nm = solute mass (g)\nV = solution volume (L) ← always in litres!\n\nEx: 30g in 0.5L → C = 30÷0.5 = 60 g/L\n\nDilution: C₁ × V₁ = C₂ × V₂\n(amount of solute conserved)'},es:{q:'La concentración C = m/V se mide en…',o:['g/L','g/mL','mol','kg/m³'],a:0,e:'C en g/L: masa soluto (g) ÷ volumen solución (L).',th:'📘 Concentración\n\nC = m / V   (g/L)\nm = masa soluto (g)\nV = volumen solución (L) ← ¡siempre en litros!\n\nEj: 30g en 0,5L → C = 30÷0,5 = 60 g/L\n\nDilución: C₁ × V₁ = C₂ × V₂\n(cantidad de soluto conservada)'}},
+{u:'mat',fr:{q:'Fusion = passage de…',o:['Solide → Liquide','Liquide → Gaz','Gaz → Liquide','Liquide → Solide'],a:0,e:'Fusion : solide → liquide (absorbe énergie). Ex : glace fond à 0°C.',th:'📘 Changements de phase\n\nEndothermiques (absorbent énergie +) :\n• Fusion : solide → liquide\n• Évaporation : liquide → gaz\n• Sublimation : solide → gaz\n\nExothermiques (libèrent énergie −) :\n• Solidification : liquide → solide\n• Condensation : gaz → liquide\n• Déposition : gaz → solide'},en:{q:'Melting = change from…',o:['Solid → Liquid','Liquid → Gas','Gas → Liquid','Liquid → Solid'],a:0,e:'Melting: solid → liquid (absorbs energy). E.g. ice melts at 0°C.',th:'📘 Phase Changes\n\nEndothermic (absorb energy +):\n• Melting: solid → liquid\n• Evaporation: liquid → gas\n• Sublimation: solid → gas\n\nExothermic (release energy −):\n• Solidification: liquid → solid\n• Condensation: gas → liquid\n• Deposition: gas → solid'},es:{q:'Fusión = cambio de…',o:['Sólido → Líquido','Líquido → Gas','Gas → Líquido','Líquido → Sólido'],a:0,e:'Fusión: sólido → líquido (absorbe energía). Ej: el hielo se funde a 0°C.',th:'📘 Cambios de Fase\n\nEndotérmicos (absorben energía +):\n• Fusión: sólido → líquido\n• Evaporación: líquido → gas\n• Sublimación: sólido → gas\n\nExotérmicos (liberan energía −):\n• Solidificación: líquido → sólido\n• Condensación: gas → líquido\n• Deposición: gas → sólido'}},
+{u:'mat',fr:{q:'Un mélange hétérogène a des composants…',o:['Visibles et non uniformes','Uniformément répartis','D\'un seul type','Toujours liquides'],a:0,e:'Hétérogène = composants visibles (vinaigrette, sable+eau). Homogène = uniforme (eau salée).',th:'📘 Types de mélanges\n\nHOMOGÈNE : composition uniforme\n→ Eau salée, air, sirop, laiton\n\nHÉTÉROGÈNE : composants visibles\n→ Vinaigrette, granola, sable+eau\n\nSUBSTANCE PURE : un seul type de particule\n→ Eau (H₂O), fer (Fe), sel (NaCl)\n\nSéparation : filtration, distillation, évaporation'},en:{q:'A heterogeneous mixture has components that are…',o:['Visible and non-uniform','Uniformly distributed','Of one type only','Always liquid'],a:0,e:'Heterogeneous = visible components (vinaigrette). Homogeneous = uniform (salt water).',th:'📘 Types of Mixtures\n\nHOMOGENEOUS: uniform composition\n→ Salt water, air, syrup, brass\n\nHETEROGENEOUS: visible components\n→ Vinaigrette, granola, sand+water\n\nPURE SUBSTANCE: only one particle type\n→ Water (H₂O), iron (Fe), salt (NaCl)\n\nSeparation: filtration, distillation, evaporation'},es:{q:'Una mezcla heterogénea tiene componentes…',o:['Visibles y no uniformes','Uniformemente distribuidos','De un solo tipo','Siempre líquidos'],a:0,e:'Heterogénea = componentes visibles (vinagreta). Homogénea = uniforme (agua salada).',th:'📘 Tipos de Mezclas\n\nHOMOGÉNEA: composición uniforme\n→ Agua salada, aire, jarabe, latón\n\nHETEROGÉNEA: componentes visibles\n→ Vinagreta, granola, arena+agua\n\nSUSTANCIA PURA: un solo tipo de partícula\n→ Agua (H₂O), hierro (Fe), sal (NaCl)\n\nSeparación: filtración, destilación, evaporación'}},
+{u:'viv',fr:{q:'Quel organite produit l\'ATP (énergie) ?',o:['Mitochondrie','Noyau','Ribosome','Vacuole'],a:0,e:'Mitochondrie = centrale énergétique. Glucose + O₂ → ATP + CO₂ + H₂O.',th:'📘 Organites cellulaires\n\n• Noyau → ADN, contrôle cellulaire\n• Mitochondrie → ATP (énergie)\n• Ribosome → synthèse protéines\n• Membrane → échanges\n• Chloroplaste (végétaux) → photosynthèse\n• Vacuole → stockage\n• Paroi (végétaux) → rigidité\n• Lysosome (animaux) → digestion déchets'},en:{q:'Which organelle produces ATP (energy)?',o:['Mitochondrion','Nucleus','Ribosome','Vacuole'],a:0,e:'Mitochondrion = powerhouse. Glucose + O₂ → ATP + CO₂ + H₂O.',th:'📘 Cell Organelles\n\n• Nucleus → DNA, cell control\n• Mitochondrion → ATP (energy)\n• Ribosome → protein synthesis\n• Membrane → exchanges\n• Chloroplast (plants) → photosynthesis\n• Vacuole → storage\n• Cell wall (plants) → rigidity\n• Lysosome (animals) → waste digestion'},es:{q:'¿Qué orgánulo produce ATP (energía)?',o:['Mitocondria','Núcleo','Ribosoma','Vacuola'],a:0,e:'Mitocondria = central energética. Glucosa + O₂ → ATP + CO₂ + H₂O.',th:'📘 Orgánulos Celulares\n\n• Núcleo → ADN, control celular\n• Mitocondria → ATP (energía)\n• Ribosoma → síntesis proteínas\n• Membrana → intercambios\n• Cloroplasto (vegetales) → fotosíntesis\n• Vacuola → almacenamiento\n• Pared (vegetales) → rigidez\n• Lisosoma (animales) → digestión desechos'}},
+{u:'viv',fr:{q:'L\'ADN est situé dans…',o:['Le noyau','Le cytoplasme','La membrane','Les ribosomes'],a:0,e:'ADN dans le noyau → chromosomes → gènes. Humains : 46 chromosomes (23 paires).',th:'📘 ADN et génétique\n\nADN = double hélice (bases A-T et C-G)\nHiérarchie : Base → Gène → Chromosome → Noyau\n\nHumains : 46 chromosomes, ~20 000 gènes\n2 mètres d\'ADN par cellule !\n\nADN → ARNm → Protéine (dogme central)'},en:{q:'DNA is located in…',o:['The nucleus','The cytoplasm','The membrane','Ribosomes'],a:0,e:'DNA in nucleus → chromosomes → genes. Humans: 46 chromosomes (23 pairs).',th:'📘 DNA and Genetics\n\nDNA = double helix (A-T and C-G bases)\nHierarchy: Base → Gene → Chromosome → Nucleus\n\nHumans: 46 chromosomes, ~20,000 genes\n2 metres of DNA per cell!\n\nDNA → mRNA → Protein (central dogma)'},es:{q:'El ADN se encuentra en…',o:['El núcleo','El citoplasma','La membrana','Los ribosomas'],a:0,e:'ADN en núcleo → cromosomas → genes. Humanos: 46 cromosomas (23 pares).',th:'📘 ADN y Genética\n\nADN = doble hélice (bases A-T y C-G)\nJerarquía: Base → Gen → Cromosoma → Núcleo\n\nHumanos: 46 cromosomas, ~20 000 genes\n¡2 metros de ADN por célula!\n\nADN → ARNm → Proteína (dogma central)'}},
+{u:'viv',fr:{q:'La mitose produit…',o:['2 cellules filles identiques','4 cellules avec moitié des chromosomes','1 cellule plus grande','3 cellules différentes'],a:0,e:'Mitose → 2 cellules filles génétiquement identiques à la mère.',th:'📘 Mitose vs Méiose\n\nMITOSE :\n→ But : croissance, réparation\n→ Résultat : 2 cellules IDENTIQUES (46 chr.)\n→ Phases : I-P-M-A-T-Cy\n   Interphase, Prophase, Métaphase,\n   Anaphase, Télophase, Cytocinèse\n\nMÉIOSE :\n→ But : reproduction sexuée\n→ Résultat : 4 cellules (23 chr. = haploïdes)\n→ Gamètes : ovule + spermatozoïde'},en:{q:'Mitosis produces…',o:['2 identical daughter cells','4 cells with half the chromosomes','1 larger cell','3 different cells'],a:0,e:'Mitosis → 2 genetically identical daughter cells.',th:'📘 Mitosis vs Meiosis\n\nMITOSIS:\n→ Purpose: growth, repair\n→ Result: 2 IDENTICAL cells (46 chr.)\n→ Phases: I-P-M-A-T-Cy\n   Interphase, Prophase, Metaphase,\n   Anaphase, Telophase, Cytokinesis\n\nMEIOSIS:\n→ Purpose: sexual reproduction\n→ Result: 4 cells (23 chr. = haploid)\n→ Gametes: egg + sperm'},es:{q:'La mitosis produce…',o:['2 células hijas idénticas','4 células con mitad de cromosomas','1 célula más grande','3 células diferentes'],a:0,e:'Mitosis → 2 células hijas genéticamente idénticas a la madre.',th:'📘 Mitosis vs Meiosis\n\nMITOSIS:\n→ Propósito: crecimiento, reparación\n→ Resultado: 2 células IDÉNTICAS (46 cr.)\n→ Fases: I-P-M-A-T-Ci\n   Interfase, Profase, Metafase,\n   Anafase, Telofase, Citocinesis\n\nMEIOSIS:\n→ Propósito: reproducción sexual\n→ Resultado: 4 células (23 cr. = haploides)\n→ Gametos: óvulo + espermatozoide'}},
+{u:'viv',fr:{q:'La photosynthèse a lieu dans…',o:['Les chloroplastes','Les mitochondries','Le noyau','Les ribosomes'],a:0,e:'Chloroplastes → photosynthèse : CO₂ + H₂O + lumière → Glucose + O₂.',th:'📘 Photosynthèse\n\nCO₂ + H₂O + Lumière → Glucose + O₂\n\nLieu : chloroplastes (contiennent chlorophylle)\nQui : végétaux et algues\n\nRespiration cellulaire (mitochondries) :\nGlucose + O₂ → ATP + CO₂ + H₂O\n\nCes deux processus sont complémentaires !'},en:{q:'Photosynthesis occurs in…',o:['Chloroplasts','Mitochondria','The nucleus','Ribosomes'],a:0,e:'Chloroplasts → photosynthesis: CO₂ + H₂O + light → Glucose + O₂.',th:'📘 Photosynthesis\n\nCO₂ + H₂O + Light → Glucose + O₂\n\nLocation: chloroplasts (contain chlorophyll)\nWho: plants and algae\n\nCellular respiration (mitochondria):\nGlucose + O₂ → ATP + CO₂ + H₂O\n\nThese two processes are complementary!'},es:{q:'La fotosíntesis ocurre en…',o:['Los cloroplastos','Las mitocondrias','El núcleo','Los ribosomas'],a:0,e:'Cloroplastos → fotosíntesis: CO₂ + H₂O + luz → Glucosa + O₂.',th:'📘 Fotosíntesis\n\nCO₂ + H₂O + Luz → Glucosa + O₂\n\nLugar: cloroplastos (contienen clorofila)\nQuién: vegetales y algas\n\nRespiración celular (mitocondrias):\nGlucosa + O₂ → ATP + CO₂ + H₂O\n\n¡Estos dos procesos son complementarios!'}},
+{u:'viv',fr:{q:'L\'absorption des nutriments dans le sang se fait via…',o:['L\'intestin grêle','L\'estomac','Le gros intestin','La bouche'],a:0,e:'Intestin grêle → absorption dans le sang. Estomac : HCl + pepsine (pH ≈ 2).',th:'📘 Système digestif\n\nTrajet : Bouche→Œsophage→Estomac→Intestin grêle→Gros intestin→Rectum→Anus\n\nBouche : mastication + amylase salivaire\nEstomac : HCl + pepsine → pH ≈ 2\nIntestin grêle : ABSORPTION → sang\nGros intestin : eau + minéraux\n\nOrganes accessoires : foie (bile), pancréas (enzymes)'},en:{q:'Nutrient absorption into the blood occurs via…',o:['The small intestine','The stomach','The large intestine','The mouth'],a:0,e:'Small intestine → absorption into blood. Stomach: HCl + pepsin (pH ≈ 2).',th:'📘 Digestive System\n\nPath: Mouth→Oesophagus→Stomach→Small intestine→Large intestine→Rectum→Anus\n\nMouth: chewing + salivary amylase\nStomach: HCl + pepsin → pH ≈ 2\nSmall intestine: ABSORPTION → blood\nLarge intestine: water + minerals\n\nAccessory organs: liver (bile), pancreas (enzymes)'},es:{q:'La absorción de nutrientes en la sangre ocurre en…',o:['El intestino delgado','El estómago','El intestino grueso','La boca'],a:0,e:'Intestino delgado → absorción en sangre. Estómago: HCl + pepsina (pH ≈ 2).',th:'📘 Sistema Digestivo\n\nRecorrido: Boca→Esófago→Estómago→Intestino delgado→Intestino grueso→Recto→Ano\n\nBoca: masticación + amilasa salival\nEstómago: HCl + pepsina → pH ≈ 2\nIntestino delgado: ABSORCIÓN → sangre\nIntestino grueso: agua + minerales\n\nÓrganos accesorios: hígado (bilis), páncreas (enzimas)'}},
+{u:'viv',fr:{q:'Les globules blancs servent à…',o:['Défendre contre les infections','Transporter O₂','Coaguler le sang','Produire hormones'],a:0,e:'Leucocytes = système immunitaire. Détruisent microbes et agents pathogènes.',th:'📘 Système immunitaire\n\nSang :\n• Globules rouges → transport O₂ (hémoglobine)\n• Globules blancs → DÉFENSE\n• Plaquettes → coagulation\n• Plasma → transport de tout\n\nImmunité :\n• Barrières : peau, mucus, cils\n• Anticorps produits par lymphocytes\n• Vaccin = antigène affaibli → mémoire immunitaire\n• Sang humain pH ≈ 7,4'},en:{q:'White blood cells serve to…',o:['Defend against infections','Transport O₂','Clot blood','Produce hormones'],a:0,e:'Leukocytes = immune system. Destroy microbes and pathogens.',th:'📘 Immune System\n\nBlood:\n• Red blood cells → O₂ transport (haemoglobin)\n• White blood cells → DEFENCE\n• Platelets → clotting\n• Plasma → transport everything\n\nImmunity:\n• Barriers: skin, mucus, cilia\n• Antibodies produced by lymphocytes\n• Vaccine = weakened antigen → immune memory\n• Human blood pH ≈ 7.4'},es:{q:'Los glóbulos blancos sirven para…',o:['Defenderse de infecciones','Transportar O₂','Coagular la sangre','Producir hormonas'],a:0,e:'Leucocitos = sistema inmunitario. Destruyen microbios y patógenos.',th:'📘 Sistema Inmunitario\n\nSangre:\n• Glóbulos rojos → transporte O₂ (hemoglobina)\n• Glóbulos blancos → DEFENSA\n• Plaquetas → coagulación\n• Plasma → transporte de todo\n\nInmunidad:\n• Barreras: piel, mucosidad, cilios\n• Anticuerpos producidos por linfocitos\n• Vacuna = antígeno debilitado → memoria inmunitaria\n• pH sangre humana ≈ 7,4'}},
+{u:'ter',fr:{q:'La couche externe rigide de la Terre est…',o:['La lithosphère','L\'asthénosphère','Le manteau','Le noyau'],a:0,e:'Lithosphère = croûte + sommet du manteau. Rigide, divisée en plaques tectoniques.',th:'📘 Structure interne de la Terre\n\nDe l\'extérieur au centre :\n1. Lithosphère (0–100 km) → rigide, plaques\n2. Asthénosphère → semi-fluide, déplacement\n3. Manteau inférieur → solide, convection\n4. Noyau externe → Fe+Ni liquides → champ magnétique\n5. Noyau interne → Fe solide, ~5 000°C\n\nMnémotechnique : L-A-M-Ne-Ni'},en:{q:'The rigid outer layer of the Earth is…',o:['The lithosphere','The asthenosphere','The mantle','The core'],a:0,e:'Lithosphere = crust + top of mantle. Rigid, divided into tectonic plates.',th:'📘 Earth\'s Internal Structure\n\nFrom outside to centre:\n1. Lithosphere (0–100 km) → rigid, plates\n2. Asthenosphere → semi-fluid, movement\n3. Lower mantle → solid, convection\n4. Outer core → liquid Fe+Ni → magnetic field\n5. Inner core → solid Fe, ~5,000°C\n\nMnemonic: L-A-M-OC-IC'},es:{q:'La capa externa rígida de la Tierra es…',o:['La litosfera','La astenosfera','El manto','El núcleo'],a:0,e:'Litosfera = corteza + parte superior del manto. Rígida, dividida en placas tectónicas.',th:'📘 Estructura Interna de la Tierra\n\nDel exterior al centro:\n1. Litosfera (0–100 km) → rígida, placas\n2. Astenosfera → semifluida, movimiento\n3. Manto inferior → sólido, convección\n4. Núcleo externo → Fe+Ni líquidos → campo magnético\n5. Núcleo interno → Fe sólido, ~5 000°C\n\nRegla mnemónica: L-A-M-Ne-Ni'}},
+{u:'ter',fr:{q:'La tectonique des plaques explique…',o:['Le mouvement des continents','La formation des nuages','L\'évolution des espèces','La rotation de la Lune'],a:0,e:'~15 plaques lithosphériques se déplacent sur l\'asthénosphère (divergence, convergence, coulissage).',th:'📘 Tectonique des plaques\n\nDivergence → plaques s\'éloignent → dorsales\n→ Atlantique s\'élargit 2,5 cm/an\n\nConvergence → plaques se rapprochent → montagnes\n→ Himalaya (Indo-australienne + Eurasie)\n\nCoulissage → plaques glissent → failles\n→ Faille de San Andreas (Californie)\n\nMoteur : courants de convection dans le manteau\nPangée → continents actuels'},en:{q:'Plate tectonics explains…',o:['The movement of continents','Cloud formation','Evolution of species','Lunar rotation'],a:0,e:'~15 lithospheric plates move over the asthenosphere (divergence, convergence, transform).',th:'📘 Plate Tectonics\n\nDivergence → plates move apart → ridges\n→ Atlantic grows 2.5 cm/year\n\nConvergence → plates collide → mountains\n→ Himalayas (Indo-Australian + Eurasian)\n\nTransform → plates slide → faults\n→ San Andreas Fault (California)\n\nEngine: convection currents in mantle\nPangaea → current continents'},es:{q:'La tectónica de placas explica…',o:['El movimiento de los continentes','La formación de nubes','La evolución de las especies','La rotación de la Luna'],a:0,e:'~15 placas litosféricas se mueven sobre la astenosfera (divergencia, convergencia, transformante).',th:'📘 Tectónica de Placas\n\nDivergencia → placas se separan → dorsales\n→ Atlántico crece 2,5 cm/año\n\nConvergencia → placas chocan → montañas\n→ Himalaya (Indo-australiana + Euroasiática)\n\nTransformante → placas deslizan → fallas\n→ Falla de San Andrés (California)\n\nMotor: corrientes de convección en el manto\nPangea → continentes actuales'}},
+{u:'ter',fr:{q:'Le Soleil produit son énergie par…',o:['Fusion nucléaire','Combustion du carbone','Fission nucléaire','Réactions chimiques'],a:0,e:'4H → He + énergie (E=mc²). 600 millions tonnes d\'H/seconde. Il reste ~5 milliards d\'années.',th:'📘 Le Soleil — étoile G\n\nFusion nucléaire : 4H → He + énergie (E=mc²)\n\nCaractéristiques :\n• Distance Terre : 150 millions km (1 UA)\n• Lumière : 8 min 20 s\n• T° surface : 5 500°C\n• T° noyau : 15 millions°C\n• 99,8% masse système solaire\n• Âge : 4,6 milliards d\'années\n• Durée de vie restante : ~5 milliards d\'années'},en:{q:'The Sun produces its energy through…',o:['Nuclear fusion','Carbon combustion','Nuclear fission','Chemical reactions'],a:0,e:'4H → He + energy (E=mc²). 600 million tonnes H/second. ~5 billion years remaining.',th:'📘 The Sun — G star\n\nNuclear fusion: 4H → He + energy (E=mc²)\n\nCharacteristics:\n• Distance from Earth: 150 million km (1 AU)\n• Light travel time: 8 min 20 s\n• Surface T°: 5,500°C\n• Core T°: 15 million°C\n• 99.8% of solar system mass\n• Age: 4.6 billion years\n• Remaining life: ~5 billion years'},es:{q:'El Sol produce su energía mediante…',o:['Fusión nuclear','Combustión del carbono','Fisión nuclear','Reacciones químicas'],a:0,e:'4H → He + energía (E=mc²). 600 millones toneladas de H/segundo. Restan ~5 mil millones de años.',th:'📘 El Sol — estrella G\n\nFusión nuclear: 4H → He + energía (E=mc²)\n\nCaracterísticas:\n• Distancia Tierra: 150 millones km (1 UA)\n• Luz: 8 min 20 s\n• T° superficial: 5 500°C\n• T° núcleo: 15 millones°C\n• 99,8% masa sistema solar\n• Edad: 4.600 millones de años\n• Vida restante: ~5 000 millones de años'}},
+{u:'ter',fr:{q:'Les roches sédimentaires…',o:['Contiennent des fossiles','Se forment par refroidissement du magma','Sont toujours noires','N\'existent pas sur Terre'],a:0,e:'Roches sédimentaires = sédiments compactés → strates → contiennent fossiles !',th:'📘 3 types de roches\n\nSÉDIMENTAIRES :\n→ Sédiments compactés en couches\n→ Contiennent fossiles!\n→ Ex : calcaire, grès, schiste, craie\n\nIGNÉES (magmatiques) :\n→ Intrusive (lente) : granite (gros cristaux)\n→ Extrusive (rapide) : basalte (petits cristaux)\n\nMÉTAMORPHIQUES :\n→ Chaleur + pression → transformation\n→ Ex : marbre (du calcaire), ardoise (du schiste)'},en:{q:'Sedimentary rocks…',o:['Contain fossils','Form from cooling magma','Are always black','Don\'t exist on Earth'],a:0,e:'Sedimentary rocks = compacted sediments → layers → contain fossils!',th:'📘 3 Rock Types\n\nSEDIMENTARY:\n→ Compacted sediments in layers\n→ Contain fossils!\n→ E.g. limestone, sandstone, shale, chalk\n\nIGNEOUS (magmatic):\n→ Intrusive (slow): granite (large crystals)\n→ Extrusive (fast): basalt (small crystals)\n\nMETAMORPHIC:\n→ Heat + pressure → transformation\n→ E.g. marble (from limestone), slate (from shale)'},es:{q:'Las rocas sedimentarias…',o:['Contienen fósiles','Se forman por enfriamiento del magma','Son siempre negras','No existen en la Tierra'],a:0,e:'Rocas sedimentarias = sedimentos compactados → capas → ¡contienen fósiles!',th:'📘 3 Tipos de Rocas\n\nSEDIMENTARIAS:\n→ Sedimentos compactados en capas\n→ ¡Contienen fósiles!\n→ Ej: caliza, arenisca, esquisto, creta\n\nÍGNEAS (magmáticas):\n→ Intrusiva (lenta): granito (cristales grandes)\n→ Extrusiva (rápida): basalto (cristales pequeños)\n\nMETAMÓRFICAS:\n→ Calor + presión → transformación\n→ Ej: mármol (de la caliza), pizarra (del esquisto)'}},
+{u:'tec',fr:{q:'La pression P = F/A se mesure en…',o:['Pascals (Pa)','Newtons (N)','Mètres (m)','Kilogrammes (kg)'],a:0,e:'P en Pascals (Pa = N/m²). F en Newtons, A en m². Plus A est petit, plus P est grande.',th:'📘 Pression — Loi de Pascal\n\nP = F / A\nP en Pascals (Pa = N/m²)\nF en Newtons (N)\nA en m² ← attention, PAS cm²!\n1 cm² = 0,0001 m²\n\nLoi de Pascal : pression transmise uniformément dans toutes les directions dans un fluide incompressible.\n\nApplications : freins hydrauliques, vérins, dentiste, pelle mécanique'},en:{q:'Pressure P = F/A is measured in…',o:['Pascals (Pa)','Newtons (N)','Metres (m)','Kilograms (kg)'],a:0,e:'P in Pascals (Pa = N/m²). F in Newtons, A in m². Smaller A → greater P.',th:'📘 Pressure — Pascal\'s Law\n\nP = F / A\nP in Pascals (Pa = N/m²)\nF in Newtons (N)\nA in m² ← NOT cm²!\n1 cm² = 0.0001 m²\n\nPascal\'s Law: pressure transmitted uniformly in all directions in an incompressible fluid.\n\nApplications: hydraulic brakes, jacks, dentist\'s chair, excavator arm'},es:{q:'La presión P = F/A se mide en…',o:['Pascales (Pa)','Newtons (N)','Metros (m)','Kilogramos (kg)'],a:0,e:'P en Pascales (Pa = N/m²). F en Newtons, A en m². Menor A → mayor P.',th:'📘 Presión — Ley de Pascal\n\nP = F / A\nP en Pascales (Pa = N/m²)\nF en Newtons (N)\nA en m² ← ¡NO cm²!\n1 cm² = 0,0001 m²\n\nLey de Pascal: presión transmitida uniformemente en todas las direcciones en un fluido incompresible.\n\nAplicaciones: frenos hidráulicos, gatos, silla del dentista, brazo de excavadora'}},
+{u:'tec',fr:{q:'La loi d\'Ohm : V = …',o:['R × I','R + I','R ÷ I','R − I'],a:0,e:'V = R × I. Tension (V) = Résistance (Ω) × Intensité (A). Triangle : V dessus, R et I dessous.',th:'📘 Loi d\'Ohm et circuits\n\nV = R × I\nV = Volts, R = Ohms (Ω), I = Ampères (A)\n\nTriangle magique :\n     [V]\n  [R] × [I]\nCouvre la valeur cherchée → lis la formule!\n\nPuissance : P = V × I (Watts)\n\nSérie : Rₜ = R₁+R₂, I identique, V = V₁+V₂\nParallèle : 1/Rₜ = 1/R₁+1/R₂, V identique, I = I₁+I₂'},en:{q:'Ohm\'s Law: V = …',o:['R × I','R + I','R ÷ I','R − I'],a:0,e:'V = R × I. Voltage (V) = Resistance (Ω) × Current (A). Triangle: V on top, R and I below.',th:'📘 Ohm\'s Law and Circuits\n\nV = R × I\nV = Volts, R = Ohms (Ω), I = Amperes (A)\n\nMagic triangle:\n     [V]\n  [R] × [I]\nCover the value you want → read the formula!\n\nPower: P = V × I (Watts)\n\nSeries: Rₜ = R₁+R₂, I same, V = V₁+V₂\nParallel: 1/Rₜ = 1/R₁+1/R₂, V same, I = I₁+I₂'},es:{q:'Ley de Ohm: V = …',o:['R × I','R + I','R ÷ I','R − I'],a:0,e:'V = R × I. Tensión (V) = Resistencia (Ω) × Intensidad (A). Triángulo: V arriba, R e I abajo.',th:'📘 Ley de Ohm y Circuitos\n\nV = R × I\nV = Volts, R = Ohms (Ω), I = Amperes (A)\n\nTriángulo mágico:\n     [V]\n  [R] × [I]\n¡Cubre el valor buscado → lee la fórmula!\n\nPotencia: P = V × I (Watts)\n\nSerie: Rₜ = R₁+R₂, I igual, V = V₁+V₂\nParalelo: 1/Rₜ = 1/R₁+1/R₂, V igual, I = I₁+I₂'}},
+{u:'tec',fr:{q:'En circuit série, l\'intensité est…',o:['Identique partout','Différente partout','Nulle','La somme de I₁+I₂'],a:0,e:'Série : I identique partout (un seul chemin). V se divise : V = V₁ + V₂.',th:'📘 Circuits série vs parallèle\n\nSÉRIE :\n• Rₜ = R₁ + R₂ (résistances s\'additionnent)\n• I IDENTIQUE partout\n• V = V₁ + V₂\n• Si 1 élément tombe → tout s\'arrête!\n• Ex : vieilles guirlandes de Noël\n\nPARALLÈLE :\n• 1/Rₜ = 1/R₁ + 1/R₂ (Rₜ < chaque R)\n• V IDENTIQUE sur chaque branche\n• I = I₁ + I₂\n• Chaque élément indépendant\n• Ex : appareils ménagers (120V Québec)'},en:{q:'In a series circuit, the current is…',o:['The same everywhere','Different everywhere','Zero','The sum I₁+I₂'],a:0,e:'Series: I same everywhere (one path). V divides: V = V₁ + V₂.',th:'📘 Series vs Parallel Circuits\n\nSERIES:\n• Rₜ = R₁ + R₂ (resistances add)\n• I SAME everywhere\n• V = V₁ + V₂\n• If 1 element fails → all stops!\n• E.g. old Christmas lights\n\nPARALLEL:\n• 1/Rₜ = 1/R₁ + 1/R₂ (Rₜ < each R)\n• V SAME on each branch\n• I = I₁ + I₂\n• Each element independent\n• E.g. home appliances (120V Québec)'},es:{q:'En un circuito serie, la intensidad es…',o:['Igual en todas partes','Diferente en todas partes','Nula','La suma I₁+I₂'],a:0,e:'Serie: I igual en todas partes (un solo camino). V se divide: V = V₁ + V₂.',th:'📘 Circuitos Serie vs Paralelo\n\nSERIE:\n• Rₜ = R₁ + R₂ (resistencias se suman)\n• I IGUAL en todas partes\n• V = V₁ + V₂\n• Si 1 elemento falla → ¡todo se detiene!\n• Ej: luces navideñas antiguas\n\nPARALELO:\n• 1/Rₜ = 1/R₁ + 1/R₂ (Rₜ < cada R)\n• V IGUAL en cada rama\n• I = I₁ + I₂\n• Cada elemento independiente\n• Ej: aparatos domésticos (120V Québec)'}},
+{u:'tec',fr:{q:'Échelle 1:2 en dessin technique signifie…',o:['Dessin 2× plus petit que l\'objet','Dessin 2× plus grand','Taille réelle','Dessin 10× plus petit'],a:0,e:'1:2 → dessin 2× plus petit. 2:1 → dessin 2× plus grand. 1:1 = taille réelle.',th:'📘 Dessin technique\n\nÉchelle = taille dessin / taille réelle\n1:1 → taille réelle\n1:2 → réduit 2× (dessin plus petit)\n2:1 → agrandi 2× (dessin plus grand)\n\nEx : objet de 80 cm à l\'échelle 1:4\n→ Dessin = 80÷4 = 20 cm\n\nVues : face, dessus, côté\nLignes : plein fort (visible), pointillé (caché), mixte (axe)'},en:{q:'Scale 1:2 in technical drawing means…',o:['Drawing 2× smaller than object','Drawing 2× larger','Full size','Drawing 10× smaller'],a:0,e:'1:2 → drawing 2× smaller. 2:1 → drawing 2× larger. 1:1 = full size.',th:'📘 Technical Drawing\n\nScale = drawing size / real size\n1:1 → full size\n1:2 → reduced 2× (smaller drawing)\n2:1 → enlarged 2× (larger drawing)\n\nEx: 80 cm object at scale 1:4\n→ Drawing = 80÷4 = 20 cm\n\nViews: front, top, side\nLines: solid (visible), dashed (hidden), chain (axis)'},es:{q:'La escala 1:2 en dibujo técnico significa…',o:['Dibujo 2× más pequeño que el objeto','Dibujo 2× más grande','Tamaño real','Dibujo 10× más pequeño'],a:0,e:'1:2 → dibujo 2× más pequeño. 2:1 → dibujo 2× más grande. 1:1 = tamaño real.',th:'📘 Dibujo Técnico\n\nEscala = tamaño dibujo / tamaño real\n1:1 → tamaño real\n1:2 → reducido 2× (dibujo más pequeño)\n2:1 → ampliado 2× (dibujo más grande)\n\nEj: objeto de 80 cm a escala 1:4\n→ Dibujo = 80÷4 = 20 cm\n\nVistas: frontal, superior, lateral\nLíneas: continua (visible), discontinua (oculta), mixta (eje)'}}
+];
+
+function buildQ(){
+  return Q_RAW.map(raw=>{
+    const q={u:raw.u};
+    ['fr','en','es'].forEach(l=>{
+      const d=raw[l];
+      const indexed=d.o.map((o,i)=>({text:o,correct:i===d.a}));
+      const shuffled=indexed.sort(()=>Math.random()-.5);
+      q[l]={q:d.q,opts:shuffled.map(o=>o.text),ans:shuffled.findIndex(o=>o.correct),exp:d.e,theory:d.th};
+    });
+    return q;
+  });
+}
+
+let lang='fr';
+let state={selected:new Set(),mode:'quiz',questions:[],current:0,correct:0,streak:0,maxStreak:0,answered:false};
+let motivIdx=0;
+
+const t=k=>TX[lang][k];
+const shuffle=arr=>[...arr].sort(()=>Math.random()-.5);
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo({top:0,behavior:'smooth'})}
+
+function setLang(l){lang=l;document.documentElement.lang=l;document.querySelectorAll('.lb').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));renderHome()}
+
+function renderHome(){
+  const tx=TX[lang];
+  document.getElementById('lh-badge').textContent=tx.badge;
+  document.getElementById('lh-t1').textContent=tx.t1;
+  document.getElementById('lh-t2').textContent=tx.t2;
+  document.getElementById('lh-sub').textContent=tx.sub;
+  document.getElementById('lh-motiv').textContent=tx.motivHome[motivIdx%tx.motivHome.length];
+  document.getElementById('lbl-labs').textContent=tx.lblLabs;
+  document.getElementById('lbl-tools').textContent=tx.lblTools;
+  document.getElementById('ql-title').textContent=tx.qlTitle;
+  document.getElementById('ql-sub').textContent=tx.qlSub;
+  const badgeText={fr:'✓ Listo',en:'✓ Ready',es:'✓ Listo'}[lang];
+  const soonText={fr:'⏳ Pronto',en:'⏳ Soon',es:'⏳ Pronto'}[lang];
+  document.getElementById('mod-grid-labs').innerHTML=LABS.map(m=>{const d=m[lang]||m.fr;return`<a class="mod-card" href="${m.file}"><span class="mc-icon">${m.icon}</span><div class="mc-name">${d.name}</div><div class="mc-sub">${d.sub}</div><span class="mc-badge mc-done">${badgeText}</span></a>`}).join('');
+  document.getElementById('mod-grid-tools').innerHTML=TOOLS.map(m=>{const d=m[lang]||m.fr;return`<a class="mod-card" href="${m.file}"${!m.done?' onclick="return false"':''}><span class="mc-icon">${m.icon}</span><div class="mc-name">${d.name}</div><div class="mc-sub">${d.sub}</div><span class="mc-badge ${m.done?'mc-done':'mc-soon'}">${m.done?badgeText:soonText}</span></a>`}).join('');
+  renderUnivGrid();renderModeButtons();renderStartButton();
+}
+
+function renderUnivGrid(){
+  const tx=TX[lang];
+  const ids=['mat','viv','ter','tec'];
+  const Q=buildQ();
+  document.getElementById('univers-grid').innerHTML=ids.map(id=>{
+    const sel=state.selected.has(id);const col=tx.univColors[id];
+    const cnt=Q.filter(q=>q.u===id).length;
+    return`<button class="univ-card${sel?' sel':''}" style="${sel?`border-color:${col};border-width:2px;background:${col}18`:''}" onclick="toggleU('${id}')"><span class="ui">${tx.univIcons[id]}</span><div><div class="un" style="${sel?`color:${col}`:''}">${tx.univNames[id]}</div><div class="uq">${cnt} q</div></div></button>`;
+  }).join('');
+}
+function renderModeButtons(){const tx=TX[lang];document.getElementById('mode-fr').textContent=tx.modeQuiz;document.getElementById('mode-fr').className='mode-btn'+(state.mode==='quiz'?' active':'');document.getElementById('mode-ft').textContent=tx.modeTout;document.getElementById('mode-ft').className='mode-btn'+(state.mode==='tout'?' active':'')}
+function renderStartButton(){const btn=document.getElementById('btn-start');btn.textContent=t('start');btn.disabled=state.selected.size===0}
+function toggleU(id){if(state.selected.has(id))state.selected.delete(id);else state.selected.add(id);renderUnivGrid();renderStartButton()}
+function setMode(m){state.mode=m;renderModeButtons()}
+
+function startGame(){
+  const freshQ=buildQ();
+  let pool=freshQ.filter(q=>state.selected.has(q.u));
+  pool=shuffle(pool);
+  if(state.mode==='quiz')pool=pool.slice(0,10);
+  state.questions=pool;state.current=0;state.correct=0;state.streak=0;state.maxStreak=0;
+  showScreen('screen-game');renderQuestion();
+}
+
+function renderQuestion(){
+  state.answered=false;
+  const q=state.questions[state.current];const d=q[lang];const total=state.questions.length;
+  const tx=TX[lang];
+  document.getElementById('prog-bar').style.width=Math.round((state.current/total)*100)+'%';
+  document.getElementById('prog-text').textContent=`${tx.q} ${state.current+1} / ${total}`;
+  const uEl=document.getElementById('q-univers');uEl.textContent=tx.univIcons[q.u]+' '+tx.univNames[q.u];uEl.style.color=tx.univColors[q.u];
+  document.getElementById('q-score').textContent=state.correct+' ✓';
+  document.getElementById('q-streak').textContent=state.streak>0?'🔥'.repeat(Math.min(state.streak,5)):'';
+  document.getElementById('question-text').textContent=d.q;
+  document.getElementById('feedback-box').className='feedback-box';
+  document.getElementById('feedback-box').innerHTML='';
+  const banner=document.getElementById('motiv-banner');
+  if(state.streak>0&&state.streak%3===0){const arr=tx.motivStreak;banner.textContent=arr[Math.floor(Math.random()*arr.length)];banner.className='motiv-banner show';setTimeout(()=>banner.className='motiv-banner',2500)}
+  document.getElementById('btn-next').style.display='none';
+  document.getElementById('btn-theory').style.display='none';
+  document.getElementById('theory-panel').style.display='none';
+  document.getElementById('options').innerHTML=d.opts.map((o,i)=>`<button class="opt-btn" onclick="answer(${i})">${o}</button>`).join('');
+}
+
+function answer(i){
+  if(state.answered)return;state.answered=true;
+  const q=state.questions[state.current];const d=q[lang];const ok=i===d.ans;
+  const btns=document.querySelectorAll('.opt-btn');btns.forEach(b=>b.disabled=true);
+  if(ok){state.correct++;state.streak++;state.maxStreak=Math.max(state.streak,state.maxStreak);btns[i].classList.add('correct');showFeedback(true,'✓ '+d.exp)}
+  else{state.streak=0;btns[i].classList.add('wrong');btns[d.ans].classList.add('reveal');showFeedback(false,'✗ '+d.exp)}
+  document.getElementById('q-score').textContent=state.correct+' ✓';
+  document.getElementById('q-streak').textContent=state.streak>0?'🔥'.repeat(Math.min(state.streak,5)):'';
+  const bt=document.getElementById('btn-theory');bt.style.display='inline-flex';bt.textContent=t('theory');
+  document.getElementById('theory-panel').dataset.content=d.theory;
+  const bn=document.getElementById('btn-next');bn.style.display='flex';
+  bn.textContent=state.current<state.questions.length-1?t('next'):t('finish');
+}
+
+function showFeedback(ok,msg){const fb=document.getElementById('feedback-box');fb.className='feedback-box show '+(ok?'ok':'bad');fb.innerHTML=msg}
+
+function nextQuestion(){
+  state.current++;
+  if(state.current>=state.questions.length){showScreen('screen-results');renderResults();return}
+  renderQuestion();
+}
+
+function toggleTheory(){
+  const panel=document.getElementById('theory-panel');const btn=document.getElementById('btn-theory');
+  if(panel.style.display==='none'||!panel.style.display){panel.style.display='block';panel.innerHTML='<pre>'+panel.dataset.content+'</pre>';btn.textContent=t('theoryClose')}
+  else{panel.style.display='none';btn.textContent=t('theory')}
+}
+
+function renderResults(){
+  const total=state.questions.length;const pct=Math.round((state.correct/total)*100);
+  const tx=TX[lang];const v=tx.verdicts.find(x=>pct>=x.min);
+  document.getElementById('res-icon').textContent=v.icon;
+  document.getElementById('res-pct').textContent=pct+'%';
+  document.getElementById('res-msg').textContent=v.msg;
+  document.getElementById('res-motiv-final').textContent=v.motiv;
+  document.getElementById('res-correct').textContent=state.correct;
+  document.getElementById('res-total').textContent=total;
+  document.getElementById('res-streak').textContent=state.maxStreak;
+  document.getElementById('res-title').textContent=tx.results;
+  document.getElementById('res-label-c').textContent=tx.correct;
+  document.getElementById('res-label-t').textContent=tx.total;
+  document.getElementById('res-label-s').textContent=tx.streakMax;
+  document.getElementById('btn-again').textContent=tx.again;
+  document.getElementById('btn-home').textContent=tx.home;
+}
+
+function resetGame(){startGame()}
+function showHome(){state.selected.clear();showScreen('screen-home');renderHome()}
+
+// Stars
+(function(){const canvas=document.getElementById('bg-canvas');const ctx=canvas.getContext('2d');let stars=[];function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;stars=Array.from({length:100},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.2+.2,o:Math.random()*.45+.05,s:Math.random()*.4+.05,t:Math.random()*Math.PI*2}))}function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);const now=Date.now()/1000;stars.forEach(s=>{ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${s.o*(0.5+0.5*Math.sin(now*s.s+s.t))})`;ctx.fill()});requestAnimationFrame(draw)}window.addEventListener('resize',resize);resize();draw()})();
+
+// Rotating motivational messages
+setInterval(()=>{const el=document.getElementById('lh-motiv');if(!el||document.getElementById('screen-home').classList.contains('active')===false)return;const arr=TX[lang].motivHome;el.style.opacity='0';setTimeout(()=>{motivIdx=(motivIdx+1)%arr.length;el.textContent=arr[motivIdx];el.style.opacity='1'},400)},5000);
+
+renderHome();
+</script>
+</body>
+</html>

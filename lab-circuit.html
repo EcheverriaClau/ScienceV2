@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Circuits électriques · STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--bg2:#0d1420;--bg3:#121d2e;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --text:#dce8f8;--muted:#4a6282;
+  --yellow:#ffd166;--blue:#5bc8ff;--green:#4ddc8a;--red:#ff5f6d;--orange:#ff8c42;
+  --font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:12px;
+}
+html{font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;
+  background-image:
+    radial-gradient(1px 1px at 15%  20%,rgba(255,255,255,.3) 0%,transparent 100%),
+    radial-gradient(1px 1px at 80%  15%,rgba(255,255,255,.3) 0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 75%,rgba(255,255,255,.25) 0%,transparent 100%),
+    radial-gradient(1px 1px at 90%  55%,rgba(255,255,255,.2) 0%,transparent 100%),
+    radial-gradient(1px 1px at 8%   70%,rgba(255,255,255,.2) 0%,transparent 100%);
+  pointer-events:none;z-index:0}
+
+/* ── LANG ── */
+#lang-bar{position:relative;z-index:10;display:flex;gap:6px;justify-content:flex-end;padding:1rem 1.25rem 0}
+.lang-btn{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:5px 12px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.lang-btn.active{background:var(--yellow);color:var(--bg);border-color:var(--yellow)}
+
+#app{position:relative;z-index:1;max-width:740px;margin:0 auto;padding:1.25rem 1.25rem 4rem}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:1.25rem 0 1.75rem}
+.hero-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.6rem}
+.hero h1{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:900;letter-spacing:-.03em;margin-bottom:.3rem}
+.hero h1 em{font-style:normal;color:var(--yellow)}
+.hero p{font-size:13px;color:var(--muted)}
+
+.sec{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:.85rem}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── CIRCUIT TYPE TABS ── */
+.tabs{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.tab-btn{flex:1;min-width:120px;padding:10px 14px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);font-family:var(--font);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;text-align:center}
+.tab-btn.active{border-color:var(--yellow);color:var(--yellow);background:rgba(255,209,102,.08)}
+
+/* ── MAIN LAYOUT ── */
+.lab-layout{display:grid;grid-template-columns:1fr 260px;gap:1.25rem;margin-bottom:1.25rem;align-items:start}
+@media(max-width:580px){.lab-layout{grid-template-columns:1fr}}
+
+/* ── CIRCUIT SVG ── */
+.circuit-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem;position:relative}
+#circuit-svg{width:100%;display:block}
+
+/* current animation */
+.current-dot{animation:flowRight 1.5s linear infinite}
+.current-dot-branch{animation:flowRight .9s linear infinite}
+@keyframes flowRight{0%{opacity:0;transform:translateX(-8px)}30%{opacity:1}70%{opacity:1}100%{opacity:0;transform:translateX(8px)}}
+
+/* ── SLIDERS PANEL ── */
+.sliders-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;display:flex;flex-direction:column;gap:1rem}
+
+.slider-group{display:flex;flex-direction:column;gap:.4rem}
+.slider-label{display:flex;justify-content:space-between;align-items:baseline}
+.slider-name{font-size:13px;font-weight:600}
+.slider-val{font-family:var(--mono);font-size:13px;font-weight:700}
+
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:7px;border-radius:4px;outline:none;cursor:pointer;background:var(--border2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid var(--bg);transition:transform .1s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+
+/* ── METERS ── */
+.meters{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1.25rem}
+.meter{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.85rem .75rem;text-align:center}
+.meter-val{font-family:var(--mono);font-size:1.5rem;font-weight:700;line-height:1;margin-bottom:3px;transition:color .3s}
+.meter-unit{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:4px}
+.meter-label{font-size:12px;color:var(--muted)}
+.meter-formula{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;padding-top:4px;border-top:1px solid var(--border)}
+
+/* component detail cards */
+.comp-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.25rem}
+.comp-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:.85rem}
+.comp-title{font-size:12px;font-weight:600;margin-bottom:.35rem;display:flex;align-items:center;gap:6px}
+.comp-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:2px 0}
+.comp-row span:last-child{font-family:var(--mono);color:var(--text)}
+
+/* ── INFO BOX ── */
+.info-box{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--yellow);border-radius:0 var(--r) var(--r) 0;padding:1rem 1.25rem;font-size:13px;line-height:1.75;color:rgba(220,232,248,.85);margin-bottom:1.25rem}
+.info-box h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:.5rem}
+.info-box .formula-block{background:var(--bg3);border-radius:8px;padding:.65rem 1rem;font-family:var(--mono);font-size:14px;color:var(--yellow);margin:.6rem 0;text-align:center;letter-spacing:.05em}
+
+/* ── THEORY ── */
+.theory-box{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:0 var(--r) var(--r) 0;padding:1rem 1.25rem;font-size:13px;line-height:1.8;color:rgba(220,232,248,.8);margin-bottom:1.25rem}
+.theory-box h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:.5rem}
+
+/* ── QUIZ ── */
+.q-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem;margin-bottom:.75rem}
+.q-num{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:.4rem}
+.q-text{font-size:14px;line-height:1.6;margin-bottom:.75rem}
+.q-opts{display:grid;gap:6px}
+.q-opt{display:block;width:100%;text-align:left;padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:13px;color:var(--text);cursor:pointer;transition:all .15s}
+.q-opt:hover:not(:disabled){border-color:var(--border2);transform:translateX(3px)}
+.q-opt:disabled{cursor:default}
+.q-opt.correct{background:rgba(77,220,138,.12);border-color:var(--green);color:#a7f3ca}
+.q-opt.wrong{background:rgba(255,95,109,.1);border-color:var(--red);color:#fca5a5}
+.q-opt.reveal{background:rgba(77,220,138,.08);border-color:rgba(77,220,138,.4);color:#a7f3ca}
+.q-fb{display:none;margin-top:.6rem;padding:.65rem .9rem;border-radius:7px;font-size:12.5px;line-height:1.65}
+.q-fb.show{display:block;animation:fadeUp .2s ease}
+.q-fb.ok{background:rgba(77,220,138,.08);color:#a7f3ca;border-left:3px solid var(--green)}
+.q-fb.bad{background:rgba(255,95,109,.08);color:#fca5a5;border-left:3px solid var(--red)}
+.result-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;text-align:center;display:none;margin-top:1rem}
+.result-card.show{display:block;animation:fadeUp .4s ease}
+.result-pct{font-size:3rem;font-weight:900;letter-spacing:-.04em;margin-bottom:.3rem}
+.result-msg{font-size:13px;color:var(--muted);margin-bottom:1rem}
+.btn-retry{font-family:var(--font);font-weight:700;font-size:14px;padding:11px 24px;border:none;border-radius:8px;background:var(--yellow);color:var(--bg);cursor:pointer;transition:all .2s}
+.btn-retry:hover{transform:translateY(-2px)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="lang-bar">
+  <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('es')">ES</button>
+</div>
+<div id="app">
+
+  <div class="hero">
+    <span class="hero-tag" id="hero-tag">STE Secondaire 3 · Laboratoire</span>
+    <h1 id="hero-h1">Circuits <em>électriques</em></h1>
+    <p id="hero-p">Explore les circuits série et parallèle · Loi d'Ohm interactive</p>
+  </div>
+
+  <p class="sec" id="sec-type">Type de circuit</p>
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-serie" onclick="setCircuit('serie')">⚡ <span id="lbl-serie">Circuit série</span></button>
+    <button class="tab-btn" id="tab-parallel" onclick="setCircuit('parallel')">⚡⚡ <span id="lbl-parallel">Circuit parallèle</span></button>
+    <button class="tab-btn" id="tab-ohm" onclick="setCircuit('ohm')">🔢 <span id="lbl-ohm">Loi d'Ohm</span></button>
+  </div>
+
+  <!-- INFO BOX (changes per circuit) -->
+  <div class="info-box" id="info-box"></div>
+
+  <!-- LAB LAYOUT -->
+  <div class="lab-layout">
+    <div class="circuit-wrap">
+      <svg id="circuit-svg" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="sliders-panel" id="sliders-panel"></div>
+  </div>
+
+  <!-- METERS -->
+  <div class="meters" id="meters"></div>
+
+  <!-- COMPONENT DETAIL CARDS -->
+  <div class="comp-cards" id="comp-cards"></div>
+
+  <!-- THEORY -->
+  <p class="sec" id="sec-theory">Théorie</p>
+  <div class="theory-box" id="theory-box"></div>
+
+  <!-- QUIZ -->
+  <p class="sec" id="sec-quiz">Quiz</p>
+  <div id="quiz-body"></div>
+  <div class="result-card" id="result-card">
+    <div class="result-pct" id="result-pct"></div>
+    <div class="result-msg" id="result-msg"></div>
+    <button class="btn-retry" onclick="initQuiz()" id="btn-retry"></button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════════════════
+const TX = {
+  fr:{
+    tag:'STE Secondaire 3 · Laboratoire',
+    h1:'Circuits <em>électriques</em>',
+    p:'Explore les circuits série et parallèle · Loi d\'Ohm interactive',
+    secType:'Type de circuit',
+    lbl_serie:'Circuit série',lbl_parallel:'Circuit parallèle',lbl_ohm:'Loi d\'Ohm',
+    secTheory:'Théorie',secQuiz:'Quiz',
+    lbl_voltage:'Tension (V)',lbl_current:'Intensité (I)',lbl_resistance:'Résistance (R)',
+    lbl_power:'Puissance (P)',
+    lbl_r1:'Résistance R₁',lbl_r2:'Résistance R₂',
+    lbl_total:'Total',lbl_branch:'Branche',
+    lbl_r1val:'Valeur R₁',lbl_r2val:'Valeur R₂',lbl_vval:'Tension V',
+    unit_v:'V',unit_a:'A',unit_ohm:'Ω',unit_w:'W',
+    info:{
+      serie:{
+        title:'Circuit série',
+        text:'Dans un circuit série, les composants sont connectés les uns à la suite des autres. Le courant est le <strong>même</strong> partout. La tension se <strong>divise</strong> entre les résistances.',
+        formulas:['R_total = R₁ + R₂','I = V / R_total','V₁ = I × R₁   ·   V₂ = I × R₂'],
+      },
+      parallel:{
+        title:'Circuit parallèle',
+        text:'Dans un circuit parallèle, les composants sont connectés entre les mêmes nœuds. La tension est la <strong>même</strong> partout. Le courant se <strong>divise</strong> entre les branches.',
+        formulas:['1/R_total = 1/R₁ + 1/R₂','I_total = V / R_total','I₁ = V / R₁   ·   I₂ = V / R₂'],
+      },
+      ohm:{
+        title:'Loi d\'Ohm',
+        text:'La loi d\'Ohm relie tension, intensité et résistance. Si tu connais deux valeurs, tu peux calculer la troisième. La puissance mesure l\'énergie consommée par seconde.',
+        formulas:['V = R × I','I = V / R','R = V / I','P = V × I'],
+      },
+    },
+    theory:`<h3>Électricité — concepts fondamentaux</h3>
+<strong>Tension (V)</strong> — Différence de potentiel électrique entre deux points. Unité : Volt (V).<br>
+<strong>Intensité (I)</strong> — Quantité de charge qui circule par seconde. Unité : Ampère (A).<br>
+<strong>Résistance (R)</strong> — Opposition au passage du courant. Unité : Ohm (Ω).<br>
+<strong>Puissance (P)</strong> — Énergie consommée par seconde. Unité : Watt (W).<br><br>
+<strong>Loi d'Ohm :</strong> V = R × I<br><br>
+<strong>Circuit série :</strong><br>
+• R_total = R₁ + R₂ (résistances s'additionnent)<br>
+• I partout identique<br>
+• V = V₁ + V₂<br><br>
+<strong>Circuit parallèle :</strong><br>
+• 1/R_total = 1/R₁ + 1/R₂ (résistance totale plus petite)<br>
+• V identique sur chaque branche<br>
+• I_total = I₁ + I₂<br><br>
+💡 <em>Astuce :</em> En parallèle, R_total est toujours <em>plus petite</em> que la plus petite résistance individuelle.`,
+    btnRetry:'Réessayer',
+    verdicts:[
+      {min:87,icon:'⚡',msg:'Maîtrise totale des circuits électriques !'},
+      {min:62,icon:'🔌',msg:'Bien ! Joue encore avec les sliders et réessaie.'},
+      {min:0,icon:'📚',msg:'Continue ! Relis la théorie et explore les circuits.'},
+    ],
+    questions:[
+      {q:'La loi d\'Ohm s\'exprime par la formule…',opts:['V = R + I','V = R × I','V = R / I','I = R × V'],ans:1,exp:'V = R × I est la loi d\'Ohm. Elle relie la tension (V), la résistance (R) et l\'intensité (I). Si R=10Ω et I=2A, alors V=20V.'},
+      {q:'Dans un circuit série avec R₁=4Ω et R₂=6Ω, la résistance totale est…',opts:['2,4 Ω','10 Ω','24 Ω','5 Ω'],ans:1,exp:'En série : R_total = R₁ + R₂ = 4 + 6 = 10 Ω. Les résistances s\'additionnent simplement.'},
+      {q:'Dans un circuit parallèle, la tension aux bornes de chaque branche est…',opts:['Différente pour chaque branche','Nulle','La même pour toutes les branches','La somme de toutes les tensions'],ans:2,exp:'En parallèle, la tension est identique aux bornes de chaque branche. C\'est le courant qui se divise.'},
+      {q:'Dans un circuit série, l\'intensité du courant est…',opts:['Différente dans chaque composant','La même partout dans le circuit','Nulle dans certains composants','La somme de toutes les intensités'],ans:1,exp:'En série, le courant passe par tous les composants — il n\'a qu\'un seul chemin. L\'intensité est identique partout.'},
+      {q:'Si V=12V et R=4Ω, l\'intensité I vaut…',opts:['48 A','8 A','3 A','16 A'],ans:2,exp:'I = V / R = 12 / 4 = 3 A. On utilise la loi d\'Ohm réarrangée : I = V / R.'},
+      {q:'La puissance électrique se calcule avec…',opts:['P = V + I','P = V / I','P = V × I','P = R × V'],ans:2,exp:'P = V × I donne la puissance en Watts. Une lampe de 12V avec 2A consomme P = 12 × 2 = 24 W.'},
+      {q:'En circuit parallèle avec R₁=6Ω et R₂=6Ω, la résistance totale est…',opts:['12 Ω','6 Ω','3 Ω','1 Ω'],ans:2,exp:'1/R_total = 1/6 + 1/6 = 2/6, donc R_total = 3 Ω. En parallèle, R_total est toujours plus petite que chaque résistance individuelle.'},
+      {q:'Quelle est l\'unité de mesure de la résistance électrique ?',opts:['Volt (V)','Ampère (A)','Watt (W)','Ohm (Ω)'],ans:3,exp:'L\'Ohm (Ω) est l\'unité de résistance, nommée en l\'honneur du physicien Georg Simon Ohm qui a établi la loi V=RI.'},
+    ],
+  },
+  en:{
+    tag:'STE Grade 9 · Laboratory',
+    h1:'Electric <em>circuits</em>',
+    p:'Explore series and parallel circuits · Interactive Ohm\'s Law',
+    secType:'Circuit type',
+    lbl_serie:'Series circuit',lbl_parallel:'Parallel circuit',lbl_ohm:'Ohm\'s Law',
+    secTheory:'Theory',secQuiz:'Quiz',
+    lbl_voltage:'Voltage (V)',lbl_current:'Current (I)',lbl_resistance:'Resistance (R)',
+    lbl_power:'Power (P)',
+    lbl_r1:'Resistance R₁',lbl_r2:'Resistance R₂',
+    lbl_total:'Total',lbl_branch:'Branch',
+    lbl_r1val:'R₁ value',lbl_r2val:'R₂ value',lbl_vval:'Voltage V',
+    unit_v:'V',unit_a:'A',unit_ohm:'Ω',unit_w:'W',
+    info:{
+      serie:{
+        title:'Series circuit',
+        text:'In a series circuit, components are connected one after another. Current is the <strong>same</strong> everywhere. Voltage is <strong>shared</strong> between resistors.',
+        formulas:['R_total = R₁ + R₂','I = V / R_total','V₁ = I × R₁   ·   V₂ = I × R₂'],
+      },
+      parallel:{
+        title:'Parallel circuit',
+        text:'In a parallel circuit, components are connected between the same nodes. Voltage is the <strong>same</strong> everywhere. Current is <strong>shared</strong> between branches.',
+        formulas:['1/R_total = 1/R₁ + 1/R₂','I_total = V / R_total','I₁ = V / R₁   ·   I₂ = V / R₂'],
+      },
+      ohm:{
+        title:'Ohm\'s Law',
+        text:'Ohm\'s Law links voltage, current and resistance. If you know two values, you can calculate the third. Power measures energy consumed per second.',
+        formulas:['V = R × I','I = V / R','R = V / I','P = V × I'],
+      },
+    },
+    theory:`<h3>Electricity — fundamental concepts</h3>
+<strong>Voltage (V)</strong> — Electric potential difference between two points. Unit: Volt (V).<br>
+<strong>Current (I)</strong> — Quantity of charge flowing per second. Unit: Ampere (A).<br>
+<strong>Resistance (R)</strong> — Opposition to current flow. Unit: Ohm (Ω).<br>
+<strong>Power (P)</strong> — Energy consumed per second. Unit: Watt (W).<br><br>
+<strong>Ohm's Law:</strong> V = R × I<br><br>
+<strong>Series circuit:</strong><br>
+• R_total = R₁ + R₂ (resistances add up)<br>
+• I is the same everywhere<br>
+• V = V₁ + V₂<br><br>
+<strong>Parallel circuit:</strong><br>
+• 1/R_total = 1/R₁ + 1/R₂ (total resistance is smaller)<br>
+• V is the same on each branch<br>
+• I_total = I₁ + I₂<br><br>
+💡 <em>Tip:</em> In parallel, R_total is always <em>smaller</em> than the smallest individual resistor.`,
+    btnRetry:'Try again',
+    verdicts:[
+      {min:87,icon:'⚡',msg:'Total mastery of electric circuits!'},
+      {min:62,icon:'🔌',msg:'Good! Play with the sliders more and try again.'},
+      {min:0,icon:'📚',msg:'Keep going! Re-read the theory and explore the circuits.'},
+    ],
+    questions:[
+      {q:'Ohm\'s Law is expressed by the formula…',opts:['V = R + I','V = R × I','V = R / I','I = R × V'],ans:1,exp:'V = R × I is Ohm\'s Law. It links voltage (V), resistance (R) and current (I). If R=10Ω and I=2A, then V=20V.'},
+      {q:'In a series circuit with R₁=4Ω and R₂=6Ω, the total resistance is…',opts:['2.4 Ω','10 Ω','24 Ω','5 Ω'],ans:1,exp:'In series: R_total = R₁ + R₂ = 4 + 6 = 10 Ω. Resistances simply add up.'},
+      {q:'In a parallel circuit, the voltage across each branch is…',opts:['Different for each branch','Zero','The same for all branches','The sum of all voltages'],ans:2,exp:'In parallel, voltage is identical across each branch. It is the current that divides.'},
+      {q:'In a series circuit, the current is…',opts:['Different in each component','The same throughout the circuit','Zero in some components','The sum of all currents'],ans:1,exp:'In series, current passes through all components — there is only one path. Current is identical everywhere.'},
+      {q:'If V=12V and R=4Ω, the current I equals…',opts:['48 A','8 A','3 A','16 A'],ans:2,exp:'I = V / R = 12 / 4 = 3 A. We use Ohm\'s Law rearranged: I = V / R.'},
+      {q:'Electrical power is calculated with…',opts:['P = V + I','P = V / I','P = V × I','P = R × V'],ans:2,exp:'P = V × I gives power in Watts. A 12V lamp with 2A consumes P = 12 × 2 = 24 W.'},
+      {q:'In a parallel circuit with R₁=6Ω and R₂=6Ω, the total resistance is…',opts:['12 Ω','6 Ω','3 Ω','1 Ω'],ans:2,exp:'1/R_total = 1/6 + 1/6 = 2/6, so R_total = 3 Ω. In parallel, R_total is always smaller than each individual resistor.'},
+      {q:'What is the unit of electrical resistance?',opts:['Volt (V)','Ampere (A)','Watt (W)','Ohm (Ω)'],ans:3,exp:'The Ohm (Ω) is the unit of resistance, named after physicist Georg Simon Ohm who established V=RI.'},
+    ],
+  },
+  es:{
+    tag:'STE Secundaria 3 · Laboratorio',
+    h1:'Circuitos <em>eléctricos</em>',
+    p:'Explora circuitos serie y paralelo · Ley de Ohm interactiva',
+    secType:'Tipo de circuito',
+    lbl_serie:'Circuito serie',lbl_parallel:'Circuito paralelo',lbl_ohm:'Ley de Ohm',
+    secTheory:'Teoría',secQuiz:'Quiz',
+    lbl_voltage:'Tensión (V)',lbl_current:'Intensidad (I)',lbl_resistance:'Resistencia (R)',
+    lbl_power:'Potencia (P)',
+    lbl_r1:'Resistencia R₁',lbl_r2:'Resistencia R₂',
+    lbl_total:'Total',lbl_branch:'Rama',
+    lbl_r1val:'Valor R₁',lbl_r2val:'Valor R₂',lbl_vval:'Tensión V',
+    unit_v:'V',unit_a:'A',unit_ohm:'Ω',unit_w:'W',
+    info:{
+      serie:{
+        title:'Circuito serie',
+        text:'En un circuito serie, los componentes están conectados uno tras otro. La corriente es la <strong>misma</strong> en todas partes. La tensión se <strong>divide</strong> entre las resistencias.',
+        formulas:['R_total = R₁ + R₂','I = V / R_total','V₁ = I × R₁   ·   V₂ = I × R₂'],
+      },
+      parallel:{
+        title:'Circuito paralelo',
+        text:'En un circuito paralelo, los componentes están conectados entre los mismos nodos. La tensión es la <strong>misma</strong> en todas partes. La corriente se <strong>divide</strong> entre las ramas.',
+        formulas:['1/R_total = 1/R₁ + 1/R₂','I_total = V / R_total','I₁ = V / R₁   ·   I₂ = V / R₂'],
+      },
+      ohm:{
+        title:'Ley de Ohm',
+        text:'La ley de Ohm relaciona tensión, intensidad y resistencia. Si conoces dos valores, puedes calcular el tercero. La potencia mide la energía consumida por segundo.',
+        formulas:['V = R × I','I = V / R','R = V / I','P = V × I'],
+      },
+    },
+    theory:`<h3>Electricidad — conceptos fundamentales</h3>
+<strong>Tensión (V)</strong> — Diferencia de potencial eléctrico entre dos puntos. Unidad: Volt (V).<br>
+<strong>Intensidad (I)</strong> — Cantidad de carga que fluye por segundo. Unidad: Ampere (A).<br>
+<strong>Resistencia (R)</strong> — Oposición al paso de la corriente. Unidad: Ohm (Ω).<br>
+<strong>Potencia (P)</strong> — Energía consumida por segundo. Unidad: Watt (W).<br><br>
+<strong>Ley de Ohm:</strong> V = R × I<br><br>
+<strong>Circuito serie:</strong><br>
+• R_total = R₁ + R₂ (las resistencias se suman)<br>
+• I es igual en todas partes<br>
+• V = V₁ + V₂<br><br>
+<strong>Circuito paralelo:</strong><br>
+• 1/R_total = 1/R₁ + 1/R₂ (resistencia total más pequeña)<br>
+• V igual en cada rama<br>
+• I_total = I₁ + I₂<br><br>
+💡 <em>Truco:</em> En paralelo, R_total es siempre <em>menor</em> que la resistencia individual más pequeña.`,
+    btnRetry:'Intentar de nuevo',
+    verdicts:[
+      {min:87,icon:'⚡',msg:'¡Dominio total de los circuitos eléctricos!'},
+      {min:62,icon:'🔌',msg:'¡Bien! Juega más con los sliders e inténtalo de nuevo.'},
+      {min:0,icon:'📚',msg:'¡Sigue! Relee la teoría y explora los circuitos.'},
+    ],
+    questions:[
+      {q:'La ley de Ohm se expresa con la fórmula…',opts:['V = R + I','V = R × I','V = R / I','I = R × V'],ans:1,exp:'V = R × I es la ley de Ohm. Relaciona tensión (V), resistencia (R) e intensidad (I). Si R=10Ω e I=2A, entonces V=20V.'},
+      {q:'En un circuito serie con R₁=4Ω y R₂=6Ω, la resistencia total es…',opts:['2,4 Ω','10 Ω','24 Ω','5 Ω'],ans:1,exp:'En serie: R_total = R₁ + R₂ = 4 + 6 = 10 Ω. Las resistencias simplemente se suman.'},
+      {q:'En un circuito paralelo, la tensión en cada rama es…',opts:['Diferente en cada rama','Nula','La misma en todas las ramas','La suma de todas las tensiones'],ans:2,exp:'En paralelo, la tensión es idéntica en cada rama. Es la corriente la que se divide.'},
+      {q:'En un circuito serie, la intensidad de la corriente es…',opts:['Diferente en cada componente','La misma en todo el circuito','Nula en algunos componentes','La suma de todas las intensidades'],ans:1,exp:'En serie, la corriente pasa por todos los componentes — solo hay un camino. La intensidad es idéntica en todas partes.'},
+      {q:'Si V=12V y R=4Ω, la intensidad I vale…',opts:['48 A','8 A','3 A','16 A'],ans:2,exp:'I = V / R = 12 / 4 = 3 A. Usamos la ley de Ohm reordenada: I = V / R.'},
+      {q:'La potencia eléctrica se calcula con…',opts:['P = V + I','P = V / I','P = V × I','P = R × V'],ans:2,exp:'P = V × I da la potencia en Watts. Una lámpara de 12V con 2A consume P = 12 × 2 = 24 W.'},
+      {q:'En circuito paralelo con R₁=6Ω y R₂=6Ω, la resistencia total es…',opts:['12 Ω','6 Ω','3 Ω','1 Ω'],ans:2,exp:'1/R_total = 1/6 + 1/6 = 2/6, entonces R_total = 3 Ω. En paralelo, R_total es siempre menor que cada resistencia individual.'},
+      {q:'¿Cuál es la unidad de medida de la resistencia eléctrica?',opts:['Volt (V)','Ampere (A)','Watt (W)','Ohm (Ω)'],ans:3,exp:'El Ohm (Ω) es la unidad de resistencia, nombrada en honor al físico Georg Simon Ohm quien estableció V=RI.'},
+    ],
+  },
+};
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let lang = 'fr';
+let circuitType = 'serie';
+let vals = { V: 12, R1: 4, R2: 6 };
+let quizAnswers = [];
+
+// ═══════════════════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════════════════
+function setLang(l){
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  applyTexts();
+  renderAll();
+  initQuiz();
+}
+
+function applyTexts(){
+  const tx = TX[lang];
+  document.getElementById('hero-tag').textContent = tx.tag;
+  document.getElementById('hero-h1').innerHTML = tx.h1;
+  document.getElementById('hero-p').textContent = tx.p;
+  document.getElementById('sec-type').childNodes[0].textContent = tx.secType;
+  document.getElementById('lbl-serie').textContent = tx.lbl_serie;
+  document.getElementById('lbl-parallel').textContent = tx.lbl_parallel;
+  document.getElementById('lbl-ohm').textContent = tx.lbl_ohm;
+  document.getElementById('sec-theory').childNodes[0].textContent = tx.secTheory;
+  document.getElementById('sec-quiz').childNodes[0].textContent = tx.secQuiz;
+  document.getElementById('theory-box').innerHTML = tx.theory;
+  document.getElementById('btn-retry').textContent = tx.btnRetry;
+}
+
+// ═══════════════════════════════════════════════════
+//  CIRCUIT TYPE
+// ═══════════════════════════════════════════════════
+function setCircuit(type){
+  circuitType = type;
+  ['serie','parallel','ohm'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === type);
+  });
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════
+//  CALCULATIONS
+// ═══════════════════════════════════════════════════
+function calc(){
+  const {V, R1, R2} = vals;
+  if(circuitType === 'serie'){
+    const Rt = R1 + R2;
+    const I  = V / Rt;
+    const V1 = I * R1;
+    const V2 = I * R2;
+    const P  = V * I;
+    return {Rt, I, I1:I, I2:I, V1, V2, P, P1:V1*I, P2:V2*I};
+  } else if(circuitType === 'parallel'){
+    const Rt = 1 / (1/R1 + 1/R2);
+    const It = V / Rt;
+    const I1 = V / R1;
+    const I2 = V / R2;
+    const P  = V * It;
+    return {Rt, I:It, I1, I2, V1:V, V2:V, P, P1:V*I1, P2:V*I2};
+  } else { // ohm
+    const I = V / R1;
+    const P = V * I;
+    return {Rt:R1, I, I1:I, I2:0, V1:V, V2:0, P, P1:P, P2:0};
+  }
+}
+
+function fmt(n){ return Math.round(n*100)/100; }
+
+// ═══════════════════════════════════════════════════
+//  RENDER ALL
+// ═══════════════════════════════════════════════════
+function renderAll(){
+  renderInfoBox();
+  renderSliders();
+  renderCircuit();
+  renderMeters();
+  renderCompCards();
+}
+
+// ── INFO BOX ───────────────────────────────────────
+function renderInfoBox(){
+  const tx = TX[lang];
+  const info = tx.info[circuitType];
+  document.getElementById('info-box').innerHTML =
+    `<h3>${info.title}</h3><p>${info.text}</p>` +
+    info.formulas.map(f => `<div class="formula-block">${f}</div>`).join('');
+}
+
+// ── SLIDERS ────────────────────────────────────────
+function renderSliders(){
+  const tx = TX[lang];
+  const panel = document.getElementById('sliders-panel');
+  const isOhm = circuitType === 'ohm';
+
+  panel.innerHTML = `
+    <div class="slider-group">
+      <div class="slider-label">
+        <span class="slider-name" style="color:var(--yellow)">${tx.lbl_vval}</span>
+        <span class="slider-val" style="color:var(--yellow)" id="disp-V">${vals.V} V</span>
+      </div>
+      <input type="range" min="1" max="24" step="1" value="${vals.V}" id="sl-V"
+        style="accent-color:var(--yellow)"
+        oninput="vals.V=+this.value;document.getElementById('disp-V').textContent=this.value+' V';renderCircuit();renderMeters();renderCompCards()"/>
+    </div>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span class="slider-name" style="color:var(--orange)">${tx.lbl_r1val}</span>
+        <span class="slider-val" style="color:var(--orange)" id="disp-R1">${vals.R1} Ω</span>
+      </div>
+      <input type="range" min="1" max="20" step="1" value="${vals.R1}" id="sl-R1"
+        style="accent-color:var(--orange)"
+        oninput="vals.R1=+this.value;document.getElementById('disp-R1').textContent=this.value+' Ω';renderCircuit();renderMeters();renderCompCards()"/>
+    </div>
+    ${!isOhm ? `
+    <div class="slider-group">
+      <div class="slider-label">
+        <span class="slider-name" style="color:var(--red)">${tx.lbl_r2val}</span>
+        <span class="slider-val" style="color:var(--red)" id="disp-R2">${vals.R2} Ω</span>
+      </div>
+      <input type="range" min="1" max="20" step="1" value="${vals.R2}" id="sl-R2"
+        style="accent-color:var(--red)"
+        oninput="vals.R2=+this.value;document.getElementById('disp-R2').textContent=this.value+' Ω';renderCircuit();renderMeters();renderCompCards()"/>
+    </div>` : ''}
+  `;
+}
+
+// ── METERS ─────────────────────────────────────────
+function renderMeters(){
+  const tx = TX[lang];
+  const c = calc();
+  const meters = document.getElementById('meters');
+
+  const powerColor = c.P > 15 ? 'var(--red)' : c.P > 8 ? 'var(--yellow)' : 'var(--green)';
+
+  meters.innerHTML = `
+    <div class="meter">
+      <div class="meter-val" style="color:var(--yellow)">${fmt(vals.V)}</div>
+      <div class="meter-unit">V</div>
+      <div class="meter-label">${tx.lbl_voltage}</div>
+      <div class="meter-formula">V = R × I</div>
+    </div>
+    <div class="meter">
+      <div class="meter-val" style="color:var(--blue)">${fmt(c.I)}</div>
+      <div class="meter-unit">A</div>
+      <div class="meter-label">${tx.lbl_current}</div>
+      <div class="meter-formula">I = V / R</div>
+    </div>
+    <div class="meter">
+      <div class="meter-val" style="color:${powerColor}">${fmt(c.P)}</div>
+      <div class="meter-unit">W</div>
+      <div class="meter-label">${tx.lbl_power}</div>
+      <div class="meter-formula">P = V × I</div>
+    </div>
+  `;
+}
+
+// ── COMPONENT CARDS ────────────────────────────────
+function renderCompCards(){
+  const tx = TX[lang];
+  const c = calc();
+  const isOhm = circuitType === 'ohm';
+  const isParallel = circuitType === 'parallel';
+  const cards = document.getElementById('comp-cards');
+
+  const Rtlabel = isOhm ? tx.lbl_resistance : `${tx.lbl_resistance} ${tx.lbl_total}`;
+  const Rtval = isOhm ? `${vals.R1} Ω` : `${fmt(c.Rt)} Ω`;
+
+  cards.innerHTML = `
+    <div class="comp-card">
+      <div class="comp-title" style="color:var(--orange)">⬛ R₁ = ${vals.R1} Ω</div>
+      <div class="comp-row"><span>V₁</span><span>${fmt(c.V1)} V</span></div>
+      <div class="comp-row"><span>I₁</span><span>${fmt(c.I1)} A</span></div>
+      <div class="comp-row"><span>P₁</span><span>${fmt(c.P1)} W</span></div>
+    </div>
+    ${!isOhm ? `
+    <div class="comp-card">
+      <div class="comp-title" style="color:var(--red)">⬛ R₂ = ${vals.R2} Ω</div>
+      <div class="comp-row"><span>V₂</span><span>${fmt(c.V2)} V</span></div>
+      <div class="comp-row"><span>I₂</span><span>${fmt(c.I2)} A</span></div>
+      <div class="comp-row"><span>P₂</span><span>${fmt(c.P2)} W</span></div>
+    </div>` : `
+    <div class="comp-card">
+      <div class="comp-title" style="color:var(--blue)">${Rtlabel}</div>
+      <div class="comp-row"><span>V</span><span>${fmt(vals.V)} V</span></div>
+      <div class="comp-row"><span>I</span><span>${fmt(c.I)} A</span></div>
+      <div class="comp-row"><span>P</span><span>${fmt(c.P)} W</span></div>
+    </div>`}
+  `;
+}
+
+// ═══════════════════════════════════════════════════
+//  SVG CIRCUIT DRAWING
+// ═══════════════════════════════════════════════════
+function svgEl(tag, attrs, text){
+  const ns = 'http://www.w3.org/2000/svg';
+  const el = document.createElementNS(ns, tag);
+  for(const [k,v] of Object.entries(attrs)) el.setAttribute(k,v);
+  if(text !== undefined) el.textContent = text;
+  return el;
+}
+
+function renderCircuit(){
+  const svg = document.getElementById('circuit-svg');
+  svg.innerHTML = '';
+  const c = calc();
+
+  if(circuitType === 'serie') drawSerie(svg, c);
+  else if(circuitType === 'parallel') drawParallel(svg, c);
+  else drawOhm(svg, c);
+}
+
+// ─── Wire helper ───────────────────────────────────
+function wire(svg, x1,y1,x2,y2, color='rgba(91,200,255,0.7)', w=2.5){
+  svg.appendChild(svgEl('line',{x1,y1,x2,y2,stroke:color,'stroke-width':w,'stroke-linecap':'round'}));
+}
+
+// ─── Battery ───────────────────────────────────────
+function battery(svg, x, y, V){
+  const g = svgEl('g',{transform:`translate(${x},${y})`});
+  // body
+  g.appendChild(svgEl('rect',{x:-14,y:-22,width:28,height:44,rx:4,fill:'rgba(255,209,102,0.15)',stroke:'#ffd166','stroke-width':2}));
+  // poles
+  g.appendChild(svgEl('line',{x1:-8,y1:-22,x2:8,y2:-22,stroke:'#ff5252','stroke-width':3,'stroke-linecap':'round'})); // +
+  g.appendChild(svgEl('line',{x1:-8,y1:22,x2:8,y2:22,stroke:'#607d8b','stroke-width':3,'stroke-linecap':'round'})); // -
+  g.appendChild(svgEl('text',{x:0,y:5,fill:'#ffd166','font-size':13,'font-weight':'700','text-anchor':'middle','font-family':'JetBrains Mono'},`${V}V`));
+  g.appendChild(svgEl('text',{x:0,y:-28,fill:'#ff5252','font-size':10,'text-anchor':'middle','font-family':'JetBrains Mono'},'+'));
+  g.appendChild(svgEl('text',{x:0,y:34,fill:'#607d8b','font-size':10,'text-anchor':'middle','font-family':'JetBrains Mono'},'−'));
+  svg.appendChild(g);
+}
+
+// ─── Resistor ──────────────────────────────────────
+function resistor(svg, x, y, R, label, color, I, horiz=true){
+  const g = svgEl('g',{transform:`translate(${x},${y})${horiz?'':' rotate(90)'}`});
+  // zigzag resistor symbol
+  const pts = '-26,0 -18,-10 -10,10 -2,-10 6,10 14,-10 22,10 26,0';
+  g.appendChild(svgEl('polyline',{points:pts,fill:'none',stroke:color,'stroke-width':2.5,'stroke-linecap':'round','stroke-linejoin':'round'}));
+  // label
+  g.appendChild(svgEl('text',{x:0,y:horiz?-16:16,fill:color,'font-size':11,'font-weight':'700','text-anchor':'middle','font-family':'JetBrains Mono'},`${label}=${R}Ω`));
+  // current label
+  if(I !== undefined){
+    g.appendChild(svgEl('text',{x:0,y:horiz?22:-22,fill:'rgba(91,200,255,0.8)','font-size':10,'text-anchor':'middle','font-family':'JetBrains Mono'},`I=${fmt(I)}A`));
+  }
+  svg.appendChild(g);
+}
+
+// ─── Ammeter ───────────────────────────────────────
+function ammeter(svg, x, y, I){
+  const g = svgEl('g',{transform:`translate(${x},${y})`});
+  g.appendChild(svgEl('circle',{cx:0,cy:0,r:14,fill:'rgba(91,200,255,0.12)',stroke:'#5bc8ff','stroke-width':2}));
+  g.appendChild(svgEl('text',{x:0,y:5,fill:'#5bc8ff','font-size':11,'font-weight':'700','text-anchor':'middle','font-family':'JetBrains Mono'},'A'));
+  g.appendChild(svgEl('text',{x:0,y:26,fill:'#5bc8ff','font-size':10,'text-anchor':'middle','font-family':'JetBrains Mono'},`${fmt(I)}A`));
+  svg.appendChild(g);
+}
+
+// ─── Voltmeter ─────────────────────────────────────
+function voltmeter(svg, x, y, V){
+  const g = svgEl('g',{transform:`translate(${x},${y})`});
+  g.appendChild(svgEl('circle',{cx:0,cy:0,r:14,fill:'rgba(255,209,102,0.12)',stroke:'#ffd166','stroke-width':2}));
+  g.appendChild(svgEl('text',{x:0,y:5,fill:'#ffd166','font-size':11,'font-weight':'700','text-anchor':'middle','font-family':'JetBrains Mono'},'V'));
+  g.appendChild(svgEl('text',{x:0,y:26,fill:'#ffd166','font-size':10,'text-anchor':'middle','font-family':'JetBrains Mono'},`${fmt(V)}V`));
+  svg.appendChild(g);
+}
+
+// ─── Bulb (for ohm mode) ───────────────────────────
+function bulb(svg, x, y, P){
+  const bright = Math.min(1, P/20);
+  const g = svgEl('g',{transform:`translate(${x},${y})`});
+  // glow
+  if(bright > 0.1){
+    g.appendChild(svgEl('circle',{cx:0,cy:0,r:28,fill:`rgba(255,209,102,${bright*0.2})`}));
+  }
+  g.appendChild(svgEl('circle',{cx:0,cy:0,r:16,fill:`rgba(255,209,102,${0.1+bright*0.3})`,stroke:'#ffd166','stroke-width':2}));
+  g.appendChild(svgEl('text',{x:0,y:5,fill:'#ffd166','font-size':14,'text-anchor':'middle'},'💡'));
+  g.appendChild(svgEl('text',{x:0,y:30,fill:'rgba(255,209,102,0.8)','font-size':10,'text-anchor':'middle','font-family':'JetBrains Mono'},`${fmt(P)}W`));
+  svg.appendChild(g);
+}
+
+// ─── Current flow dots ─────────────────────────────
+function flowDots(svg, x1,y1,x2,y2, I, count=3){
+  if(I < 0.05) return;
+  const speed = Math.max(0.5, 3 - I*0.3);
+  for(let i=0;i<count;i++){
+    const dot = svgEl('circle',{r:3,fill:'var(--blue)',opacity:'0.9'});
+    const anim = document.createElementNS('http://www.w3.org/2000/svg','animateMotion');
+    anim.setAttribute('dur',`${speed}s`);
+    anim.setAttribute('begin',`${i*(speed/count)}s`);
+    anim.setAttribute('repeatCount','indefinite');
+    const mp = document.createElementNS('http://www.w3.org/2000/svg','mpath');
+    // create path
+    const pathId = `fp-${Math.random().toString(36).slice(2)}`;
+    const path = svgEl('path',{id:pathId,d:`M${x1},${y1} L${x2},${y2}`,fill:'none',stroke:'none'});
+    svg.appendChild(path);
+    mp.setAttribute('href','#'+pathId);
+    anim.appendChild(mp);
+    dot.appendChild(anim);
+    svg.appendChild(dot);
+  }
+}
+
+// ─── SERIE CIRCUIT ─────────────────────────────────
+function drawSerie(svg, c){
+  const wc = 'rgba(91,200,255,0.6)';
+  // top wire
+  wire(svg,60,60,340,60,wc);
+  // right side
+  wire(svg,340,60,340,240,wc);
+  // bottom wire
+  wire(svg,340,240,60,240,wc);
+  // left side
+  wire(svg,60,240,60,60,wc);
+
+  // battery left
+  battery(svg,60,150, vals.V);
+  // R1 top
+  resistor(svg,170,60, vals.R1,'R₁','#ff8c42', c.I1, true);
+  // R2 right
+  resistor(svg,340,150, vals.R2,'R₂','#ff5f6d', c.I2, false);
+  // ammeter bottom
+  ammeter(svg,200,240, c.I);
+  // voltmeter R1
+  voltmeter(svg,170,30, c.V1);
+
+  // flow dots
+  flowDots(svg,65,60,335,60, c.I);
+  flowDots(svg,340,65,340,235, c.I);
+  flowDots(svg,335,240,65,240, c.I);
+  flowDots(svg,60,235,60,65, c.I);
+}
+
+// ─── PARALLEL CIRCUIT ──────────────────────────────
+function drawParallel(svg, c){
+  const wc = 'rgba(91,200,255,0.6)';
+  // main rails
+  wire(svg,40,40,360,40,wc,3);   // top rail
+  wire(svg,40,260,360,260,wc,3); // bottom rail
+  wire(svg,40,40,40,260,wc,2.5); // left rail
+  wire(svg,360,40,360,260,wc,2.5); // right rail
+
+  // branch 1 verticals
+  wire(svg,160,40,160,260,wc,1.5);
+  // branch 2 verticals
+  wire(svg,270,40,270,260,wc,1.5);
+
+  // battery
+  battery(svg,40,150, vals.V);
+  // R1 branch 1
+  resistor(svg,160,150, vals.R1,'R₁','#ff8c42', c.I1, false);
+  // R2 branch 2
+  resistor(svg,270,150, vals.R2,'R₂','#ff5f6d', c.I2, false);
+  // ammeter main
+  ammeter(svg,360,150, c.I);
+
+  // voltage labels (same everywhere)
+  voltmeter(svg,215,150, vals.V);
+
+  // flow dots branches
+  flowDots(svg,160,45,160,145, c.I1, 2);
+  flowDots(svg,160,155,160,255, c.I1, 2);
+  flowDots(svg,270,45,270,145, c.I2, 2);
+  flowDots(svg,270,155,270,255, c.I2, 2);
+  flowDots(svg,45,40,155,40, c.I);
+  flowDots(svg,275,40,355,40, c.I);
+}
+
+// ─── OHM MODE ──────────────────────────────────────
+function drawOhm(svg, c){
+  const wc = 'rgba(91,200,255,0.6)';
+  wire(svg,60,80,340,80,wc);
+  wire(svg,340,80,340,220,wc);
+  wire(svg,340,220,60,220,wc);
+  wire(svg,60,220,60,80,wc);
+
+  battery(svg,60,150, vals.V);
+  resistor(svg,200,80, vals.R1,'R','#ff8c42', c.I, true);
+  bulb(svg,200,220, c.P);
+  ammeter(svg,340,150, c.I);
+  voltmeter(svg,200,150, vals.V);
+
+  flowDots(svg,65,80,335,80, c.I);
+  flowDots(svg,340,85,340,215, c.I);
+  flowDots(svg,335,220,65,220, c.I);
+  flowDots(svg,60,215,60,85, c.I);
+
+  // formula display
+  const fG = svgEl('g',{});
+  fG.appendChild(svgEl('rect',{x:10,y:265,width:380,height:28,rx:6,fill:'rgba(255,209,102,0.07)',stroke:'rgba(255,209,102,0.2)','stroke-width':1}));
+  fG.appendChild(svgEl('text',{x:200,y:283,fill:'#ffd166','font-size':12,'text-anchor':'middle','font-family':'JetBrains Mono'},
+    `V=${fmt(vals.V)}V  R=${vals.R1}Ω  I=${fmt(c.I)}A  P=${fmt(c.P)}W`));
+  svg.appendChild(fG);
+}
+
+// ═══════════════════════════════════════════════════
+//  QUIZ
+// ═══════════════════════════════════════════════════
+function initQuiz(){
+  quizAnswers = [];
+  document.getElementById('result-card').className = 'result-card';
+  const tx = TX[lang];
+  document.getElementById('btn-retry').textContent = tx.btnRetry;
+  document.getElementById('quiz-body').innerHTML = tx.questions.map((q,i) => `
+    <div class="q-block" id="qb-${i}">
+      <div class="q-num">⚡ Q${i+1}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-opts">
+        ${q.opts.map((o,j) => `<button class="q-opt" id="qo-${i}-${j}" onclick="answerQ(${i},${j})">${o}</button>`).join('')}
+      </div>
+      <div class="q-fb" id="qfb-${i}"></div>
+    </div>
+  `).join('');
+}
+
+function answerQ(qi,oi){
+  if(quizAnswers[qi] !== undefined) return;
+  quizAnswers[qi] = oi;
+  const tx = TX[lang];
+  const q = tx.questions[qi];
+  const ok = oi === q.ans;
+  for(let j=0;j<q.opts.length;j++){
+    const btn = document.getElementById(`qo-${qi}-${j}`);
+    btn.disabled = true;
+    if(j===q.ans) btn.classList.add(ok?'correct':'reveal');
+    if(j===oi&&!ok) btn.classList.add('wrong');
+  }
+  const fb = document.getElementById(`qfb-${qi}`);
+  fb.className = 'q-fb show '+(ok?'ok':'bad');
+  fb.innerHTML = (ok?'✓ ':'✗ ')+q.exp;
+  document.getElementById(`qb-${qi}`).style.borderColor = ok?'#4ddc8a':'#ff5f6d';
+  if(quizAnswers.filter(a=>a!==undefined).length===tx.questions.length) setTimeout(showResults,500);
+}
+
+function showResults(){
+  const tx = TX[lang];
+  const correct = quizAnswers.filter((a,i)=>a===tx.questions[i].ans).length;
+  const pct = Math.round((correct/tx.questions.length)*100);
+  const v = tx.verdicts.find(x=>pct>=x.min);
+  document.getElementById('result-pct').textContent = v.icon+' '+pct+'%';
+  document.getElementById('result-msg').textContent = v.msg;
+  document.getElementById('result-card').className = 'result-card show';
+  document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+applyTexts();
+renderAll();
+initQuiz();
+</script>
+</body>
+</html>

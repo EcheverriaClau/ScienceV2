@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Constructeur d'atomes · STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060a12;--bg2:#0c1220;--bg3:#111827;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.13);
+  --text:#e2eaf8;--muted:#4a6080;
+  --proton:#ff5252;--neutron:#607d8b;--electron:#40c4ff;
+  --nucleus-glow:rgba(255,82,82,0.25);
+  --font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:12px;
+}
+html{font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+
+/* starfield */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    radial-gradient(1px 1px at 15% 25%,rgba(255,255,255,.35) 0%,transparent 100%),
+    radial-gradient(1px 1px at 40% 65%,rgba(255,255,255,.25) 0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 72% 18%,rgba(255,255,255,.4) 0%,transparent 100%),
+    radial-gradient(1px 1px at 88% 72%,rgba(255,255,255,.3) 0%,transparent 100%),
+    radial-gradient(1px 1px at 55% 88%,rgba(255,255,255,.25) 0%,transparent 100%),
+    radial-gradient(1px 1px at 8% 80%,rgba(255,255,255,.3) 0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 95% 40%,rgba(255,255,255,.4) 0%,transparent 100%),
+    radial-gradient(1px 1px at 28% 92%,rgba(255,255,255,.2) 0%,transparent 100%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── LANG ── */
+#lang-bar{position:relative;z-index:10;display:flex;gap:6px;justify-content:flex-end;padding:1rem 1.25rem 0}
+.lang-btn{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:5px 12px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.lang-btn.active{background:var(--electron);color:var(--bg);border-color:var(--electron)}
+
+#app{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:1.25rem 1.25rem 4rem}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:1.5rem 0 2rem}
+.hero-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.75rem}
+.hero h1{font-size:clamp(2rem,6vw,3rem);font-weight:900;letter-spacing:-.03em;line-height:1.1;margin-bottom:.4rem}
+.hero h1 span{color:var(--electron)}
+.hero p{font-size:13px;color:var(--muted)}
+
+/* ── SECTION LABEL ── */
+.sec{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:.75rem}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── PARTICLE PALETTE ── */
+.palette{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.5rem}
+.particle-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:.7rem 1.1rem;border-radius:var(--r);
+  border:1px solid var(--border2);background:var(--bg2);
+  cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600;
+  color:var(--text);transition:all .2s;flex:1;min-width:140px;
+  user-select:none;
+}
+.particle-btn:hover{transform:translateY(-2px)}
+.particle-btn .dot{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.particle-btn .info{text-align:left}
+.particle-btn .pname{font-size:13px;font-weight:700}
+.particle-btn .psub{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.particle-btn.selected{border-width:2px}
+.pb-p{border-color:var(--proton)22}.pb-p.selected{border-color:var(--proton);background:rgba(255,82,82,.08)}
+.pb-n{border-color:var(--neutron)22}.pb-n.selected{border-color:var(--neutron);background:rgba(96,125,139,.08)}
+.pb-e{border-color:var(--electron)22}.pb-e.selected{border-color:var(--electron);background:rgba(64,196,255,.08)}
+
+/* ── ATOM CANVAS AREA ── */
+.atom-layout{display:grid;grid-template-columns:1fr 240px;gap:1.25rem;margin-bottom:1.25rem;align-items:start}
+@media(max-width:560px){.atom-layout{grid-template-columns:1fr}}
+
+.canvas-wrap{position:relative}
+#atom-canvas{
+  width:100%;aspect-ratio:1/1;
+  border-radius:var(--r);
+  background:var(--bg2);
+  border:1px solid var(--border);
+  cursor:crosshair;display:block;
+  touch-action:none;
+}
+.canvas-hint{
+  text-align:center;font-family:var(--mono);font-size:11px;
+  color:var(--muted);margin-top:.5rem;
+}
+
+/* ── INFO PANEL ── */
+.info-panel{display:flex;flex-direction:column;gap:10px}
+.info-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:1rem;
+}
+.info-card .ic-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:.4rem}
+.info-card .ic-val{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.info-card .ic-sub{font-size:12px;color:var(--muted);margin-top:3px}
+
+.element-display{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.25rem;text-align:center;
+}
+.el-symbol{font-size:3rem;font-weight:900;letter-spacing:-.04em;line-height:1}
+.el-name{font-size:14px;color:var(--muted);margin-top:4px}
+.el-number{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.el-charge{font-size:13px;font-weight:600;margin-top:6px}
+.charge-neutral{color:var(--green,#4ddc8a)}
+.charge-pos{color:var(--proton)}
+.charge-neg{color:var(--electron)}
+
+.count-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.count-card{
+  background:var(--bg3);border-radius:8px;padding:.65rem .5rem;
+  text-align:center;border:1px solid var(--border);
+}
+.count-num{font-size:20px;font-weight:700}
+.count-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.08em;margin-top:2px}
+
+/* ── CONTROLS ── */
+.ctrl-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem}
+.btn-clear{
+  font-family:var(--font);font-size:13px;font-weight:600;
+  padding:10px 18px;border:1px solid var(--border2);border-radius:8px;
+  background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;
+}
+.btn-clear:hover{color:var(--text);border-color:var(--text)}
+.btn-preset{
+  font-family:var(--font);font-size:12px;font-weight:600;
+  padding:10px 14px;border:1px solid var(--border);border-radius:8px;
+  background:var(--bg2);color:var(--text);cursor:pointer;transition:all .2s;
+}
+.btn-preset:hover{border-color:var(--electron);color:var(--electron)}
+
+/* ── PERIODIC MINI TABLE ── */
+.periodic-section{margin-bottom:1.5rem}
+.periodic-grid{
+  display:grid;
+  grid-template-columns:repeat(18,1fr);
+  gap:2px;
+}
+@media(max-width:560px){
+  .periodic-grid{grid-template-columns:repeat(9,1fr)}
+}
+.pt-cell{
+  aspect-ratio:1/1;border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(7px,1.4vw,11px);font-weight:700;
+  cursor:pointer;transition:all .15s;
+  border:1px solid transparent;
+  background:var(--bg2);color:var(--muted);
+}
+.pt-cell:hover{border-color:var(--electron);color:var(--electron);transform:scale(1.15);z-index:2;position:relative}
+.pt-cell.active{background:var(--electron)22;border-color:var(--electron);color:var(--electron)}
+.pt-cell.nonmetal{background:rgba(77,220,138,.08);color:#4ddc8a}
+.pt-cell.metal{background:rgba(255,200,80,.06);color:#ffc850}
+.pt-cell.noble{background:rgba(167,139,250,.08);color:#a78bfa}
+.pt-cell.empty{background:transparent;border:none;cursor:default}
+
+/* ── QUIZ ── */
+.quiz-wrap{margin-top:1.5rem}
+.quiz-title{font-size:18px;font-weight:700;letter-spacing:-.02em;margin-bottom:1rem}
+.q-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;margin-bottom:.75rem}
+.q-num{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:.4rem}
+.q-text{font-size:14px;line-height:1.6;margin-bottom:.75rem}
+.q-opts{display:grid;gap:6px}
+.q-opt{display:block;width:100%;text-align:left;padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:13px;color:var(--text);cursor:pointer;transition:all .15s}
+.q-opt:hover:not(:disabled){border-color:var(--border2);background:rgba(255,255,255,.04);transform:translateX(3px)}
+.q-opt:disabled{cursor:default}
+.q-opt.correct{background:rgba(77,220,138,.12);border-color:#4ddc8a;color:#a7f3ca}
+.q-opt.wrong{background:rgba(255,82,82,.1);border-color:var(--proton);color:#fca5a5}
+.q-opt.reveal{background:rgba(77,220,138,.08);border-color:rgba(77,220,138,.5);color:#a7f3ca}
+.q-fb{display:none;margin-top:.6rem;padding:.65rem .9rem;border-radius:7px;font-size:12.5px;line-height:1.65}
+.q-fb.show{display:block;animation:fadeUp .2s ease}
+.q-fb.ok{background:rgba(77,220,138,.08);color:#a7f3ca;border-left:3px solid #4ddc8a}
+.q-fb.bad{background:rgba(255,82,82,.08);color:#fca5a5;border-left:3px solid var(--proton)}
+.result-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;text-align:center;display:none;margin-top:1rem}
+.result-card.show{display:block;animation:fadeUp .4s ease}
+.result-pct{font-size:3.5rem;font-weight:900;letter-spacing:-.04em;margin-bottom:.3rem}
+.result-msg{font-size:13px;color:var(--muted);margin-bottom:1rem}
+.btn-retry{font-family:var(--font);font-weight:700;font-size:14px;padding:11px 24px;border:none;border-radius:8px;background:var(--electron);color:var(--bg);cursor:pointer;transition:all .2s;margin:4px}
+.btn-retry:hover{transform:translateY(-2px)}
+.btn-reset-quiz{font-family:var(--font);font-size:14px;padding:11px 20px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;margin:4px}
+.btn-reset-quiz:hover{color:var(--text)}
+
+/* ── THEORY BOX ── */
+.theory-box{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--electron);border-radius:0 var(--r) var(--r) 0;padding:1.1rem 1.25rem;font-size:13px;line-height:1.8;color:rgba(226,234,248,.8);margin-bottom:1.25rem}
+.theory-box h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:.5rem}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+<div id="lang-bar">
+  <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('es')">ES</button>
+</div>
+
+<div id="app">
+  <div class="hero">
+    <span class="hero-tag" id="hero-tag">STE Secondaire 3 · Laboratoire</span>
+    <h1 id="hero-h1">Constructeur <span>d'atomes</span></h1>
+    <p id="hero-p">Clique sur le canvas pour placer protons, neutrons et électrons</p>
+  </div>
+
+  <!-- PARTICLE SELECTOR -->
+  <p class="sec" id="sec-particle">Choisir une particule</p>
+  <div class="palette">
+    <button class="particle-btn pb-p selected" id="btn-p" onclick="selectParticle('p')">
+      <div class="dot" style="background:var(--proton)">p⁺</div>
+      <div class="info"><div class="pname" id="pname-p">Proton</div><div class="psub">+1 · noyau</div></div>
+    </button>
+    <button class="particle-btn pb-n" id="btn-n" onclick="selectParticle('n')">
+      <div class="dot" style="background:var(--neutron)">n</div>
+      <div class="info"><div class="pname" id="pname-n">Neutron</div><div class="psub">0 · noyau</div></div>
+    </button>
+    <button class="particle-btn pb-e" id="btn-e" onclick="selectParticle('e')">
+      <div class="dot" style="background:var(--electron)">e⁻</div>
+      <div class="info"><div class="pname" id="pname-e">Électron</div><div class="psub">−1 · orbite</div></div>
+    </button>
+  </div>
+
+  <!-- ATOM LAYOUT -->
+  <div class="atom-layout">
+    <div class="canvas-wrap">
+      <canvas id="atom-canvas"></canvas>
+      <p class="canvas-hint" id="canvas-hint">Clic gauche = ajouter · Clic droit = supprimer</p>
+    </div>
+    <div class="info-panel">
+      <!-- element box -->
+      <div class="element-display" id="element-display">
+        <div class="el-symbol" id="el-symbol">?</div>
+        <div class="el-name" id="el-name">—</div>
+        <div class="el-number" id="el-number">Z = 0</div>
+        <div class="el-charge" id="el-charge">—</div>
+      </div>
+      <!-- counts -->
+      <div class="count-row">
+        <div class="count-card"><div class="count-num" id="cnt-p" style="color:var(--proton)">0</div><div class="count-lbl" id="lbl-p">Protons</div></div>
+        <div class="count-card"><div class="count-num" id="cnt-n" style="color:var(--neutron)">0</div><div class="count-lbl" id="lbl-n">Neutrons</div></div>
+        <div class="count-card"><div class="count-num" id="cnt-e" style="color:var(--electron)">0</div><div class="count-lbl" id="lbl-e">Électrons</div></div>
+      </div>
+      <!-- mass / charge cards -->
+      <div class="info-card">
+        <div class="ic-label" id="lbl-mass">Nombre de masse</div>
+        <div class="ic-val" id="val-mass">0</div>
+        <div class="ic-sub" id="sub-mass">A = protons + neutrons</div>
+      </div>
+      <div class="info-card">
+        <div class="ic-label" id="lbl-shells">Couches électroniques</div>
+        <div class="ic-val" id="val-shells">—</div>
+        <div class="ic-sub" id="sub-shells">Max: 2, 8, 8, 18…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="ctrl-row">
+    <button class="btn-clear" onclick="clearAtom()" id="btn-clear">⌫ Effacer tout</button>
+    <span style="flex:1;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-preset" onclick="loadPreset(1)">H ¹</button>
+      <button class="btn-preset" onclick="loadPreset(2)">He ²</button>
+      <button class="btn-preset" onclick="loadPreset(6)">C ⁶</button>
+      <button class="btn-preset" onclick="loadPreset(8)">O ⁸</button>
+      <button class="btn-preset" onclick="loadPreset(11)">Na ¹¹</button>
+      <button class="btn-preset" onclick="loadPreset(17)">Cl ¹⁷</button>
+    </span>
+  </div>
+
+  <!-- THEORY -->
+  <p class="sec" id="sec-theory">Théorie</p>
+  <div class="theory-box" id="theory-box"></div>
+
+  <!-- PERIODIC TABLE -->
+  <p class="sec" id="sec-periodic">Tableau périodique (18 premiers éléments)</p>
+  <div class="periodic-section">
+    <div class="periodic-grid" id="periodic-grid"></div>
+  </div>
+
+  <!-- QUIZ -->
+  <p class="sec" id="sec-quiz">Quiz</p>
+  <div class="quiz-wrap">
+    <div id="quiz-body"></div>
+    <div class="result-card" id="result-card">
+      <div class="result-pct" id="result-pct"></div>
+      <div class="result-msg" id="result-msg"></div>
+      <button class="btn-retry" onclick="initQuiz()" id="btn-retry-q"></button>
+      <button class="btn-reset-quiz" onclick="clearAtom()" id="btn-reset-q"></button>
+    </div>
+  </div>
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════
+//  ELEMENT DATA (first 18 + a few more)
+// ═══════════════════════════════════════════════
+const ELEMENTS = [
+  null, // index 0 unused
+  {sym:'H', fr:'Hydrogène',en:'Hydrogen',es:'Hidrógeno', type:'nonmetal', shells:[1]},
+  {sym:'He',fr:'Hélium',   en:'Helium',  es:'Helio',     type:'noble',   shells:[2]},
+  {sym:'Li',fr:'Lithium',  en:'Lithium', es:'Litio',     type:'metal',   shells:[2,1]},
+  {sym:'Be',fr:'Béryllium',en:'Beryllium',es:'Berilio',  type:'metal',   shells:[2,2]},
+  {sym:'B', fr:'Bore',     en:'Boron',   es:'Boro',      type:'nonmetal',shells:[2,3]},
+  {sym:'C', fr:'Carbone',  en:'Carbon',  es:'Carbono',   type:'nonmetal',shells:[2,4]},
+  {sym:'N', fr:'Azote',    en:'Nitrogen',es:'Nitrógeno', type:'nonmetal',shells:[2,5]},
+  {sym:'O', fr:'Oxygène',  en:'Oxygen',  es:'Oxígeno',   type:'nonmetal',shells:[2,6]},
+  {sym:'F', fr:'Fluor',    en:'Fluorine',es:'Flúor',     type:'nonmetal',shells:[2,7]},
+  {sym:'Ne',fr:'Néon',     en:'Neon',    es:'Neón',      type:'noble',   shells:[2,8]},
+  {sym:'Na',fr:'Sodium',   en:'Sodium',  es:'Sodio',     type:'metal',   shells:[2,8,1]},
+  {sym:'Mg',fr:'Magnésium',en:'Magnesium',es:'Magnesio', type:'metal',   shells:[2,8,2]},
+  {sym:'Al',fr:'Aluminium',en:'Aluminium',es:'Aluminio', type:'metal',   shells:[2,8,3]},
+  {sym:'Si',fr:'Silicium', en:'Silicon', es:'Silicio',   type:'nonmetal',shells:[2,8,4]},
+  {sym:'P', fr:'Phosphore',en:'Phosphorus',es:'Fósforo', type:'nonmetal',shells:[2,8,5]},
+  {sym:'S', fr:'Soufre',   en:'Sulfur',  es:'Azufre',    type:'nonmetal',shells:[2,8,6]},
+  {sym:'Cl',fr:'Chlore',   en:'Chlorine',es:'Cloro',     type:'nonmetal',shells:[2,8,7]},
+  {sym:'Ar',fr:'Argon',    en:'Argon',   es:'Argón',     type:'noble',   shells:[2,8,8]},
+];
+
+// ═══════════════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════════════
+const TX = {
+  fr:{
+    tag:'STE Secondaire 3 · Laboratoire',
+    h1:'Constructeur <span>d\'atomes</span>',
+    p:'Clique sur le canvas pour placer protons, neutrons et électrons',
+    secParticle:'Choisir une particule',
+    secTheory:'Théorie',
+    secPeriodic:'Tableau périodique (18 premiers éléments)',
+    secQuiz:'Quiz',
+    pnames:['Proton','Neutron','Électron'],
+    psubs:['+1 · noyau','0 · noyau','−1 · orbite'],
+    hint:'Clic gauche = ajouter · Clic droit = supprimer',
+    lbl_mass:'Nombre de masse',sub_mass:'A = protons + neutrons',
+    lbl_shells:'Couches électroniques',sub_shells:'Max: 2, 8, 8, 18…',
+    lbl_p:'Protons',lbl_n:'Neutrons',lbl_e:'Électrons',
+    btnClear:'⌫ Effacer tout',
+    neutral:'Atome neutre ⚡',
+    cation:'Ion positif (cation)',
+    anion:'Ion négatif (anion)',
+    noElement:'Élément inconnu',
+    theory:`<h3>Structure de l'atome</h3>
+Un atome est composé de 3 types de particules :<br>
+• <strong style="color:#ff5252">Proton (p⁺)</strong> — charge +1, situé dans le <em>noyau</em>. Le nombre de protons = numéro atomique (Z) = identifie l'élément.<br>
+• <strong style="color:#607d8b">Neutron (n)</strong> — charge neutre, situé dans le <em>noyau</em>. Contribue à la masse mais pas à la charge.<br>
+• <strong style="color:#40c4ff">Électron (e⁻)</strong> — charge −1, gravite autour du noyau dans des <em>couches électroniques</em>.<br><br>
+<strong>Nombre de masse A = protons + neutrons</strong><br>
+<strong>Atome neutre</strong> : nb protons = nb électrons<br>
+<strong>Ion</strong> : déséquilibre entre protons et électrons → charge nette<br><br>
+Couches max : K=2, L=8, M=8 (ou 18), N=18…`,
+    quizTitle:'Quiz — Structure atomique',
+    btnRetry:'Réessayer',btnResetQ:'Retour au labo',
+    verdicts:[
+      {min:90,icon:'⚛️',msg:'Maîtrise totale de la structure atomique !'},
+      {min:65,icon:'🔬',msg:'Bien ! Quelques révisions et tu seras parfait.'},
+      {min:0, icon:'📚',msg:'Utilise le constructeur et relis la théorie.'},
+    ],
+    questions:[
+      {q:"Le numéro atomique (Z) d'un élément correspond au nombre de…",opts:["Neutrons","Protons","Électrons sur la dernière couche","Protons + neutrons"],ans:1,exp:"Z = nombre de protons. C'est ce qui définit l'identité de l'élément (ex: Z=6 = carbone, Z=8 = oxygène)."},
+      {q:"Le nombre de masse (A) d'un atome est égal à…",opts:["Nombre de protons uniquement","Nombre d'électrons","Protons + neutrons","Neutrons + électrons"],ans:2,exp:"A = Z + N (protons + neutrons). Les électrons ont une masse négligeable et ne comptent pas dans A."},
+      {q:"Un atome de sodium (Na) a Z=11. Combien d'électrons a-t-il à l'état neutre ?",opts:["8","11","23","12"],ans:1,exp:"Atome neutre : nb électrons = nb protons = Z = 11. Répartition : 2-8-1 sur les couches K, L, M."},
+      {q:"Combien d'électrons peut contenir au maximum la couche L (2e couche) ?",opts:["2","4","8","18"],ans:2,exp:"La couche L peut accueillir au maximum 8 électrons. K=2, L=8, M=8 ou 18 selon les cas."},
+      {q:"Un ion Na⁺ (sodium) a perdu un électron. Sa charge est…",opts:["Neutre","−1","+1","+2"],ans:2,exp:"Na⁺ : 11 protons (+11) et 10 électrons (−10) → charge nette = +1. On appelle cela un cation."},
+      {q:"Quelle particule se trouve dans le noyau de l'atome ?",opts:["Électrons seulement","Protons seulement","Protons et neutrons","Neutrons et électrons"],ans:2,exp:"Le noyau contient protons et neutrons (nucléons). Les électrons gravitent autour dans les couches."},
+      {q:"Deux atomes du même élément mais avec un nombre différent de neutrons sont des…",opts:["Ions","Isotopes","Isomères","Électrons de valence"],ans:1,exp:"Les isotopes ont le même Z (même élément) mais un nombre de neutrons différent → A différent. Ex: C-12 et C-14."},
+      {q:"L'oxygène a Z=8. Sa configuration électronique est…",opts:["2-6","2-8","8-0","2-4-2"],ans:0,exp:"O a 8 électrons : 2 sur la couche K (pleine) et 6 sur la couche L. Configuration : 2-6."},
+    ],
+  },
+  en:{
+    tag:'STE Grade 9 · Laboratory',
+    h1:'Atom <span>Builder</span>',
+    p:'Click on the canvas to place protons, neutrons and electrons',
+    secParticle:'Choose a particle',
+    secTheory:'Theory',
+    secPeriodic:'Periodic table (first 18 elements)',
+    secQuiz:'Quiz',
+    pnames:['Proton','Neutron','Electron'],
+    psubs:['+1 · nucleus','0 · nucleus','−1 · orbit'],
+    hint:'Left click = add · Right click = remove',
+    lbl_mass:'Mass number',sub_mass:'A = protons + neutrons',
+    lbl_shells:'Electron shells',sub_shells:'Max: 2, 8, 8, 18…',
+    lbl_p:'Protons',lbl_n:'Neutrons',lbl_e:'Electrons',
+    btnClear:'⌫ Clear all',
+    neutral:'Neutral atom ⚡',
+    cation:'Positive ion (cation)',
+    anion:'Negative ion (anion)',
+    noElement:'Unknown element',
+    theory:`<h3>Atomic structure</h3>
+An atom has 3 types of particles:<br>
+• <strong style="color:#ff5252">Proton (p⁺)</strong> — charge +1, in the <em>nucleus</em>. Number of protons = atomic number (Z) = identifies the element.<br>
+• <strong style="color:#607d8b">Neutron (n)</strong> — neutral charge, in the <em>nucleus</em>. Contributes to mass but not charge.<br>
+• <strong style="color:#40c4ff">Electron (e⁻)</strong> — charge −1, orbits the nucleus in <em>electron shells</em>.<br><br>
+<strong>Mass number A = protons + neutrons</strong><br>
+<strong>Neutral atom</strong>: protons = electrons<br>
+<strong>Ion</strong>: imbalance between protons and electrons → net charge<br><br>
+Shell max: K=2, L=8, M=8 (or 18), N=18…`,
+    quizTitle:'Quiz — Atomic structure',
+    btnRetry:'Try again',btnResetQ:'Back to lab',
+    verdicts:[
+      {min:90,icon:'⚛️',msg:'Total mastery of atomic structure!'},
+      {min:65,icon:'🔬',msg:'Good! A little revision and you\'ll be perfect.'},
+      {min:0, icon:'📚',msg:'Use the builder and re-read the theory.'},
+    ],
+    questions:[
+      {q:"The atomic number (Z) of an element equals the number of…",opts:["Neutrons","Protons","Valence electrons","Protons + neutrons"],ans:1,exp:"Z = number of protons. It defines the element's identity (e.g. Z=6 = carbon, Z=8 = oxygen)."},
+      {q:"The mass number (A) of an atom equals…",opts:["Number of protons only","Number of electrons","Protons + neutrons","Neutrons + electrons"],ans:2,exp:"A = Z + N (protons + neutrons). Electrons have negligible mass and don't count in A."},
+      {q:"Sodium (Na) has Z=11. How many electrons does a neutral sodium atom have?",opts:["8","11","23","12"],ans:1,exp:"Neutral atom: electrons = protons = Z = 11. Distribution: 2-8-1 on shells K, L, M."},
+      {q:"How many electrons can the L shell (2nd shell) hold at maximum?",opts:["2","4","8","18"],ans:2,exp:"The L shell holds a maximum of 8 electrons. K=2, L=8, M=8 or 18 depending on the case."},
+      {q:"A Na⁺ ion has lost one electron. Its charge is…",opts:["Neutral","−1","+1","+2"],ans:2,exp:"Na⁺: 11 protons (+11) and 10 electrons (−10) → net charge = +1. This is called a cation."},
+      {q:"Which particles are found in the atom's nucleus?",opts:["Electrons only","Protons only","Protons and neutrons","Neutrons and electrons"],ans:2,exp:"The nucleus contains protons and neutrons (nucleons). Electrons orbit around in shells."},
+      {q:"Two atoms of the same element but with different numbers of neutrons are…",opts:["Ions","Isotopes","Isomers","Valence electrons"],ans:1,exp:"Isotopes have the same Z (same element) but different neutron numbers → different A. E.g. C-12 and C-14."},
+      {q:"Oxygen has Z=8. Its electron configuration is…",opts:["2-6","2-8","8-0","2-4-2"],ans:0,exp:"O has 8 electrons: 2 on shell K (full) and 6 on shell L. Configuration: 2-6."},
+    ],
+  },
+  es:{
+    tag:'STE Secundaria 3 · Laboratorio',
+    h1:'Constructor <span>de átomos</span>',
+    p:'Haz clic en el canvas para colocar protones, neutrones y electrones',
+    secParticle:'Elegir una partícula',
+    secTheory:'Teoría',
+    secPeriodic:'Tabla periódica (primeros 18 elementos)',
+    secQuiz:'Quiz',
+    pnames:['Protón','Neutrón','Electrón'],
+    psubs:['+1 · núcleo','0 · núcleo','−1 · órbita'],
+    hint:'Clic izquierdo = agregar · Clic derecho = eliminar',
+    lbl_mass:'Número de masa',sub_mass:'A = protones + neutrones',
+    lbl_shells:'Capas electrónicas',sub_shells:'Máx: 2, 8, 8, 18…',
+    lbl_p:'Protones',lbl_n:'Neutrones',lbl_e:'Electrones',
+    btnClear:'⌫ Borrar todo',
+    neutral:'Átomo neutro ⚡',
+    cation:'Ion positivo (catión)',
+    anion:'Ion negativo (anión)',
+    noElement:'Elemento desconocido',
+    theory:`<h3>Estructura del átomo</h3>
+Un átomo está compuesto por 3 tipos de partículas:<br>
+• <strong style="color:#ff5252">Protón (p⁺)</strong> — carga +1, en el <em>núcleo</em>. El número de protones = número atómico (Z) = identifica el elemento.<br>
+• <strong style="color:#607d8b">Neutrón (n)</strong> — carga neutra, en el <em>núcleo</em>. Contribuye a la masa pero no a la carga.<br>
+• <strong style="color:#40c4ff">Electrón (e⁻)</strong> — carga −1, orbita el núcleo en <em>capas electrónicas</em>.<br><br>
+<strong>Número de masa A = protones + neutrones</strong><br>
+<strong>Átomo neutro</strong>: protones = electrones<br>
+<strong>Ion</strong>: desequilibrio entre protones y electrones → carga neta<br><br>
+Capas máx: K=2, L=8, M=8 (o 18), N=18…`,
+    quizTitle:'Quiz — Estructura atómica',
+    btnRetry:'Intentar de nuevo',btnResetQ:'Volver al laboratorio',
+    verdicts:[
+      {min:90,icon:'⚛️',msg:'¡Dominio total de la estructura atómica!'},
+      {min:65,icon:'🔬',msg:'¡Bien! Un poco de repaso y serás perfecto.'},
+      {min:0, icon:'📚',msg:'Usa el constructor y relee la teoría.'},
+    ],
+    questions:[
+      {q:"El número atómico (Z) de un elemento corresponde al número de…",opts:["Neutrones","Protones","Electrones en la última capa","Protones + neutrones"],ans:1,exp:"Z = número de protones. Define la identidad del elemento (ej: Z=6 = carbono, Z=8 = oxígeno)."},
+      {q:"El número de masa (A) de un átomo es igual a…",opts:["Solo el número de protones","Número de electrones","Protones + neutrones","Neutrones + electrones"],ans:2,exp:"A = Z + N (protones + neutrones). Los electrones tienen masa despreciable y no cuentan en A."},
+      {q:"El sodio (Na) tiene Z=11. ¿Cuántos electrones tiene un átomo neutro de sodio?",opts:["8","11","23","12"],ans:1,exp:"Átomo neutro: electrones = protones = Z = 11. Distribución: 2-8-1 en capas K, L, M."},
+      {q:"¿Cuántos electrones puede contener como máximo la capa L (2ª capa)?",opts:["2","4","8","18"],ans:2,exp:"La capa L puede contener hasta 8 electrones. K=2, L=8, M=8 o 18 según el caso."},
+      {q:"Un ion Na⁺ (sodio) perdió un electrón. Su carga es…",opts:["Neutra","−1","+1","+2"],ans:2,exp:"Na⁺: 11 protones (+11) y 10 electrones (−10) → carga neta = +1. Esto se llama catión."},
+      {q:"¿Qué partículas se encuentran en el núcleo del átomo?",opts:["Solo electrones","Solo protones","Protones y neutrones","Neutrones y electrones"],ans:2,exp:"El núcleo contiene protones y neutrones (nucleones). Los electrones orbitan alrededor en capas."},
+      {q:"Dos átomos del mismo elemento pero con diferente número de neutrones son…",opts:["Iones","Isótopos","Isómeros","Electrones de valencia"],ans:1,exp:"Los isótopos tienen el mismo Z (mismo elemento) pero diferente número de neutrones → A diferente. Ej: C-12 y C-14."},
+      {q:"El oxígeno tiene Z=8. Su configuración electrónica es…",opts:["2-6","2-8","8-0","2-4-2"],ans:0,exp:"O tiene 8 electrones: 2 en la capa K (completa) y 6 en la capa L. Configuración: 2-6."},
+    ],
+  },
+};
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let lang = 'fr';
+let selectedParticle = 'p';
+let protons = 0, neutrons = 0, electrons = 0;
+let quizAnswers = [];
+
+// ═══════════════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════════════
+function setLang(l){
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  applyTexts();
+  drawAtom();
+  updateInfo();
+  buildPeriodic();
+  initQuiz();
+}
+
+function applyTexts(){
+  const tx = TX[lang];
+  document.getElementById('hero-tag').textContent = tx.tag;
+  document.getElementById('hero-h1').innerHTML = tx.h1;
+  document.getElementById('hero-p').textContent = tx.p;
+  document.getElementById('sec-particle').childNodes[0].textContent = tx.secParticle;
+  document.getElementById('sec-theory').childNodes[0].textContent = tx.secTheory;
+  document.getElementById('sec-periodic').childNodes[0].textContent = tx.secPeriodic;
+  document.getElementById('sec-quiz').childNodes[0].textContent = tx.secQuiz;
+  document.getElementById('pname-p').textContent = tx.pnames[0];
+  document.getElementById('pname-n').textContent = tx.pnames[1];
+  document.getElementById('pname-e').textContent = tx.pnames[2];
+  document.getElementById('canvas-hint').textContent = tx.hint;
+  document.getElementById('lbl-mass').textContent = tx.lbl_mass;
+  document.getElementById('sub-mass').textContent = tx.sub_mass;
+  document.getElementById('lbl-shells').textContent = tx.lbl_shells;
+  document.getElementById('sub-shells').textContent = tx.sub_shells;
+  document.getElementById('lbl-p').textContent = tx.lbl_p;
+  document.getElementById('lbl-n').textContent = tx.lbl_n;
+  document.getElementById('lbl-e').textContent = tx.lbl_e;
+  document.getElementById('btn-clear').textContent = tx.btnClear;
+  document.getElementById('theory-box').innerHTML = tx.theory;
+  document.getElementById('btn-retry-q').textContent = tx.btnRetry;
+  document.getElementById('btn-reset-q').textContent = tx.btnResetQ;
+}
+
+// ═══════════════════════════════════════════════
+//  PARTICLE SELECTION
+// ═══════════════════════════════════════════════
+function selectParticle(type){
+  selectedParticle = type;
+  document.querySelectorAll('.particle-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('btn-'+type).classList.add('selected');
+}
+
+// ═══════════════════════════════════════════════
+//  CANVAS
+// ═══════════════════════════════════════════════
+const canvas = document.getElementById('atom-canvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas(){
+  const w = canvas.parentElement.offsetWidth;
+  canvas.width = w; canvas.height = w;
+  drawAtom();
+}
+
+canvas.addEventListener('click', e => {
+  const r = canvas.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  const cx = canvas.width/2, cy = canvas.height/2;
+  const dist = Math.hypot(x - cx, y - cy);
+  const nucleusR = canvas.width * 0.18;
+
+  if(selectedParticle === 'p'){ protons = Math.min(protons+1, 18); }
+  else if(selectedParticle === 'n'){ neutrons = Math.min(neutrons+1, 30); }
+  else { electrons = Math.min(electrons+1, 18); }
+
+  drawAtom(); updateInfo();
+});
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  if(selectedParticle === 'p' && protons > 0) protons--;
+  else if(selectedParticle === 'n' && neutrons > 0) neutrons--;
+  else if(selectedParticle === 'e' && electrons > 0) electrons--;
+  drawAtom(); updateInfo();
+});
+
+// touch
+let lastTap = 0;
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  const now = Date.now();
+  if(now - lastTap < 300){ // double tap = remove
+    if(selectedParticle === 'p' && protons > 0) protons--;
+    else if(selectedParticle === 'n' && neutrons > 0) neutrons--;
+    else if(selectedParticle === 'e' && electrons > 0) electrons--;
+  } else {
+    if(selectedParticle === 'p') protons = Math.min(protons+1, 18);
+    else if(selectedParticle === 'n') neutrons = Math.min(neutrons+1, 30);
+    else electrons = Math.min(electrons+1, 18);
+  }
+  lastTap = now;
+  drawAtom(); updateInfo();
+});
+
+function drawAtom(){
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const nucleusR = W * 0.17;
+  ctx.clearRect(0, 0, W, H);
+
+  // background glow
+  const grd = ctx.createRadialGradient(cx,cy,0,cx,cy,nucleusR*2.5);
+  grd.addColorStop(0,'rgba(255,82,82,0.07)');
+  grd.addColorStop(1,'transparent');
+  ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+
+  // electron shells
+  const shellDef = [2,8,8];
+  const shellR = [nucleusR+W*0.14, nucleusR+W*0.26, nucleusR+W*0.38];
+  let eRemaining = electrons;
+
+  shellDef.forEach((cap, si) => {
+    if(si > 0 && shellDef.slice(0,si).every((c,i) => (eRemaining + (electrons - eRemaining)) >= c)) {}
+    const shellElectrons = Math.min(eRemaining, cap);
+    if(si === 0) eRemaining -= Math.min(2, electrons);
+    else if(si === 1) eRemaining -= Math.min(8, Math.max(0, electrons - 2));
+    else eRemaining -= Math.min(8, Math.max(0, electrons - 10));
+
+    // draw orbit ring
+    ctx.beginPath();
+    ctx.arc(cx, cy, shellR[si], 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(64,196,255,0.12)`;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // draw electrons on shells
+  let eLeft = electrons;
+  shellDef.forEach((cap, si) => {
+    const eOnShell = Math.min(eLeft, cap);
+    eLeft -= eOnShell;
+    for(let i = 0; i < eOnShell; i++){
+      const angle = (i / eOnShell) * Math.PI * 2 - Math.PI/2 + (si * 0.3);
+      const ex = cx + shellR[si] * Math.cos(angle);
+      const ey = cy + shellR[si] * Math.sin(angle);
+      // glow
+      const eg = ctx.createRadialGradient(ex,ey,0,ex,ey,8);
+      eg.addColorStop(0,'rgba(64,196,255,0.5)');
+      eg.addColorStop(1,'transparent');
+      ctx.fillStyle = eg; ctx.fillRect(ex-8,ey-8,16,16);
+      // dot
+      ctx.beginPath();
+      ctx.arc(ex, ey, W*0.025, 0, Math.PI*2);
+      ctx.fillStyle = '#40c4ff';
+      ctx.fill();
+      // label
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = `bold ${W*0.022}px JetBrains Mono`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('e⁻', ex, ey);
+    }
+  });
+
+  // nucleus
+  const ng = ctx.createRadialGradient(cx,cy,0,cx,cy,nucleusR);
+  ng.addColorStop(0,'rgba(255,130,130,0.35)');
+  ng.addColorStop(0.6,'rgba(255,82,82,0.15)');
+  ng.addColorStop(1,'rgba(255,82,82,0.04)');
+  ctx.fillStyle = ng;
+  ctx.beginPath(); ctx.arc(cx,cy,nucleusR,0,Math.PI*2); ctx.fill();
+
+  ctx.beginPath(); ctx.arc(cx,cy,nucleusR,0,Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,82,82,0.4)';
+  ctx.lineWidth = 1.5; ctx.stroke();
+
+  // protons & neutrons in nucleus
+  const total = protons + neutrons;
+  const pRadius = Math.max(W*0.018, Math.min(W*0.035, nucleusR / Math.max(1, Math.ceil(Math.sqrt(total))+1)));
+  const positions = nucleusPositions(total, nucleusR * 0.75, cx, cy);
+  for(let i = 0; i < total; i++){
+    const pos = positions[i] || {x:cx, y:cy};
+    const isP = i < protons;
+    const color = isP ? '#ff5252' : '#607d8b';
+    const label = isP ? 'p⁺' : 'n';
+
+    const pg = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,pRadius);
+    pg.addColorStop(0, isP ? 'rgba(255,150,150,0.9)' : 'rgba(130,160,175,0.9)');
+    pg.addColorStop(1, color);
+    ctx.beginPath(); ctx.arc(pos.x,pos.y,pRadius,0,Math.PI*2);
+    ctx.fillStyle = pg; ctx.fill();
+    ctx.strokeStyle = isP ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1; ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${pRadius*0.9}px JetBrains Mono`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, pos.x, pos.y);
+  }
+
+  // empty nucleus hint
+  if(total === 0){
+    ctx.fillStyle = 'rgba(255,82,82,0.3)';
+    ctx.font = `${W*0.04}px Outfit`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('+', cx, cy);
+  }
+}
+
+function nucleusPositions(n, maxR, cx, cy){
+  if(n === 0) return [];
+  if(n === 1) return [{x:cx,y:cy}];
+  const pos = [];
+  const rings = [1,6,12,18];
+  let placed = 0;
+  for(let ri = 0; ri < rings.length && placed < n; ri++){
+    const count = Math.min(rings[ri], n - placed);
+    const r = ri === 0 ? 0 : (maxR / rings.length) * (ri + 0.5);
+    for(let i = 0; i < count; i++){
+      const a = (i/count)*Math.PI*2;
+      pos.push({x: cx + r*Math.cos(a), y: cy + r*Math.sin(a)});
+    }
+    placed += count;
+  }
+  return pos;
+}
+
+// ═══════════════════════════════════════════════
+//  INFO UPDATE
+// ═══════════════════════════════════════════════
+function updateInfo(){
+  const tx = TX[lang];
+  document.getElementById('cnt-p').textContent = protons;
+  document.getElementById('cnt-n').textContent = neutrons;
+  document.getElementById('cnt-e').textContent = electrons;
+  document.getElementById('val-mass').textContent = protons + neutrons;
+
+  // shells
+  const shellDist = [];
+  let rem = electrons;
+  [2,8,8].forEach(cap => {
+    const n = Math.min(rem, cap);
+    if(n > 0) shellDist.push(n);
+    rem -= n;
+  });
+  document.getElementById('val-shells').textContent = shellDist.length ? shellDist.join(' — ') : '—';
+
+  // element
+  const el = ELEMENTS[protons] || null;
+  if(el){
+    document.getElementById('el-symbol').textContent = el.sym;
+    document.getElementById('el-name').textContent = el[lang];
+    document.getElementById('el-number').textContent = `Z = ${protons}`;
+  } else if(protons === 0){
+    document.getElementById('el-symbol').textContent = '?';
+    document.getElementById('el-name').textContent = '—';
+    document.getElementById('el-number').textContent = 'Z = 0';
+  } else {
+    document.getElementById('el-symbol').textContent = protons;
+    document.getElementById('el-name').textContent = tx.noElement;
+    document.getElementById('el-number').textContent = `Z = ${protons}`;
+  }
+
+  // charge
+  const charge = protons - electrons;
+  const chargeEl = document.getElementById('el-charge');
+  if(charge === 0){ chargeEl.textContent = tx.neutral; chargeEl.className = 'el-charge charge-neutral'; }
+  else if(charge > 0){ chargeEl.textContent = `${tx.cation} (+${charge})`; chargeEl.className = 'el-charge charge-pos'; }
+  else { chargeEl.textContent = `${tx.anion} (${charge})`; chargeEl.className = 'el-charge charge-neg'; }
+
+  // highlight periodic table
+  document.querySelectorAll('.pt-cell').forEach(c => {
+    c.classList.toggle('active', parseInt(c.dataset.z) === protons);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  PRESETS
+// ═══════════════════════════════════════════════
+function loadPreset(z){
+  protons = z;
+  neutrons = Math.round(z * 1.1); // approximate
+  electrons = z;
+  // fix common ones
+  const neutronMap = {1:0,2:2,6:6,8:8,11:12,17:18};
+  if(neutronMap[z] !== undefined) neutrons = neutronMap[z];
+  drawAtom(); updateInfo();
+}
+
+function clearAtom(){
+  protons = 0; neutrons = 0; electrons = 0;
+  drawAtom(); updateInfo();
+}
+
+// ═══════════════════════════════════════════════
+//  PERIODIC TABLE
+// ═══════════════════════════════════════════════
+// Row layout for first 18 (simplified)
+const PERIOD_LAYOUT = [
+  // [z, col] for period 1-3 grid (18 columns)
+  [1,1],[2,18],
+  [3,1],[4,2],[5,13],[6,14],[7,15],[8,16],[9,17],[10,18],
+  [11,1],[12,2],[13,13],[14,14],[15,15],[16,16],[17,17],[18,18],
+];
+
+function buildPeriodic(){
+  const grid = document.getElementById('periodic-grid');
+  grid.innerHTML = '';
+  // 3 rows x 18 cols
+  const cells = {};
+  PERIOD_LAYOUT.forEach(([z, col]) => cells[`${Math.ceil(PERIOD_LAYOUT.indexOf(PERIOD_LAYOUT.find(x=>x[0]===z)) < 2 ? 1 : PERIOD_LAYOUT.indexOf(PERIOD_LAYOUT.find(x=>x[0]===z)) < 10 ? 2 : 3)}_${col}`] = z);
+
+  // determine row
+  const rowOf = z => z <= 2 ? 1 : z <= 10 ? 2 : 3;
+
+  for(let row = 1; row <= 3; row++){
+    for(let col = 1; col <= 18; col++){
+      const entry = PERIOD_LAYOUT.find(([z,c]) => rowOf(z) === row && c === col);
+      const div = document.createElement('div');
+      if(entry){
+        const z = entry[0];
+        const el = ELEMENTS[z];
+        div.className = `pt-cell ${el.type}`;
+        div.textContent = el.sym;
+        div.dataset.z = z;
+        div.title = `${el[lang]} (Z=${z})`;
+        div.onclick = () => { loadPreset(z); };
+      } else {
+        div.className = 'pt-cell empty';
+      }
+      grid.appendChild(div);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  QUIZ
+// ═══════════════════════════════════════════════
+function initQuiz(){
+  quizAnswers = [];
+  const tx = TX[lang];
+  document.getElementById('result-card').className = 'result-card';
+  document.getElementById('btn-retry-q').textContent = tx.btnRetry;
+  document.getElementById('btn-reset-q').textContent = tx.btnResetQ;
+
+  const body = document.getElementById('quiz-body');
+  body.innerHTML = tx.questions.map((q,i) => `
+    <div class="q-block" id="qb-${i}">
+      <div class="q-num">⚛️ Q${i+1}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-opts">
+        ${q.opts.map((o,j) => `<button class="q-opt" id="qo-${i}-${j}" onclick="answerQ(${i},${j})">${o}</button>`).join('')}
+      </div>
+      <div class="q-fb" id="qfb-${i}"></div>
+    </div>
+  `).join('');
+}
+
+function answerQ(qi, oi){
+  if(quizAnswers[qi] !== undefined) return;
+  quizAnswers[qi] = oi;
+  const tx = TX[lang];
+  const q = tx.questions[qi];
+  const ok = oi === q.ans;
+  for(let j = 0; j < q.opts.length; j++){
+    const btn = document.getElementById(`qo-${qi}-${j}`);
+    btn.disabled = true;
+    if(j === q.ans) btn.classList.add(ok ? 'correct' : 'reveal');
+    if(j === oi && !ok) btn.classList.add('wrong');
+  }
+  const fb = document.getElementById(`qfb-${qi}`);
+  fb.className = 'q-fb show ' + (ok ? 'ok' : 'bad');
+  fb.innerHTML = (ok ? '✓ ' : '✗ ') + q.exp;
+  document.getElementById(`qb-${qi}`).style.borderColor = ok ? '#4ddc8a' : '#ff5252';
+
+  if(quizAnswers.filter(a => a !== undefined).length === tx.questions.length){
+    setTimeout(showResults, 500);
+  }
+}
+
+function showResults(){
+  const tx = TX[lang];
+  const correct = quizAnswers.filter((a,i) => a === tx.questions[i].ans).length;
+  const pct = Math.round((correct / tx.questions.length) * 100);
+  const v = tx.verdicts.find(x => pct >= x.min);
+  document.getElementById('result-pct').textContent = v.icon + ' ' + pct + '%';
+  document.getElementById('result-msg').textContent = v.msg;
+  document.getElementById('result-card').className = 'result-card show';
+  document.getElementById('result-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+applyTexts();
+buildPeriodic();
+initQuiz();
+</script>
+</body>
+</html>

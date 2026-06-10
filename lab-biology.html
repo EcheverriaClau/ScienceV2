@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Biologie — Systèmes du corps · STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070910;--bg2:#0d1220;--bg3:#131a2c;--bg4:#181f30;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --text:#ddeeff;--muted:#4a6282;
+  --heart:#ff4466;--eye:#44aaff;--brain:#aa66ff;--digestif:#ff8c42;
+  --circulo:#ff4466;--resp:#44ccff;--nerveux:#aa66ff;--immun:#4ddc8a;--excret:#ffd166;
+  --font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;--r:12px;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.25) 0%,transparent 100%),radial-gradient(1px 1px at 75% 15%,rgba(255,255,255,.3) 0%,transparent 100%),radial-gradient(1px 1px at 50% 80%,rgba(255,255,255,.2) 0%,transparent 100%);pointer-events:none;z-index:0}
+
+#lang-bar{position:relative;z-index:10;display:flex;gap:6px;justify-content:flex-end;padding:1rem 1.25rem 0}
+.lb{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:5px 12px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.lb.active{background:var(--heart);color:#fff;border-color:var(--heart)}
+
+#app{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:1.25rem 1.25rem 4rem}
+
+.hero{text-align:center;padding:1.25rem 0 1.75rem}
+.hero-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.6rem}
+.hero h1{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:900;letter-spacing:-.03em;margin-bottom:.3rem}
+.hero h1 em{font-style:normal;color:var(--heart)}
+.hero p{font-size:13px;color:var(--muted)}
+
+.sec{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:.85rem;margin-top:1.5rem}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── SYSTEM TABS ── */
+.sys-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem}
+.sys-tab{padding:7px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--bg2);font-family:var(--font);font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px}
+.sys-tab:hover{color:var(--text);border-color:var(--border2)}
+.sys-tab.active{color:#fff;font-weight:700;border-width:1.5px}
+
+/* ── SYSTEM PANELS ── */
+.sys-panel{display:none}
+.sys-panel.active{display:block;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── DIAGRAM LAYOUT ── */
+.diagram-layout{display:grid;grid-template-columns:1fr 280px;gap:1.25rem;margin-bottom:1.5rem;align-items:start}
+@media(max-width:580px){.diagram-layout{grid-template-columns:1fr}}
+.diagram-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem;position:relative}
+.diagram-wrap svg{width:100%;display:block;cursor:pointer}
+
+/* ── INFO PANEL ── */
+.info-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;min-height:180px;display:flex;flex-direction:column;gap:.75rem}
+.info-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;color:var(--muted);font-size:13px;gap:.5rem;padding:1rem}
+.info-empty .arr{font-size:24px;animation:bounce 1.5s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.info-name{font-size:17px;font-weight:700;margin-bottom:3px}
+.info-badge{font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid var(--border2);color:var(--muted);display:inline-block;margin-bottom:.5rem}
+.info-fn{font-size:13px;line-height:1.7;color:rgba(221,238,255,.85)}
+.info-fact{background:var(--bg3);border-left:3px solid var(--heart);border-radius:0 8px 8px 0;padding:.6rem .85rem;font-size:12px;color:rgba(221,238,255,.7);line-height:1.6;margin-top:.25rem}
+.info-fact strong{color:var(--heart)}
+
+/* ── PART LABELS ── */
+.part-label{font-size:11px;fill:rgba(221,238,255,.8);font-family:'JetBrains Mono',monospace;cursor:pointer;transition:fill .15s}
+.part-label:hover{fill:#fff}
+.part-hotspot{cursor:pointer;transition:opacity .15s}
+.part-hotspot:hover{opacity:.8}
+
+/* ── THEORY BOX ── */
+.theory-box{background:var(--bg2);border:1px solid var(--border);border-left:3px solid;border-radius:0 var(--r) var(--r) 0;padding:1rem 1.25rem;font-size:13px;line-height:1.8;color:rgba(221,238,255,.8);margin-bottom:1.25rem}
+.theory-box h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:.5rem}
+
+/* steps */
+.steps{margin-bottom:1rem}
+.step{display:flex;gap:12px;margin-bottom:.65rem;align-items:flex-start}
+.step-n{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;margin-top:1px}
+.step-t{font-size:13px;color:rgba(221,238,255,.85);line-height:1.6;flex:1}
+.step-t strong{color:var(--text)}
+
+/* table */
+.bio-table{width:100%;border-collapse:collapse;margin-bottom:1rem;font-size:12.5px}
+.bio-table th{background:var(--bg3);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:.55rem .85rem;text-align:left;border-bottom:1px solid var(--border)}
+.bio-table td{padding:.5rem .85rem;border-bottom:1px solid var(--border);color:rgba(221,238,255,.85);vertical-align:top}
+.bio-table tr:hover td{background:rgba(255,255,255,.02)}
+
+/* tip boxes */
+.tip{border-radius:8px;padding:.7rem 1rem;margin-bottom:.65rem;font-size:12.5px;line-height:1.65;display:flex;gap:10px}
+.tip-icon{flex-shrink:0;font-size:15px}
+.tip-green{background:rgba(77,220,138,.07);border-left:3px solid var(--immun);color:rgba(221,238,255,.85)}
+.tip-red{background:rgba(255,68,102,.07);border-left:3px solid var(--heart);color:rgba(221,238,255,.85)}
+.tip-blue{background:rgba(68,170,255,.07);border-left:3px solid var(--eye);color:rgba(221,238,255,.85)}
+.tip-purple{background:rgba(170,102,255,.07);border-left:3px solid var(--brain);color:rgba(221,238,255,.85)}
+
+/* quiz */
+.q-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem;margin-bottom:.75rem}
+.q-num{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:.4rem}
+.q-text{font-size:14px;line-height:1.6;margin-bottom:.75rem}
+.q-opts{display:grid;gap:6px}
+.q-opt{display:block;width:100%;text-align:left;padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:13px;color:var(--text);cursor:pointer;transition:all .15s}
+.q-opt:hover:not(:disabled){border-color:var(--border2);transform:translateX(3px)}
+.q-opt:disabled{cursor:default}
+.q-opt.correct{background:rgba(77,220,138,.12);border-color:var(--immun);color:#a7f3ca}
+.q-opt.wrong{background:rgba(255,68,102,.1);border-color:var(--heart);color:#fca5a5}
+.q-opt.reveal{background:rgba(77,220,138,.08);border-color:rgba(77,220,138,.4);color:#a7f3ca}
+.q-fb{display:none;margin-top:.6rem;padding:.65rem .85rem;border-radius:7px;font-size:12.5px;line-height:1.65}
+.q-fb.show{display:block;animation:fadeUp .2s ease}
+.q-fb.ok{background:rgba(77,220,138,.08);color:#a7f3ca;border-left:3px solid var(--immun)}
+.q-fb.bad{background:rgba(255,68,102,.08);color:#fca5a5;border-left:3px solid var(--heart)}
+.result-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;text-align:center;display:none;margin-top:1rem}
+.result-card.show{display:block;animation:fadeUp .4s ease}
+.result-pct{font-size:3rem;font-weight:900;letter-spacing:-.04em;margin-bottom:.3rem}
+.result-msg{font-size:13px;color:var(--muted);margin-bottom:1rem}
+.btn-retry{font-family:var(--font);font-weight:700;font-size:14px;padding:11px 24px;border:none;border-radius:8px;background:var(--heart);color:#fff;cursor:pointer;transition:all .2s}
+.btn-retry:hover{transform:translateY(-2px)}
+
+/* legend */
+.legend-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:4px 10px;border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all .15s;background:var(--bg2)}
+.leg-item:hover{border-color:var(--border2);color:var(--text)}
+.leg-item.active{border-color:currentColor}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="lang-bar">
+  <button class="lb active" onclick="setLang('fr')">FR</button>
+  <button class="lb" onclick="setLang('en')">EN</button>
+  <button class="lb" onclick="setLang('es')">ES</button>
+</div>
+<div id="app">
+  <div class="hero">
+    <span class="hero-tag" id="hero-tag">STE Secondaire 3 · Univers vivant</span>
+    <h1 id="hero-h1">Biologie <em>interactive</em></h1>
+    <p id="hero-p">Clique sur chaque partie pour découvrir sa fonction</p>
+  </div>
+
+  <p class="sec" id="sec-sys">Choisir un système</p>
+  <div class="sys-tabs" id="sys-tabs"></div>
+
+  <!-- PANELS injected by JS -->
+  <div id="panels-container"></div>
+
+  <p class="sec" id="sec-quiz">Quiz biologie</p>
+  <div id="quiz-body"></div>
+  <div class="result-card" id="result-card">
+    <div class="result-pct" id="result-pct"></div>
+    <div class="result-msg" id="result-msg"></div>
+    <button class="btn-retry" onclick="initQuiz()" id="btn-retry"></button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════
+const SYSTEMS = {
+  heart:{
+    color:'#ff4466',
+    fr:{name:'Cœur',icon:'❤️'},en:{name:'Heart',icon:'❤️'},es:{name:'Corazón',icon:'❤️'},
+    parts:{
+      ao:{fr:{name:'Aorte',badge:'Artère principale',fn:'Transporte le sang oxygéné vers tout le corps. C\'est la plus grande artère (diamètre ~2,5 cm).',fact:'<strong>Fait :</strong> L\'aorte est si large qu\'un crayon pourrait y entrer ! Elle reçoit 5 litres de sang par minute.'},en:{name:'Aorta',badge:'Main artery',fn:'Carries oxygenated blood to the whole body. It is the largest artery (diameter ~2.5 cm).',fact:'<strong>Fact:</strong> The aorta is so wide a pencil could fit inside! It receives 5 litres of blood per minute.'},es:{name:'Aorta',badge:'Arteria principal',fn:'Transporta la sangre oxigenada a todo el cuerpo. Es la arteria más grande (diámetro ~2,5 cm).',fact:'<strong>Dato:</strong> ¡La aorta es tan ancha que un lápiz cabría dentro! Recibe 5 litros de sangre por minuto.'}},
+      vd:{fr:{name:'Ventricule droit',badge:'Chambre inférieure droite',fn:'Pompe le sang désoxygéné vers les poumons via l\'artère pulmonaire pour qu\'il soit réoxygéné.',fact:'<strong>Fait :</strong> Le ventricule droit produit ~1/4 de la pression du ventricule gauche — les poumons sont fragiles!'},en:{name:'Right ventricle',badge:'Lower right chamber',fn:'Pumps deoxygenated blood to the lungs via the pulmonary artery to be re-oxygenated.',fact:'<strong>Fact:</strong> The right ventricle produces ~1/4 the pressure of the left ventricle — the lungs are delicate!'},es:{name:'Ventrículo derecho',badge:'Cámara inferior derecha',fn:'Bombea la sangre desoxigenada hacia los pulmones para que sea reoxigenada.',fact:'<strong>Dato:</strong> El ventrículo derecho produce ~1/4 de la presión del izquierdo — ¡los pulmones son delicados!'}},
+      vg:{fr:{name:'Ventricule gauche',badge:'Chambre inférieure gauche',fn:'La pompe principale ! Propulse le sang oxygéné vers tout le corps. Paroi très épaisse (~1,2 cm).',fact:'<strong>Fait :</strong> Le ventricule gauche génère assez de force pour projeter le sang à 2 mètres de hauteur !'},en:{name:'Left ventricle',badge:'Lower left chamber',fn:'The main pump! Propels oxygenated blood to the whole body. Very thick wall (~1.2 cm).',fact:'<strong>Fact:</strong> The left ventricle generates enough force to shoot blood 2 metres high!'},es:{name:'Ventrículo izquierdo',badge:'Cámara inferior izquierda',fn:'¡La bomba principal! Impulsa la sangre oxigenada a todo el cuerpo. Pared muy gruesa (~1,2 cm).',fact:'<strong>Dato:</strong> ¡El ventrículo izquierdo genera suficiente fuerza para lanzar sangre a 2 metros de altura!'}},
+      od:{fr:{name:'Oreillette droite',badge:'Chambre supérieure droite',fn:'Reçoit le sang désoxygéné du corps entier via les veines caves (supérieure et inférieure).',fact:'<strong>Fait :</strong> L\'oreillette droite reçoit environ 70% du retour veineux du corps.'},en:{name:'Right atrium',badge:'Upper right chamber',fn:'Receives deoxygenated blood from the whole body via the superior and inferior vena cava.',fact:'<strong>Fact:</strong> The right atrium receives about 70% of the venous return from the body.'},es:{name:'Aurícula derecha',badge:'Cámara superior derecha',fn:'Recibe la sangre desoxigenada de todo el cuerpo a través de las venas cavas.',fact:'<strong>Dato:</strong> La aurícula derecha recibe aproximadamente el 70% del retorno venoso del cuerpo.'}},
+      og:{fr:{name:'Oreillette gauche',badge:'Chambre supérieure gauche',fn:'Reçoit le sang oxygéné revenant des poumons via les veines pulmonaires (4 veines).',fact:'<strong>Fait :</strong> L\'oreillette gauche est la chambre la plus postérieure du cœur — proche de l\'œsophage.'},en:{name:'Left atrium',badge:'Upper left chamber',fn:'Receives oxygenated blood returning from the lungs via the pulmonary veins (4 veins).',fact:'<strong>Fact:</strong> The left atrium is the most posterior chamber of the heart — close to the oesophagus.'},es:{name:'Aurícula izquierda',badge:'Cámara superior izquierda',fn:'Recibe la sangre oxigenada que regresa de los pulmones a través de las venas pulmonares.',fact:'<strong>Dato:</strong> La aurícula izquierda es la cámara más posterior del corazón — cerca del esófago.'}},
+      ap:{fr:{name:'Artère pulmonaire',badge:'Vers les poumons',fn:'Unique artère transportant du sang désoxygéné. Porte le sang du ventricule droit aux poumons.',fact:'<strong>Fait :</strong> C\'est la seule artère du corps qui transporte du sang désoxygéné (toutes les autres transportent du sang oxygéné).'},en:{name:'Pulmonary artery',badge:'To the lungs',fn:'The only artery carrying deoxygenated blood. Takes blood from the right ventricle to the lungs.',fact:'<strong>Fact:</strong> It is the only artery in the body that carries deoxygenated blood (all others carry oxygenated blood).'},es:{name:'Arteria pulmonar',badge:'Hacia los pulmones',fn:'Única arteria que transporta sangre desoxigenada. Lleva sangre del ventrículo derecho a los pulmones.',fact:'<strong>Dato:</strong> Es la única arteria del cuerpo que transporta sangre desoxigenada (todas las demás transportan sangre oxigenada).'}},
+      vc:{fr:{name:'Veine cave',badge:'Retour veineux',fn:'Deux veines (supérieure et inférieure) ramènent le sang désoxygéné de tout le corps vers l\'oreillette droite.',fact:'<strong>Fait :</strong> La veine cave inférieure est la plus grande veine du corps humain (~2 cm de diamètre).'},en:{name:'Vena cava',badge:'Venous return',fn:'Two veins (superior and inferior) return deoxygenated blood from the whole body to the right atrium.',fact:'<strong>Fact:</strong> The inferior vena cava is the largest vein in the human body (~2 cm diameter).'},es:{name:'Vena cava',badge:'Retorno venoso',fn:'Dos venas (superior e inferior) devuelven la sangre desoxigenada de todo el cuerpo a la aurícula derecha.',fact:'<strong>Dato:</strong> La vena cava inferior es la vena más grande del cuerpo humano (~2 cm de diámetro).'}},
+      sep:{fr:{name:'Septum',badge:'Cloison cardiaque',fn:'Paroi musculaire qui sépare le cœur droit (sang désoxygéné) du cœur gauche (sang oxygéné). Empêche les mélanges.',fact:'<strong>Fait :</strong> Un défaut septal (trou dans le septum) est l\'une des malformations cardiaques congénitales les plus fréquentes.'},en:{name:'Septum',badge:'Cardiac partition',fn:'Muscular wall separating the right heart (deoxygenated blood) from the left heart (oxygenated blood). Prevents mixing.',fact:'<strong>Fact:</strong> A septal defect (hole in the septum) is one of the most common congenital heart defects.'},es:{name:'Tabique',badge:'Pared cardíaca',fn:'Pared muscular que separa el corazón derecho (sangre desoxigenada) del izquierdo (sangre oxigenada). Evita mezclas.',fact:'<strong>Dato:</strong> Un defecto septal (agujero en el tabique) es una de las malformaciones cardíacas congénitas más frecuentes.'}},
+    }
+  },
+  eye:{
+    color:'#44aaff',
+    fr:{name:'Œil',icon:'👁️'},en:{name:'Eye',icon:'👁️'},es:{name:'Ojo',icon:'👁️'},
+    parts:{
+      cornee:{fr:{name:'Cornée',badge:'Lentille transparente',fn:'Surface transparente courbée qui réfracte (dévie) la lumière vers le cristallin. Représente 2/3 du pouvoir réfractif de l\'œil.',fact:'<strong>Fait :</strong> La cornée n\'a pas de vaisseaux sanguins — elle se nourrit directement de l\'oxygène de l\'air et des larmes.'},en:{name:'Cornea',badge:'Transparent lens',fn:'Curved transparent surface that refracts (bends) light towards the lens. Accounts for 2/3 of the eye\'s refractive power.',fact:'<strong>Fact:</strong> The cornea has no blood vessels — it gets oxygen directly from air and tears.'},es:{name:'Córnea',badge:'Lente transparente',fn:'Superficie transparente curva que refracta (desvía) la luz hacia el cristalino. Representa 2/3 del poder refractivo del ojo.',fact:'<strong>Dato:</strong> La córnea no tiene vasos sanguíneos — se nutre directamente del oxígeno del aire y las lágrimas.'}},
+      iris:{fr:{name:'Iris',badge:'Diaphragme coloré',fn:'Muscle annulaire coloré qui contrôle le diamètre de la pupille. Se contracte en lumière forte (pupille petite) et se dilate dans l\'obscurité (pupille grande).',fact:'<strong>Fait :</strong> La couleur de l\'iris est déterminée par la quantité de mélanine. Brun = beaucoup, bleu = peu. Les yeux bleus sont une mutation génétique vieille de ~10 000 ans.'},en:{name:'Iris',badge:'Coloured diaphragm',fn:'Coloured ring muscle controlling pupil diameter. Contracts in bright light (small pupil) and dilates in darkness (large pupil).',fact:'<strong>Fact:</strong> Iris colour is determined by melanin amount. Brown = lots, blue = little. Blue eyes are a genetic mutation ~10,000 years old.'},es:{name:'Iris',badge:'Diafragma coloreado',fn:'Músculo anular coloreado que controla el diámetro de la pupila. Se contrae con luz intensa (pupila pequeña) y se dilata en la oscuridad.',fact:'<strong>Dato:</strong> El color del iris está determinado por la cantidad de melanina. Marrón = mucha, azul = poca. Los ojos azules son una mutación genética de ~10 000 años.'}},
+      cristallin:{fr:{name:'Cristallin',badge:'Lentille flexible',fn:'Lentille biconvexe transparente et flexible. Son épaisseur est ajustée par les muscles ciliaires pour faire la mise au point (accommodation).',fact:'<strong>Fait :</strong> Le cristallin peut changer de forme en 330 millisecondes ! Avec l\'âge, il perd sa flexibilité → presbytie (difficulté à voir de près).'},en:{name:'Lens',badge:'Flexible lens',fn:'Transparent biconvex flexible lens. Its thickness is adjusted by ciliary muscles to focus (accommodation).',fact:'<strong>Fact:</strong> The lens can change shape in 330 milliseconds! With age it loses flexibility → presbyopia (difficulty seeing close up).'},es:{name:'Cristalino',badge:'Lente flexible',fn:'Lente biconvexa transparente y flexible. Su grosor es ajustado por los músculos ciliares para enfocar (acomodación).',fact:'<strong>Dato:</strong> ¡El cristalino puede cambiar de forma en 330 milisegundos! Con la edad pierde flexibilidad → presbicia.'}},
+      retine:{fr:{name:'Rétine',badge:'Écran récepteur',fn:'Couche de cellules photoréceptrices tapissant le fond de l\'œil. Cônes (vision couleurs, jour) et bâtonnets (vision nuit, noir et blanc) convertissent la lumière en signaux nerveux.',fact:'<strong>Fait :</strong> La rétine contient ~120 millions de bâtonnets et ~6 millions de cônes. L\'image est projetée à l\'envers sur la rétine — le cerveau la retourne !'},en:{name:'Retina',badge:'Receptor screen',fn:'Layer of photoreceptor cells lining the back of the eye. Cones (colour/day vision) and rods (night/black-and-white vision) convert light into nerve signals.',fact:'<strong>Fact:</strong> The retina contains ~120 million rods and ~6 million cones. The image is projected upside down on the retina — the brain flips it!'},es:{name:'Retina',badge:'Pantalla receptora',fn:'Capa de células fotorreceptoras que tapiza el fondo del ojo. Los conos (visión en color, día) y los bastones (visión nocturna) convierten la luz en señales nerviosas.',fact:'<strong>Dato:</strong> La retina contiene ~120 millones de bastones y ~6 millones de conos. ¡La imagen se proyecta invertida en la retina — el cerebro la voltea!'}},
+      nerf:{fr:{name:'Nerf optique',badge:'Cable vers le cerveau',fn:'Transmet les signaux électriques de la rétine vers le cortex visuel du cerveau. Composé de ~1 million de fibres nerveuses.',fact:'<strong>Fait :</strong> Le point où le nerf optique quitte la rétine est le "point aveugle" — il n\'y a aucun photorécepteur là. Tu ne le perçois pas car le cerveau le "remplit" !'},en:{name:'Optic nerve',badge:'Cable to the brain',fn:'Transmits electrical signals from the retina to the brain\'s visual cortex. Composed of ~1 million nerve fibres.',fact:'<strong>Fact:</strong> Where the optic nerve leaves the retina is the "blind spot" — no photoreceptors there. You don\'t notice it because the brain "fills it in"!'},es:{name:'Nervio óptico',badge:'Cable al cerebro',fn:'Transmite señales eléctricas de la retina al córtex visual del cerebro. Compuesto por ~1 millón de fibras nerviosas.',fact:'<strong>Dato:</strong> El punto donde el nervio óptico sale de la retina es el "punto ciego" — no hay fotorreceptores allí. ¡No lo percibes porque el cerebro lo "rellena"!'}},
+      pupille:{fr:{name:'Pupille',badge:'Ouverture centrale',fn:'Ouverture circulaire au centre de l\'iris qui laisse entrer la lumière. Sa taille varie de 2 mm (lumière vive) à 8 mm (obscurité totale).',fact:'<strong>Fait :</strong> Les émotions influencent la taille de la pupille — elle se dilate lors d\'une forte émotion (peur, excitation, amour) !'},en:{name:'Pupil',badge:'Central opening',fn:'Circular opening at the centre of the iris that lets light in. Size varies from 2 mm (bright light) to 8 mm (total darkness).',fact:'<strong>Fact:</strong> Emotions influence pupil size — it dilates during strong emotions (fear, excitement, love)!'},es:{name:'Pupila',badge:'Apertura central',fn:'Apertura circular en el centro del iris que deja entrar la luz. Su tamaño varía de 2 mm (luz intensa) a 8 mm (oscuridad total).',fact:'<strong>Dato:</strong> ¡Las emociones influyen en el tamaño de la pupila — se dilata durante emociones intensas (miedo, excitación, amor)!'}},
+      sclerotique:{fr:{name:'Sclérotique',badge:'Blanc de l\'œil',fn:'Couche externe blanche et résistante qui protège l\'œil et maintient sa forme sphérique. Attachée aux muscles oculomoteurs.',fact:'<strong>Fait :</strong> Les humains sont les seuls primates à avoir une sclérotique blanche visible — ce qui nous permet de suivre le regard des autres (communication sociale).'},en:{name:'Sclera',badge:'White of the eye',fn:'White, tough outer layer protecting the eye and maintaining its spherical shape. Attached to the extraocular muscles.',fact:'<strong>Fact:</strong> Humans are the only primates with a visible white sclera — allowing us to follow others\' gaze (social communication).'},es:{name:'Esclerótica',badge:'Blanco del ojo',fn:'Capa externa blanca y resistente que protege el ojo y mantiene su forma esférica. Adherida a los músculos oculomotores.',fact:'<strong>Dato:</strong> Los humanos somos los únicos primates con esclerótica blanca visible — lo que nos permite seguir la mirada de los demás.'}},
+    }
+  },
+  brain:{
+    color:'#aa66ff',
+    fr:{name:'Cerveau',icon:'🧠'},en:{name:'Brain',icon:'🧠'},es:{name:'Cerebro',icon:'🧠'},
+    parts:{
+      frontal:{fr:{name:'Lobe frontal',badge:'Fonctions supérieures',fn:'Siège de la personnalité, du raisonnement, de la planification, du langage (aire de Broca) et des mouvements volontaires.',fact:'<strong>Fait :</strong> Le lobe frontal est le plus grand lobe cérébral. Il continue de se développer jusqu\'à ~25 ans — c\'est pourquoi les ados prennent parfois de mauvaises décisions !'},en:{name:'Frontal lobe',badge:'Higher functions',fn:'Seat of personality, reasoning, planning, language (Broca\'s area) and voluntary movement.',fact:'<strong>Fact:</strong> The frontal lobe is the largest brain lobe. It keeps developing until ~25 years old — that\'s why teens sometimes make poor decisions!'},es:{name:'Lóbulo frontal',badge:'Funciones superiores',fn:'Sede de la personalidad, razonamiento, planificación, lenguaje (área de Broca) y movimiento voluntario.',fact:'<strong>Dato:</strong> El lóbulo frontal es el más grande del cerebro. Sigue desarrollándose hasta los ~25 años — ¡por eso los adolescentes a veces toman malas decisiones!'}},
+      parietal:{fr:{name:'Lobe pariétal',badge:'Sensations et espace',fn:'Traite les sensations tactiles (toucher, douleur, température) et la perception spatiale (où sont les objets autour de toi).',fact:'<strong>Fait :</strong> Le lobe pariétal crée ta "carte mentale" de l\'espace. Des lésions ici peuvent causer une condition où les personnes ignorent complètement un côté de leur corps.'},en:{name:'Parietal lobe',badge:'Sensations and space',fn:'Processes tactile sensations (touch, pain, temperature) and spatial perception (where objects are around you).',fact:'<strong>Fact:</strong> The parietal lobe creates your "mental map" of space. Damage here can cause a condition where people completely ignore one side of their body.'},es:{name:'Lóbulo parietal',badge:'Sensaciones y espacio',fn:'Procesa las sensaciones táctiles (tacto, dolor, temperatura) y la percepción espacial.',fact:'<strong>Dato:</strong> El lóbulo parietal crea tu "mapa mental" del espacio. Las lesiones aquí pueden causar que las personas ignoren completamente un lado de su cuerpo.'}},
+      temporal:{fr:{name:'Lobe temporal',badge:'Mémoire et ouïe',fn:'Traite les sons et le langage (aire de Wernicke), la mémoire à long terme, la reconnaissance des visages et la compréhension du langage.',fact:'<strong>Fait :</strong> L\'hippocampe (dans le lobe temporal) est crucial pour former de nouveaux souvenirs. Sans lui, on ne peut pas se souvenir de quoi que ce soit de plus de quelques minutes !'},en:{name:'Temporal lobe',badge:'Memory and hearing',fn:'Processes sounds and language (Wernicke\'s area), long-term memory, face recognition and language comprehension.',fact:'<strong>Fact:</strong> The hippocampus (in the temporal lobe) is crucial for forming new memories. Without it, you can\'t remember anything for more than a few minutes!'},es:{name:'Lóbulo temporal',badge:'Memoria y audición',fn:'Procesa sonidos y lenguaje (área de Wernicke), memoria a largo plazo, reconocimiento de rostros.',fact:'<strong>Dato:</strong> El hipocampo (en el lóbulo temporal) es crucial para formar nuevos recuerdos. ¡Sin él, no puedes recordar nada por más de unos minutos!'}},
+      occipital:{fr:{name:'Lobe occipital',badge:'Vision',fn:'Entièrement dédié au traitement visuel. Reçoit les signaux du nerf optique et les interprète (couleurs, formes, mouvements, profondeur).',fact:'<strong>Fait :</strong> Le cortex visuel occupe ~30% du cortex cérébral — la vision est de loin notre sens le plus développé !'},en:{name:'Occipital lobe',badge:'Vision',fn:'Entirely dedicated to visual processing. Receives signals from the optic nerve and interprets them (colours, shapes, motion, depth).',fact:'<strong>Fact:</strong> The visual cortex occupies ~30% of the cerebral cortex — vision is by far our most developed sense!'},es:{name:'Lóbulo occipital',badge:'Visión',fn:'Completamente dedicado al procesamiento visual. Recibe señales del nervio óptico y las interpreta.',fact:'<strong>Dato:</strong> El córtex visual ocupa ~30% del córtex cerebral — ¡la visión es con diferencia nuestro sentido más desarrollado!'}},
+      cervelet:{fr:{name:'Cervelet',badge:'Coordination motrice',fn:'Coordonne les mouvements, l\'équilibre et la posture. Reçoit les informations des muscles et ajuste les mouvements en temps réel.',fact:'<strong>Fait :</strong> Le cervelet représente seulement 10% du volume cérébral mais contient ~50% de tous les neurones du cerveau !'},en:{name:'Cerebellum',badge:'Motor coordination',fn:'Coordinates movement, balance and posture. Receives information from muscles and adjusts movements in real time.',fact:'<strong>Fact:</strong> The cerebellum is only 10% of brain volume but contains ~50% of all brain neurons!'},es:{name:'Cerebelo',badge:'Coordinación motora',fn:'Coordina los movimientos, el equilibrio y la postura. Recibe información de los músculos y ajusta los movimientos en tiempo real.',fact:'<strong>Dato:</strong> ¡El cerebelo es solo el 10% del volumen cerebral pero contiene ~50% de todas las neuronas del cerebro!'}},
+      tronc:{fr:{name:'Tronc cérébral',badge:'Fonctions vitales',fn:'Contrôle les fonctions vitales automatiques : respiration, rythme cardiaque, pression artérielle, déglutition, réflexes. Relie le cerveau à la moelle épinière.',fact:'<strong>Fait :</strong> Le tronc cérébral ne s\'arrête jamais — même pendant le sommeil profond. Sans lui, nous ne pourrions pas respirer automatiquement.'},en:{name:'Brain stem',badge:'Vital functions',fn:'Controls automatic vital functions: breathing, heart rate, blood pressure, swallowing, reflexes. Connects brain to spinal cord.',fact:'<strong>Fact:</strong> The brain stem never stops — even in deep sleep. Without it, we couldn\'t breathe automatically.'},es:{name:'Tronco encefálico',badge:'Funciones vitales',fn:'Controla las funciones vitales automáticas: respiración, frecuencia cardíaca, presión arterial, deglución, reflejos.',fact:'<strong>Dato:</strong> El tronco encefálico nunca se detiene — ni siquiera durante el sueño profundo. Sin él, no podríamos respirar automáticamente.'}},
+      moelle:{fr:{name:'Moelle épinière',badge:'Autoroute nerveuse',fn:'Câble nerveux reliant le cerveau au reste du corps. Transmet les ordres moteurs (cerveau→muscles) et les sensations (peau→cerveau). Siège des réflexes.',fact:'<strong>Fait :</strong> La moelle épinière mesure ~45 cm et a le diamètre d\'un doigt. Elle contient ~13,5 millions de neurones.'},en:{name:'Spinal cord',badge:'Nerve highway',fn:'Nerve cable connecting the brain to the rest of the body. Transmits motor commands (brain→muscles) and sensations (skin→brain). Site of reflexes.',fact:'<strong>Fact:</strong> The spinal cord is ~45 cm long and as wide as a finger. It contains ~13.5 million neurons.'},es:{name:'Médula espinal',badge:'Autopista nerviosa',fn:'Cable nervioso que conecta el cerebro con el resto del cuerpo. Transmite órdenes motoras y sensaciones. Sede de los reflejos.',fact:'<strong>Dato:</strong> La médula espinal mide ~45 cm y tiene el grosor de un dedo. Contiene ~13,5 millones de neuronas.'}},
+    }
+  },
+  systemes:{
+    color:'#4ddc8a',
+    fr:{name:'Systèmes',icon:'🫀'},en:{name:'Systems',icon:'🫀'},es:{name:'Sistemas',icon:'🫀'},
+    // No SVG diagram — text-based
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════════════════════
+const TX={
+  fr:{
+    heroTag:'STE Secondaire 3 · Univers vivant',heroH1:'Biologie <em>interactive</em>',heroP:'Clique sur chaque partie pour découvrir sa fonction',
+    secSys:'Choisir un système',secQuiz:'Quiz biologie',
+    clickHint:'Clique sur une partie pour voir son rôle',
+    sysLabel:{heart:'Cœur',eye:'Œil',brain:'Cerveau',systemes:'Systèmes'},
+    verdicts:[{min:87,icon:'🧬',msg:'Maîtrise totale de la biologie !'},{min:62,icon:'🔬',msg:'Bien ! Explore encore et réessaie.'},{min:0,icon:'📚',msg:'Continue ! Clique sur chaque partie.'}],
+    btnRetry:'Réessayer',
+    systemesTitle:'Les 6 systèmes du corps humain',
+    questions:[
+      {q:'Quelle chambre du cœur pompe le sang vers tout le corps ?',opts:['Ventricule gauche','Ventricule droit','Oreillette gauche','Oreillette droite'],ans:0,exp:'Le ventricule gauche est la chambre la plus musclée — il propulse le sang oxygéné vers tout le corps via l\'aorte.'},
+      {q:'Quel type de cellule de la rétine est responsable de la vision des couleurs ?',opts:['Les cônes','Les bâtonnets','Le nerf optique','L\'iris'],ans:0,exp:'Les cônes (6 millions) détectent les couleurs et fonctionnent en lumière vive. Les bâtonnets (120 millions) voient en noir et blanc mais fonctionnent dans l\'obscurité.'},
+      {q:'Quel lobe cérébral contrôle les fonctions vitales (respiration, cœur) ?',opts:['Lobe frontal','Lobe temporal','Tronc cérébral','Cervelet'],ans:2,exp:'Le tronc cérébral contrôle les fonctions vitales automatiques : respiration, rythme cardiaque, pression artérielle. Il ne s\'arrête jamais.'},
+      {q:'L\'artère pulmonaire transporte du sang…',opts:['Désoxygéné vers les poumons','Oxygéné vers le corps','Oxygéné vers les poumons','Désoxygéné vers le corps'],ans:0,exp:'L\'artère pulmonaire est unique — c\'est la seule artère qui transporte du sang désoxygéné (du ventricule droit vers les poumons pour le recharger en O₂).'},
+      {q:'Quelle partie de l\'œil ajuste la mise au point ?',opts:['Cornée','Rétine','Cristallin','Pupille'],ans:2,exp:'Le cristallin change de forme grâce aux muscles ciliaires pour ajuster la mise au point selon la distance — c\'est l\'accommodation.'},
+      {q:'Le cervelet représente 10% du volume cérébral mais contient…',opts:['50% des neurones','10% des neurones','1% des neurones','90% des neurones'],ans:0,exp:'Le cervelet est densément peuplé en neurones (~50% de tous les neurones cérébraux) malgré son petit volume. Il coordonne les mouvements précis.'},
+      {q:'Où se produit l\'absorption des nutriments dans le sang ?',opts:['Intestin grêle','Estomac','Gros intestin','Foie'],ans:0,exp:'L\'intestin grêle est le site d\'absorption — ses villosités et microvillosités multiplient la surface d\'absorption par ~600 (surface totale ~250 m²).'},
+      {q:'Quel est le rôle du septum cardiaque ?',opts:['Séparer sang oxygéné et désoxygéné','Pomper le sang','Réguler le rythme cardiaque','Filtrer le sang'],ans:0,exp:'Le septum est la paroi musculaire qui empêche le mélange entre le sang oxygéné (côté gauche) et désoxygéné (côté droit) du cœur.'},
+    ],
+  },
+  en:{
+    heroTag:'STE Grade 9 · Living Universe',heroH1:'Interactive <em>biology</em>',heroP:'Click each part to discover its function',
+    secSys:'Choose a system',secQuiz:'Biology quiz',
+    clickHint:'Click on a part to see its role',
+    sysLabel:{heart:'Heart',eye:'Eye',brain:'Brain',systemes:'Systems'},
+    verdicts:[{min:87,icon:'🧬',msg:'Total mastery of biology!'},{min:62,icon:'🔬',msg:'Good! Explore more and try again.'},{min:0,icon:'📚',msg:'Keep going! Click each part.'}],
+    btnRetry:'Try again',
+    systemesTitle:'The 6 human body systems',
+    questions:[
+      {q:'Which heart chamber pumps blood to the whole body?',opts:['Left ventricle','Right ventricle','Left atrium','Right atrium'],ans:0,exp:'The left ventricle is the most muscular chamber — it propels oxygenated blood to the whole body via the aorta.'},
+      {q:'Which retinal cell type is responsible for colour vision?',opts:['Cones','Rods','Optic nerve','Iris'],ans:0,exp:'Cones (6 million) detect colours and work in bright light. Rods (120 million) see in black and white but work in darkness.'},
+      {q:'Which brain region controls vital functions (breathing, heart)?',opts:['Frontal lobe','Temporal lobe','Brain stem','Cerebellum'],ans:2,exp:'The brain stem controls automatic vital functions: breathing, heart rate, blood pressure. It never stops.'},
+      {q:'The pulmonary artery carries…',opts:['Deoxygenated blood to the lungs','Oxygenated blood to the body','Oxygenated blood to the lungs','Deoxygenated blood to the body'],ans:0,exp:'The pulmonary artery is unique — it is the only artery carrying deoxygenated blood (from right ventricle to lungs to reload with O₂).'},
+      {q:'Which part of the eye adjusts focus?',opts:['Cornea','Retina','Lens','Pupil'],ans:2,exp:'The lens changes shape via ciliary muscles to adjust focus for different distances — this is called accommodation.'},
+      {q:'The cerebellum is 10% of brain volume but contains…',opts:['50% of neurons','10% of neurons','1% of neurons','90% of neurons'],ans:0,exp:'The cerebellum is densely packed with neurons (~50% of all brain neurons) despite its small volume. It coordinates precise movement.'},
+      {q:'Where does nutrient absorption into blood occur?',opts:['Small intestine','Stomach','Large intestine','Liver'],ans:0,exp:'The small intestine is the absorption site — its villi and microvilli multiply the absorption surface ~600 times (total area ~250 m²).'},
+      {q:'What is the role of the cardiac septum?',opts:['Separate oxygenated and deoxygenated blood','Pump blood','Regulate heart rate','Filter blood'],ans:0,exp:'The septum is the muscular wall preventing mixing between oxygenated blood (left side) and deoxygenated blood (right side) of the heart.'},
+    ],
+  },
+  es:{
+    heroTag:'STE Secundaria 3 · Universo viviente',heroH1:'Biología <em>interactiva</em>',heroP:'Haz clic en cada parte para descubrir su función',
+    secSys:'Elegir un sistema',secQuiz:'Quiz de biología',
+    clickHint:'Haz clic en una parte para ver su rol',
+    sysLabel:{heart:'Corazón',eye:'Ojo',brain:'Cerebro',systemes:'Sistemas'},
+    verdicts:[{min:87,icon:'🧬',msg:'¡Dominio total de la biología!'},{min:62,icon:'🔬',msg:'¡Bien! Explora más e inténtalo de nuevo.'},{min:0,icon:'📚',msg:'¡Sigue! Haz clic en cada parte.'}],
+    btnRetry:'Intentar de nuevo',
+    systemesTitle:'Los 6 sistemas del cuerpo humano',
+    questions:[
+      {q:'¿Qué cámara del corazón bombea sangre a todo el cuerpo?',opts:['Ventrículo izquierdo','Ventrículo derecho','Aurícula izquierda','Aurícula derecha'],ans:0,exp:'El ventrículo izquierdo es la cámara más musculosa — impulsa la sangre oxigenada a todo el cuerpo a través de la aorta.'},
+      {q:'¿Qué tipo de célula de la retina es responsable de la visión en color?',opts:['Los conos','Los bastones','El nervio óptico','El iris'],ans:0,exp:'Los conos (6 millones) detectan colores y funcionan con luz intensa. Los bastones (120 millones) ven en blanco y negro pero funcionan en la oscuridad.'},
+      {q:'¿Qué región cerebral controla las funciones vitales (respiración, corazón)?',opts:['Lóbulo frontal','Lóbulo temporal','Tronco encefálico','Cerebelo'],ans:2,exp:'El tronco encefálico controla las funciones vitales automáticas: respiración, frecuencia cardíaca, presión arterial. Nunca se detiene.'},
+      {q:'La arteria pulmonar transporta…',opts:['Sangre desoxigenada hacia los pulmones','Sangre oxigenada hacia el cuerpo','Sangre oxigenada hacia los pulmones','Sangre desoxigenada hacia el cuerpo'],ans:0,exp:'La arteria pulmonar es única — es la única arteria que transporta sangre desoxigenada (del ventrículo derecho a los pulmones para recargarla de O₂).'},
+      {q:'¿Qué parte del ojo ajusta el enfoque?',opts:['Córnea','Retina','Cristalino','Pupila'],ans:2,exp:'El cristalino cambia de forma mediante los músculos ciliares para ajustar el enfoque a diferentes distancias — esto se llama acomodación.'},
+      {q:'El cerebelo es el 10% del volumen cerebral pero contiene…',opts:['50% de las neuronas','10% de las neuronas','1% de las neuronas','90% de las neuronas'],ans:0,exp:'El cerebelo está densamente poblado de neuronas (~50% de todas las neuronas cerebrales) a pesar de su pequeño volumen. Coordina los movimientos precisos.'},
+      {q:'¿Dónde ocurre la absorción de nutrientes en la sangre?',opts:['Intestino delgado','Estómago','Intestino grueso','Hígado'],ans:0,exp:'El intestino delgado es el sitio de absorción — sus vellosidades y microvellosidades multiplican la superficie de absorción ~600 veces (superficie total ~250 m²).'},
+      {q:'¿Cuál es la función del tabique cardíaco?',opts:['Separar sangre oxigenada y desoxigenada','Bombear sangre','Regular el ritmo cardíaco','Filtrar la sangre'],ans:0,exp:'El tabique es la pared muscular que evita la mezcla entre la sangre oxigenada (lado izquierdo) y desoxigenada (lado derecho) del corazón.'},
+    ],
+  },
+};
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let lang='fr', activeSystem='heart', selectedPart=null, quizAnswers=[];
+
+function t(k){return TX[lang][k]}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+// ═══════════════════════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════════════════════
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lb').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
+  applyTexts();
+  renderTabs();
+  renderPanel(activeSystem);
+  initQuiz();
+}
+
+function applyTexts(){
+  const tx=TX[lang];
+  document.getElementById('hero-tag').textContent=tx.heroTag;
+  document.getElementById('hero-h1').innerHTML=tx.heroH1;
+  document.getElementById('hero-p').textContent=tx.heroP;
+  document.getElementById('sec-sys').childNodes[0].textContent=tx.secSys;
+  document.getElementById('sec-quiz').childNodes[0].textContent=tx.secQuiz;
+}
+
+// ═══════════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════════
+function renderTabs(){
+  const tx=TX[lang];
+  const container=document.getElementById('sys-tabs');
+  container.innerHTML=['heart','eye','brain','systemes'].map(id=>{
+    const s=SYSTEMS[id];
+    const active=id===activeSystem;
+    return `<button class="sys-tab${active?' active':''}"
+      style="${active?`border-color:${s.color};color:${s.color};background:${s.color}15`:''}"
+      onclick="switchSystem('${id}')">
+      ${s[lang].icon} ${tx.sysLabel[id]}
+    </button>`;
+  }).join('');
+}
+
+function switchSystem(id){
+  activeSystem=id;selectedPart=null;
+  renderTabs();renderPanel(id);
+}
+
+// ═══════════════════════════════════════════════════════
+//  PANELS
+// ═══════════════════════════════════════════════════════
+function renderPanel(id){
+  const container=document.getElementById('panels-container');
+  container.innerHTML='';
+  const panel=document.createElement('div');
+  panel.className='sys-panel active';
+
+  if(id==='systemes'){
+    panel.innerHTML=buildSystemesPanel();
+  } else {
+    panel.innerHTML=buildDiagramPanel(id);
+  }
+  container.appendChild(panel);
+}
+
+function buildDiagramPanel(id){
+  const s=SYSTEMS[id];
+  const tx=TX[lang];
+  const svgFn={heart:heartSVG,eye:eyeSVG,brain:brainSVG}[id];
+  const legend=Object.entries(s.parts).map(([key,p])=>`
+    <div class="leg-item${selectedPart===key?' active':''}" data-part="${key}"
+      style="${selectedPart===key?`color:${s.color};border-color:${s.color}`:''};"
+      onclick="selectPart('${id}','${key}')">
+      <span class="leg-dot" style="background:${s.color}"></span>
+      ${p[lang].name}
+    </div>`).join('');
+
+  const infoHTML=selectedPart&&s.parts[selectedPart]?buildInfoCard(s,selectedPart):`
+    <div class="info-empty">
+      <span class="arr">👆</span>
+      <span>${tx.clickHint}</span>
+    </div>`;
+
+  return `
+    <div class="diagram-layout">
+      <div class="diagram-wrap">
+        ${svgFn(id,s)}
+      </div>
+      <div class="info-panel" id="info-panel-${id}">${infoHTML}</div>
+    </div>
+    <div class="legend-grid">${legend}</div>
+    ${buildTheorySection(id)}
+  `;
+}
+
+function buildInfoCard(sys,partKey){
+  const p=sys.parts[partKey][lang];
+  const c=sys.color;
+  return `
+    <div style="font-size:22px;margin-bottom:4px">🔍</div>
+    <div class="info-name" style="color:${c}">${p.name}</div>
+    <span class="info-badge" style="border-color:${c}44;color:${c}">${p.badge}</span>
+    <div class="info-fn">${p.fn}</div>
+    <div class="info-fact" style="border-color:${c}">${p.fact}</div>
+  `;
+}
+
+function selectPart(sysId,partKey){
+  selectedPart=partKey;
+  renderPanel(sysId);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SVG DIAGRAMS
+// ═══════════════════════════════════════════════════════
+function heartSVG(id,s){
+  const c=s.color;
+  return `<svg viewBox="0 0 380 320" xmlns="http://www.w3.org/2000/svg" onclick="handleSVGClick(event,'${id}')">
+    <defs>
+      <radialGradient id="hbg" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="${c}20"/>
+        <stop offset="100%" stop-color="transparent"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="190" cy="160" rx="160" ry="140" fill="url(#hbg)"/>
+
+    <!-- Vena cava superior -->
+    <rect data-part="vc" x="155" y="20" width="28" height="55" rx="14" fill="${c}33" stroke="${c}88" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="188" y="32" font-size="10">VCS</text>
+
+    <!-- Aorta -->
+    <path data-part="ao" d="M200,50 Q230,30 250,40 Q270,50 260,80 Q250,100 230,100" fill="none" stroke="${c}" stroke-width="14" stroke-linecap="round" class="part-hotspot" opacity=".85"/>
+    <text class="part-label" x="258" y="42" font-size="11">Aorte</text>
+
+    <!-- Artère pulmonaire -->
+    <path data-part="ap" d="M170,75 Q140,55 120,70 Q100,85 110,110" fill="none" stroke="#44aaff" stroke-width="12" stroke-linecap="round" class="part-hotspot" opacity=".85"/>
+    <text class="part-label" x="84" y="68" font-size="10">A.Pulm.</text>
+
+    <!-- Oreillette droite -->
+    <ellipse data-part="od" cx="135" cy="130" rx="45" ry="38" fill="#ff446633" stroke="${c}99" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="135" y="128" text-anchor="middle" font-size="11">O.D.</text>
+
+    <!-- Oreillette gauche -->
+    <ellipse data-part="og" cx="245" cy="120" rx="42" ry="36" fill="#ff446633" stroke="${c}99" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="245" y="118" text-anchor="middle" font-size="11">O.G.</text>
+
+    <!-- Septum -->
+    <rect data-part="sep" x="183" y="120" width="14" height="130" rx="6" fill="${c}55" stroke="${c}" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="200" y="200" font-size="9">Sept.</text>
+
+    <!-- Ventricule droit -->
+    <path data-part="vd" d="M80,165 Q75,220 100,265 Q120,290 165,295 Q180,296 183,290 L183,162 Q155,155 130,162 Z" fill="#ff446633" stroke="${c}99" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="120" y="240" text-anchor="middle" font-size="11">V.D.</text>
+
+    <!-- Ventricule gauche -->
+    <path data-part="vg" d="M197,162 L197,290 Q215,296 240,290 Q275,275 290,240 Q305,205 295,165 Q270,155 240,158 Z" fill="#ff446633" stroke="${c}" stroke-width="2" class="part-hotspot"/>
+    <text class="part-label" x="255" y="240" text-anchor="middle" font-size="11">V.G.</text>
+
+    <!-- Vena cava inferior -->
+    <rect data-part="vc" x="118" y="295" width="28" height="22" rx="8" fill="${c}33" stroke="${c}88" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="152" y="308" font-size="9">VCI</text>
+
+    <!-- Labels click hint -->
+    <text x="190" y="310" text-anchor="middle" font-size="9" fill="rgba(221,238,255,.35)" font-family="JetBrains Mono">Clique pour explorer</text>
+  </svg>`;
+}
+
+function eyeSVG(id,s){
+  const c=s.color;
+  return `<svg viewBox="0 0 380 280" xmlns="http://www.w3.org/2000/svg" onclick="handleSVGClick(event,'${id}')">
+    <defs>
+      <radialGradient id="ebg" cx="40%" cy="40%" r="60%">
+        <stop offset="0%" stop-color="${c}15"/>
+        <stop offset="100%" stop-color="transparent"/>
+      </radialGradient>
+    </defs>
+    <!-- Sclérotique (outline) -->
+    <ellipse data-part="sclerotique" cx="180" cy="140" rx="145" ry="120" fill="rgba(220,235,255,.06)" stroke="rgba(220,235,255,.35)" stroke-width="2.5" class="part-hotspot"/>
+    <text class="part-label" x="38" y="90" font-size="10">Sclérotique</text>
+
+    <!-- Cornée (front dome) -->
+    <path data-part="cornee" d="M36,140 Q60,80 90,65" fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round" class="part-hotspot" opacity=".9"/>
+    <text class="part-label" x="14" y="148" font-size="10">Cornée</text>
+
+    <!-- Iris ring -->
+    <ellipse data-part="iris" cx="180" cy="140" rx="65" ry="65" fill="${c}20" stroke="${c}" stroke-width="14" class="part-hotspot"/>
+    <text class="part-label" x="190" y="92" text-anchor="middle" font-size="11">Iris</text>
+
+    <!-- Pupille -->
+    <ellipse data-part="pupille" cx="180" cy="140" rx="28" ry="28" fill="#04060c" stroke="rgba(220,235,255,.4)" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="180" y="138" text-anchor="middle" font-size="10" fill="rgba(221,238,255,.7)">Pupille</text>
+
+    <!-- Cristallin -->
+    <ellipse data-part="cristallin" cx="180" cy="140" rx="20" ry="32" fill="${c}44" stroke="${c}88" stroke-width="2" class="part-hotspot" transform="translate(45,0)"/>
+    <text class="part-label" x="238" y="118" font-size="10">Cristallin</text>
+
+    <!-- Rétine (back) -->
+    <path data-part="retine" d="M290,85 Q330,110 335,140 Q330,170 290,195" fill="none" stroke="#aa66ff" stroke-width="8" stroke-linecap="round" class="part-hotspot"/>
+    <text class="part-label" x="310" y="78" font-size="11">Rétine</text>
+
+    <!-- Nerf optique -->
+    <path data-part="nerf" d="M320,140 L380,140" fill="none" stroke="#ffd166" stroke-width="6" stroke-linecap="round" class="part-hotspot"/>
+    <text class="part-label" x="318" y="155" font-size="10">N. optique</text>
+
+    <text x="190" y="270" text-anchor="middle" font-size="9" fill="rgba(221,238,255,.35)" font-family="JetBrains Mono">Clique pour explorer</text>
+  </svg>`;
+}
+
+function brainSVG(id,s){
+  const c=s.color;
+  return `<svg viewBox="0 0 380 300" xmlns="http://www.w3.org/2000/svg" onclick="handleSVGClick(event,'${id}')">
+    <!-- Lobe frontal (left-front) -->
+    <path data-part="frontal" d="M60,80 Q55,40 100,30 Q145,20 175,50 Q185,70 180,100 Q160,115 130,120 Q90,125 70,110 Z" fill="#ff8c4220" stroke="#ff8c42" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="115" y="72" text-anchor="middle" font-size="11">Lobe frontal</text>
+
+    <!-- Lobe pariétal (top-back) -->
+    <path data-part="parietal" d="M180,50 Q220,30 260,45 Q295,60 300,95 Q305,125 285,140 Q260,150 230,145 Q205,140 185,120 Q180,100 180,50 Z" fill="#44aaff20" stroke="#44aaff" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="248" y="90" text-anchor="middle" font-size="11">L. pariétal</text>
+
+    <!-- Lobe temporal (left-bottom) -->
+    <path data-part="temporal" d="M60,115 Q50,150 60,185 Q80,215 120,220 Q155,225 175,200 Q185,175 180,150 Q160,130 130,125 Q90,120 60,115 Z" fill="#4ddc8a20" stroke="#4ddc8a" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="108" y="182" text-anchor="middle" font-size="11">L. temporal</text>
+
+    <!-- Lobe occipital (back) -->
+    <path data-part="occipital" d="M285,140 Q320,155 330,185 Q335,215 310,235 Q285,250 250,245 Q225,238 210,215 Q200,195 205,170 Q220,150 250,148 Z" fill="#ffd16620" stroke="#ffd166" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="272" y="202" text-anchor="middle" font-size="11">L. occipital</text>
+
+    <!-- Cervelet -->
+    <path data-part="cervelet" d="M150,225 Q155,210 175,205 Q195,210 200,225 Q205,245 190,258 Q175,268 160,258 Q148,248 150,225 Z" fill="#aa66ff20" stroke="#aa66ff" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="176" y="250" text-anchor="middle" font-size="11">Cervelet</text>
+
+    <!-- Tronc cérébral -->
+    <rect data-part="tronc" x="110" y="215" width="40" height="50" rx="10" fill="#ff446633" stroke="#ff4466" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="130" y="212" text-anchor="middle" font-size="10">Tronc</text>
+
+    <!-- Moelle épinière -->
+    <rect data-part="moelle" x="118" y="265" width="24" height="28" rx="6" fill="#5bc8ff33" stroke="#5bc8ff" stroke-width="1.5" class="part-hotspot"/>
+    <text class="part-label" x="155" y="282" font-size="9">Moelle</text>
+
+    <!-- Separating line (fissure) -->
+    <line x1="188" y1="45" x2="185" y2="200" stroke="rgba(221,238,255,.2)" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+    <text x="190" y="295" text-anchor="middle" font-size="9" fill="rgba(221,238,255,.35)" font-family="JetBrains Mono">Clique pour explorer</text>
+  </svg>`;
+}
+
+// ─── SVG click handler ──────────────────────────────────────
+function handleSVGClick(e,sysId){
+  const target=e.target.closest('[data-part]');
+  if(!target)return;
+  const partKey=target.dataset.part;
+  if(partKey)selectPart(sysId,partKey);
+}
+
+// ─── Systems overview panel ─────────────────────────────────
+function buildSystemesPanel(){
+  const systems6=[
+    {id:'digestif',color:'var(--digestif)',fr:{icon:'🍽️',name:'Système digestif',steps:['Bouche : mastication + amylase','Œsophage : péristaltisme','Estomac : HCl + pepsine (pH≈2)','Intestin grêle : ABSORPTION → sang','Gros intestin : eau + minéraux','Rectum → Anus : élimination'],fact:'Surface intestin grêle ≈ 250 m² grâce aux villosités'},en:{icon:'🍽️',name:'Digestive system',steps:['Mouth: chewing + amylase','Oesophagus: peristalsis','Stomach: HCl + pepsin (pH≈2)','Small intestine: ABSORPTION → blood','Large intestine: water + minerals','Rectum → Anus: elimination'],fact:'Small intestine surface ≈ 250 m² thanks to villi'},es:{icon:'🍽️',name:'Sistema digestivo',steps:['Boca: masticación + amilasa','Esófago: peristaltismo','Estómago: HCl + pepsina (pH≈2)','Intestino delgado: ABSORCIÓN → sangre','Intestino grueso: agua + minerales','Recto → Ano: eliminación'],fact:'Superficie intestino delgado ≈ 250 m² gracias a vellosidades'}},
+    {id:'circulo',color:'var(--circulo)',fr:{icon:'❤️',name:'Système circulatoire',steps:['Cœur : 4 chambres, ~100 000 batt/jour','Artères : sang oxygéné → corps','Veines : sang désoxygéné → cœur','Capillaires : échanges avec les cellules','Globules rouges : O₂ via hémoglobine','Plasma : transport de tout'],fact:'5 L de sang, trajet complet en ~60 secondes'},en:{icon:'❤️',name:'Circulatory system',steps:['Heart: 4 chambers, ~100,000 beats/day','Arteries: oxygenated blood → body','Veins: deoxygenated blood → heart','Capillaries: exchanges with cells','Red blood cells: O₂ via haemoglobin','Plasma: transport everything'],fact:'5 L of blood, full circuit in ~60 seconds'},es:{icon:'❤️',name:'Sistema circulatorio',steps:['Corazón: 4 cámaras, ~100 000 lat/día','Arterias: sangre oxigenada → cuerpo','Venas: sangre desoxigenada → corazón','Capilares: intercambios con células','Glóbulos rojos: O₂ via hemoglobina','Plasma: transporte de todo'],fact:'5 L de sangre, circuito completo en ~60 segundos'}},
+    {id:'resp',color:'var(--resp)',fr:{icon:'🫁',name:'Système respiratoire',steps:['Nez/Bouche : filtrage + humidification','Trachée : tube ~12 cm','Bronches → Bronchioles','Alvéoles pulmonaires : ~300 millions','Échange O₂/CO₂ (diffusion)','Diaphragme : muscle principal'],fact:'On respire ~20 000 fois/jour. Surface alvéoles ≈ 70 m²'},en:{icon:'🫁',name:'Respiratory system',steps:['Nose/Mouth: filtering + humidification','Trachea: tube ~12 cm','Bronchi → Bronchioles','Pulmonary alveoli: ~300 million','O₂/CO₂ exchange (diffusion)','Diaphragm: main muscle'],fact:'We breathe ~20,000 times/day. Alveolar surface ≈ 70 m²'},es:{icon:'🫁',name:'Sistema respiratorio',steps:['Nariz/Boca: filtrado + humidificación','Tráquea: tubo ~12 cm','Bronquios → Bronquiolos','Alvéolos pulmonares: ~300 millones','Intercambio O₂/CO₂ (difusión)','Diafragma: músculo principal'],fact:'Respiramos ~20 000 veces/día. Superficie alveolar ≈ 70 m²'}},
+    {id:'nerveux',color:'var(--nerveux)',fr:{icon:'🧠',name:'Système nerveux',steps:['SNC : cerveau + moelle épinière','SNP : nerfs périphériques','Neurone : dendrites → axone → synapse','Neurotransmetteurs : messages chimiques','Acte réflexe : sans passer par le cerveau','Cerveau : ~86 milliards de neurones'],fact:'Les influx nerveux voyagent jusqu\'à 120 m/s'},en:{icon:'🧠',name:'Nervous system',steps:['CNS: brain + spinal cord','PNS: peripheral nerves','Neuron: dendrites → axon → synapse','Neurotransmitters: chemical messages','Reflex: bypasses the brain','Brain: ~86 billion neurons'],fact:'Nerve impulses travel up to 120 m/s'},es:{icon:'🧠',name:'Sistema nervioso',steps:['SNC: cerebro + médula espinal','SNP: nervios periféricos','Neurona: dendritas → axón → sinapsis','Neurotransmisores: mensajes químicos','Acto reflejo: sin pasar por el cerebro','Cerebro: ~86 mil millones de neuronas'],fact:'Los impulsos nerviosos viajan hasta 120 m/s'}},
+    {id:'immun',color:'var(--immun)',fr:{icon:'🛡️',name:'Système immunitaire',steps:['Barrières physiques : peau, mucus, cils','Globules blancs : leucocytes (défense)','Lymphocytes B : produisent anticorps','Lymphocytes T : détruisent cellules infectées','Anticorps : reconnaissent les antigènes','Vaccin : mémoire immunitaire'],fact:'On produit ~10 millions de nouvelles cellules immunitaires par jour'},en:{icon:'🛡️',name:'Immune system',steps:['Physical barriers: skin, mucus, cilia','White blood cells: leukocytes (defence)','B lymphocytes: produce antibodies','T lymphocytes: destroy infected cells','Antibodies: recognise antigens','Vaccine: immune memory'],fact:'We produce ~10 million new immune cells per day'},es:{icon:'🛡️',name:'Sistema inmunitario',steps:['Barreras físicas: piel, mucosidad, cilios','Glóbulos blancos: leucocitos (defensa)','Linfocitos B: producen anticuerpos','Linfocitos T: destruyen células infectadas','Anticuerpos: reconocen antígenos','Vacuna: memoria inmunitaria'],fact:'Producimos ~10 millones de nuevas células inmunitarias por día'}},
+    {id:'excret',color:'var(--excret)',fr:{icon:'🫘',name:'Système excréteur',steps:['Reins (×2) : filtrent ~180 L sang/jour','Unité : le néphron (~1 million par rein)','Filtration : urée, eau, sels, toxines','Urine : eau (95%), urée, sels','Uretères → Vessie → Urètre','Le foie produit l\'urée (dégradation protéines)'],fact:'En 1 journée, tes reins filtrent l\'équivalent de 45 baignoires de sang !'},en:{icon:'🫘',name:'Excretory system',steps:['Kidneys (×2): filter ~180 L blood/day','Unit: the nephron (~1 million per kidney)','Filtration: urea, water, salts, toxins','Urine: water (95%), urea, salts','Ureters → Bladder → Urethra','Liver produces urea (protein breakdown)'],fact:'In 1 day, your kidneys filter the equivalent of 45 bathtubs of blood!'},es:{icon:'🫘',name:'Sistema excretor',steps:['Riñones (×2): filtran ~180 L sangre/día','Unidad: la nefrona (~1 millón por riñón)','Filtración: urea, agua, sales, toxinas','Orina: agua (95%), urea, sales','Uréteres → Vejiga → Uretra','El hígado produce urea (degradación proteínas)'],fact:'¡En 1 día, tus riñones filtran el equivalente a 45 bañeras de sangre!'}},
+  ];
+
+  const cards=systems6.map(sys=>{
+    const d=sys[lang];
+    return `<div class="theory-box" style="border-color:${sys.color};margin-bottom:1rem">
+      <h3 style="color:${sys.color}">${d.icon} ${d.name}</h3>
+      <div class="steps">
+        ${d.steps.map((s,i)=>`<div class="step"><div class="step-n" style="background:${sys.color}">${i+1}</div><div class="step-t">${s}</div></div>`).join('')}
+      </div>
+      <div class="tip tip-blue"><span class="tip-icon">💡</span><span>${d.fact}</span></div>
+    </div>`;
+  }).join('');
+
+  return `<h2 style="font-size:16px;font-weight:700;margin-bottom:1.25rem;color:var(--text)">${TX[lang].systemesTitle}</h2>${cards}`;
+}
+
+function buildTheorySection(id){
+  const theories={
+    heart:{
+      fr:`<div class="theory-box" style="border-color:var(--heart)">
+        <h3 style="color:var(--heart)">❤️ Le cœur — pompe double</h3>
+        Le cœur bat ~100 000 fois par jour et pompe ~7 000 L de sang. Il a 2 pompes en série :<br><br>
+        <strong>Circulation pulmonaire (petite) :</strong> Cœur droit → Poumons → Cœur gauche<br>
+        <strong>Circulation systémique (grande) :</strong> Cœur gauche → Corps entier → Cœur droit<br><br>
+        <div class="tip tip-red"><span class="tip-icon">💓</span><span>Le son "lub-dub" = fermeture des valves cardiaques. Un soufle au cœur = une valve qui ne ferme pas bien.</span></div>
+      </div>`,
+      en:`<div class="theory-box" style="border-color:var(--heart)">
+        <h3 style="color:var(--heart)">❤️ The heart — double pump</h3>
+        The heart beats ~100,000 times a day and pumps ~7,000 L of blood. It has 2 pumps in series:<br><br>
+        <strong>Pulmonary circulation (small):</strong> Right heart → Lungs → Left heart<br>
+        <strong>Systemic circulation (large):</strong> Left heart → Whole body → Right heart<br><br>
+        <div class="tip tip-red"><span class="tip-icon">💓</span><span>The "lub-dub" sound = closing of heart valves. A heart murmur = a valve not closing properly.</span></div>
+      </div>`,
+      es:`<div class="theory-box" style="border-color:var(--heart)">
+        <h3 style="color:var(--heart)">❤️ El corazón — bomba doble</h3>
+        El corazón late ~100 000 veces al día y bombea ~7 000 L de sangre. Tiene 2 bombas en serie:<br><br>
+        <strong>Circulación pulmonar (pequeña):</strong> Corazón derecho → Pulmones → Corazón izquierdo<br>
+        <strong>Circulación sistémica (grande):</strong> Corazón izquierdo → Todo el cuerpo → Corazón derecho<br><br>
+        <div class="tip tip-red"><span class="tip-icon">💓</span><span>El sonido "lub-dub" = cierre de las válvulas cardíacas. Un soplo cardíaco = una válvula que no cierra bien.</span></div>
+      </div>`,
+    },
+    eye:{
+      fr:`<div class="theory-box" style="border-color:var(--eye)">
+        <h3 style="color:var(--eye)">👁️ La vision — chemin de la lumière</h3>
+        <strong>Trajet de la lumière :</strong> Cornée → Pupille → Cristallin → Vitré → Rétine → Nerf optique → Cerveau (cortex visuel)<br><br>
+        <div class="tip tip-blue"><span class="tip-icon">🔍</span><span>L'image se forme à l'envers sur la rétine (comme un appareil photo). Le cerveau la retourne pour que tu la perçoives à l'endroit.</span></div>
+        <div class="tip tip-green"><span class="tip-icon">🌈</span><span>3 types de cônes : rouge, vert, bleu. Le daltonisme = absence ou défaut d'un type de cône.</span></div>
+      </div>`,
+      en:`<div class="theory-box" style="border-color:var(--eye)">
+        <h3 style="color:var(--eye)">👁️ Vision — light's journey</h3>
+        <strong>Light path:</strong> Cornea → Pupil → Lens → Vitreous → Retina → Optic nerve → Brain (visual cortex)<br><br>
+        <div class="tip tip-blue"><span class="tip-icon">🔍</span><span>The image forms upside down on the retina (like a camera). The brain flips it so you perceive it right-side up.</span></div>
+        <div class="tip tip-green"><span class="tip-icon">🌈</span><span>3 types of cones: red, green, blue. Colour blindness = absence or defect of one cone type.</span></div>
+      </div>`,
+      es:`<div class="theory-box" style="border-color:var(--eye)">
+        <h3 style="color:var(--eye)">👁️ La visión — camino de la luz</h3>
+        <strong>Recorrido de la luz:</strong> Córnea → Pupila → Cristalino → Vítreo → Retina → Nervio óptico → Cerebro (córtex visual)<br><br>
+        <div class="tip tip-blue"><span class="tip-icon">🔍</span><span>La imagen se forma invertida en la retina (como una cámara). El cerebro la voltea para que la percibas correctamente.</span></div>
+        <div class="tip tip-green"><span class="tip-icon">🌈</span><span>3 tipos de conos: rojo, verde, azul. El daltonismo = ausencia o defecto de un tipo de cono.</span></div>
+      </div>`,
+    },
+    brain:{
+      fr:`<div class="theory-box" style="border-color:var(--brain)">
+        <h3 style="color:var(--brain)">🧠 Le cerveau — faits essentiels</h3>
+        <strong>Masse :</strong> ~1,4 kg (2% du corps, 20% de l'énergie totale)<br>
+        <strong>Neurones :</strong> ~86 milliards — reliés par ~100 trillions de synapses<br>
+        <strong>Vitesse :</strong> Influx nerveux jusqu'à 120 m/s<br><br>
+        <div class="tip tip-purple"><span class="tip-icon">🧠</span><span>Le mythe des "10% du cerveau" est faux. Les IRMf montrent que presque toutes les régions cérébrales sont actives à tout moment.</span></div>
+        <div class="tip tip-blue"><span class="tip-icon">💤</span><span>Durant le sommeil, le cerveau consolide les souvenirs et élimine les déchets métaboliques. Dormir = réessential pour apprendre !</span></div>
+      </div>`,
+      en:`<div class="theory-box" style="border-color:var(--brain)">
+        <h3 style="color:var(--brain)">🧠 The brain — key facts</h3>
+        <strong>Mass:</strong> ~1.4 kg (2% of body, 20% of total energy)<br>
+        <strong>Neurons:</strong> ~86 billion — connected by ~100 trillion synapses<br>
+        <strong>Speed:</strong> Nerve impulses up to 120 m/s<br><br>
+        <div class="tip tip-purple"><span class="tip-icon">🧠</span><span>The "10% of the brain" myth is false. fMRI scans show that almost all brain regions are active at any time.</span></div>
+        <div class="tip tip-blue"><span class="tip-icon">💤</span><span>During sleep, the brain consolidates memories and eliminates metabolic waste. Sleep = essential for learning!</span></div>
+      </div>`,
+      es:`<div class="theory-box" style="border-color:var(--brain)">
+        <h3 style="color:var(--brain)">🧠 El cerebro — datos esenciales</h3>
+        <strong>Masa:</strong> ~1,4 kg (2% del cuerpo, 20% de la energía total)<br>
+        <strong>Neuronas:</strong> ~86 mil millones — conectadas por ~100 billones de sinapsis<br>
+        <strong>Velocidad:</strong> Impulsos nerviosos hasta 120 m/s<br><br>
+        <div class="tip tip-purple"><span class="tip-icon">🧠</span><span>El mito del "10% del cerebro" es falso. Las IRMf muestran que casi todas las regiones cerebrales están activas todo el tiempo.</span></div>
+        <div class="tip tip-blue"><span class="tip-icon">💤</span><span>Durante el sueño, el cerebro consolida recuerdos y elimina desechos metabólicos. ¡Dormir = esencial para aprender!</span></div>
+      </div>`,
+    },
+  };
+  return theories[id]?.[lang]||'';
+}
+
+// ═══════════════════════════════════════════════════════
+//  QUIZ
+// ═══════════════════════════════════════════════════════
+function initQuiz(){
+  quizAnswers=[];
+  document.getElementById('result-card').className='result-card';
+  const tx=TX[lang];
+  document.getElementById('btn-retry').textContent=tx.btnRetry;
+  // randomize answers
+  const questions=tx.questions.map(q=>{
+    const indexed=q.opts.map((o,i)=>({t:o,c:i===q.ans})).sort(()=>Math.random()-.5);
+    return {...q,opts:indexed.map(x=>x.t),ans:indexed.findIndex(x=>x.c)};
+  });
+  document.getElementById('quiz-body').innerHTML=questions.map((q,i)=>`
+    <div class="q-block" id="qb-${i}">
+      <div class="q-num">🧬 Q${i+1}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-opts">
+        ${q.opts.map((o,j)=>`<button class="q-opt" id="qo-${i}-${j}" onclick="answerQ(${i},${j},${q.ans},'${q.exp.replace(/'/g,"\\'")}')">${o}</button>`).join('')}
+      </div>
+      <div class="q-fb" id="qfb-${i}"></div>
+    </div>`).join('');
+}
+
+function answerQ(qi,oi,ans,exp){
+  if(quizAnswers[qi]!==undefined)return;
+  quizAnswers[qi]=oi;
+  const ok=oi===ans;
+  for(let j=0;j<4;j++){const btn=document.getElementById(`qo-${qi}-${j}`);if(!btn)continue;btn.disabled=true;if(j===ans)btn.classList.add(ok?'correct':'reveal');if(j===oi&&!ok)btn.classList.add('wrong')}
+  const fb=document.getElementById(`qfb-${qi}`);
+  fb.className='q-fb show '+(ok?'ok':'bad');
+  fb.innerHTML=(ok?'✓ ':'✗ ')+exp;
+  document.getElementById(`qb-${qi}`).style.borderColor=ok?'var(--immun)':'var(--heart)';
+  const total=TX[lang].questions.length;
+  if(quizAnswers.filter(a=>a!==undefined).length===total)setTimeout(showResults,500);
+}
+
+function showResults(){
+  const tx=TX[lang];
+  const total=tx.questions.length;
+  const correct=quizAnswers.filter((a,i)=>a===TX[lang].questions.map((q,qi)=>{const indexed=q.opts.map((o,j)=>({t:o,c:j===q.ans})).sort(()=>0);return indexed.findIndex(x=>x.c)})[i]).length;
+  const pct=Math.round((quizAnswers.filter((a,i,arr)=>{
+    const body=document.getElementById('quiz-body');
+    const corr=body.querySelectorAll('.q-opt.correct')[i];
+    return corr&&corr.classList.contains('correct');
+  }).length/total)*100);
+  // simpler: count green buttons
+  const greens=document.querySelectorAll('.q-opt.correct').length;
+  const pctReal=Math.round((greens/total)*100);
+  const v=tx.verdicts.find(x=>pctReal>=x.min);
+  document.getElementById('result-pct').textContent=v.icon+' '+pctReal+'%';
+  document.getElementById('result-msg').textContent=v.msg;
+  document.getElementById('result-card').className='result-card show';
+  document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+applyTexts();renderTabs();renderPanel('heart');initQuiz();
+</script>
+</body>
+</html>

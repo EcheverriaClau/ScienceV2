@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Formules interactives · STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;600;700;900&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080c14;--bg2:#0f1624;--bg3:#161f30;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --text:#ddeeff;--muted:#4e6a8a;
+  --yellow:#ffd166;--blue:#5bc8ff;--green:#4ddc8a;
+  --red:#ff5f6d;--orange:#ff8c42;--purple:#b48bfa;--pink:#ff6b9d;
+  --font:'Figtree',sans-serif;--mono:'Fira Code',monospace;
+  --r:14px;
+}
+html{font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+
+/* animated grid background */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(91,200,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(91,200,255,0.03) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+}
+
+/* ── LANG BAR ── */
+#lang-bar{position:relative;z-index:10;display:flex;gap:6px;justify-content:flex-end;padding:1rem 1.25rem 0}
+.lb{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:5px 12px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.lb.active{background:var(--yellow);color:var(--bg);border-color:var(--yellow)}
+
+#app{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:1.25rem 1.25rem 4rem}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:1.25rem 0 2rem}
+.hero-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.6rem}
+.hero h1{font-size:clamp(2rem,6vw,3rem);font-weight:900;letter-spacing:-.04em;line-height:1.05;margin-bottom:.4rem}
+.hero h1 em{font-style:normal;color:var(--yellow)}
+.hero p{font-size:13px;color:var(--muted)}
+
+/* ── CATEGORY TABS ── */
+.cat-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem}
+.cat-tab{
+  padding:8px 16px;border-radius:20px;border:1px solid var(--border2);
+  background:var(--bg2);font-family:var(--font);font-size:12px;font-weight:600;
+  color:var(--muted);cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;gap:6px;
+}
+.cat-tab:hover{color:var(--text);border-color:var(--text)}
+.cat-tab.active{border-width:1.5px;color:var(--bg);font-weight:700}
+
+/* ── FORMULA CARDS ── */
+.formula-grid{display:grid;gap:1rem}
+
+.formula-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;
+  transition:border-color .2s;
+}
+.formula-card:hover{border-color:var(--border2)}
+
+.fc-header{
+  padding:1rem 1.25rem .75rem;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;
+}
+.fc-icon{font-size:24px;flex-shrink:0}
+.fc-title-wrap{flex:1}
+.fc-title{font-size:16px;font-weight:700;letter-spacing:-.02em;margin-bottom:2px}
+.fc-subtitle{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.fc-expand{font-size:18px;color:var(--muted);transition:transform .25s}
+.fc-expand.open{transform:rotate(180deg)}
+
+.fc-body{display:none;padding:1.25rem}
+.fc-body.open{display:block;animation:fadeDown .25s ease}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── FORMULA DISPLAY ── */
+.formula-display{
+  text-align:center;
+  background:var(--bg3);border-radius:10px;
+  padding:1rem 1.5rem;margin-bottom:1.25rem;
+  border:1px solid var(--border);
+}
+.formula-main{
+  font-family:var(--mono);font-size:clamp(1.2rem,4vw,1.8rem);
+  font-weight:600;letter-spacing:.05em;color:var(--yellow);
+  margin-bottom:.35rem;
+}
+.formula-vars{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center}
+.fv{background:var(--bg2);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)}
+
+/* ── MAGIC TRIANGLE ── */
+.triangle-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:1.25rem;gap:.5rem}
+.triangle-svg-wrap{position:relative;width:160px;height:140px}
+.triangle-svg-wrap svg{width:100%;height:100%}
+.tri-zone{cursor:pointer;transition:opacity .15s}
+.tri-zone:hover{opacity:.8}
+.tri-label{font-family:var(--mono);font-size:13px;font-weight:600;pointer-events:none}
+.triangle-hint{font-size:12px;color:var(--muted);font-family:var(--mono);text-align:center}
+
+/* ── CALCULATOR ── */
+.calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:1.25rem}
+
+.calc-field{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;padding:.85rem 1rem;
+  transition:border-color .2s;position:relative;
+}
+.calc-field.solving{border-color:var(--yellow);background:rgba(255,209,102,.06)}
+.calc-field.locked{opacity:.6}
+.cf-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;margin-bottom:.4rem;display:flex;justify-content:space-between;align-items:center}
+.cf-unit{color:var(--text);font-size:11px}
+.cf-input{
+  width:100%;background:transparent;border:none;outline:none;
+  font-family:var(--mono);font-size:1.3rem;font-weight:600;
+  color:var(--text);padding:0;
+}
+.cf-input.result-field{color:var(--yellow)}
+.cf-input::-webkit-outer-spin-button,
+.cf-input::-webkit-inner-spin-button{-webkit-appearance:none}
+.cf-solve-indicator{
+  position:absolute;top:8px;right:10px;
+  font-size:9px;font-family:var(--mono);
+  color:var(--yellow);letter-spacing:.06em;
+  display:none;
+}
+.calc-field.solving .cf-solve-indicator{display:block}
+
+.calc-actions{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.btn-solve{
+  flex:1;padding:11px 20px;border:none;border-radius:10px;
+  font-family:var(--font);font-size:14px;font-weight:700;
+  cursor:pointer;transition:all .2s;
+}
+.btn-solve:hover{transform:translateY(-2px)}
+.btn-clear-calc{
+  padding:11px 16px;border:1px solid var(--border2);border-radius:10px;
+  background:transparent;font-family:var(--font);font-size:13px;
+  color:var(--muted);cursor:pointer;transition:all .2s;
+}
+.btn-clear-calc:hover{color:var(--text);border-color:var(--text)}
+
+.solve-target-row{
+  display:flex;gap:6px;align-items:center;margin-bottom:1rem;
+  flex-wrap:wrap;
+}
+.solve-target-label{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.solve-target-btn{
+  font-family:var(--mono);font-size:11px;padding:4px 10px;
+  border-radius:20px;border:1px solid var(--border2);
+  background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.solve-target-btn.active{background:var(--yellow);color:var(--bg);border-color:var(--yellow)}
+
+/* ── RESULT BOX ── */
+.result-box{
+  background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.3);
+  border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.25rem;
+  display:none;animation:fadeDown .2s ease;
+}
+.result-box.show{display:block}
+.result-equation{font-family:var(--mono);font-size:1.1rem;font-weight:600;color:var(--yellow);margin-bottom:.35rem}
+.result-check{font-size:12px;color:rgba(255,209,102,.7)}
+
+/* ── EXAMPLES ── */
+.examples-wrap{margin-bottom:1rem}
+.examples-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem}
+.example-item{
+  background:var(--bg3);border-radius:8px;padding:.75rem 1rem;
+  margin-bottom:6px;border:1px solid var(--border);
+  cursor:pointer;transition:border-color .15s;
+}
+.example-item:hover{border-color:var(--border2)}
+.ex-problem{font-size:13px;line-height:1.55;margin-bottom:.4rem}
+.ex-solution{font-family:var(--mono);font-size:12px;color:var(--green);display:none}
+.ex-solution.show{display:block}
+.ex-hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* ── TIPS & ALERTS ── */
+.tip-box{
+  border-radius:8px;padding:.75rem 1rem;margin-bottom:.6rem;
+  font-size:12.5px;line-height:1.65;display:flex;gap:10px;
+}
+.tip-icon{flex-shrink:0;font-size:16px}
+.tip-green{background:rgba(77,220,138,.08);border-left:3px solid var(--green);color:rgba(220,232,248,.85)}
+.tip-yellow{background:rgba(255,209,102,.08);border-left:3px solid var(--yellow);color:rgba(220,232,248,.85)}
+.tip-red{background:rgba(255,95,109,.08);border-left:3px solid var(--red);color:rgba(220,232,248,.85)}
+.tip-blue{background:rgba(91,200,255,.08);border-left:3px solid var(--blue);color:rgba(220,232,248,.85)}
+
+/* ── SECTION LABEL ── */
+.sec{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:.85rem;margin-top:1.5rem}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,209,102,.4)}50%{box-shadow:0 0 0 6px rgba(255,209,102,0)}}
+</style>
+</head>
+<body>
+<div id="lang-bar">
+  <button class="lb active" onclick="setLang('fr')">FR</button>
+  <button class="lb" onclick="setLang('en')">EN</button>
+  <button class="lb" onclick="setLang('es')">ES</button>
+</div>
+<div id="app">
+
+  <div class="hero">
+    <span class="hero-tag" id="hero-tag">STE Secondaire 3 · Québec</span>
+    <h1 id="hero-h1">Formules <em>interactives</em></h1>
+    <p id="hero-p">Entre 2 valeurs connues → calcule la 3e automatiquement</p>
+  </div>
+
+  <div class="cat-tabs" id="cat-tabs"></div>
+  <div class="formula-grid" id="formula-grid"></div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  ALL FORMULA DATA
+// ═══════════════════════════════════════════════════════
+const FORMULAS = [
+  // ═══ CHIMIE ════════════════════════════════════════
+  {
+    id:'masse-vol', cat:'chimie',
+    icon:'⚗️',
+    color:'#5bc8ff',
+    btnColor:'linear-gradient(135deg,#1565c0,#0277bd)',
+    fr:{
+      title:'Masse volumique',subtitle:'ρ = m / V',
+      vars:{a:{sym:'ρ',name:'Masse volumique',unit:'g/mL ou g/cm³'},b:{sym:'m',name:'Masse',unit:'g'},c:{sym:'V',name:'Volume',unit:'mL ou cm³'}},
+      triangle:{top:'ρ',bl:'m',br:'V',hint:'Couvre la valeur cherchée → lis la formule'},
+      targets:['ρ (masse volumique)','m (masse)','V (volume)'],
+      formulas:['ρ = m ÷ V','m = ρ × V','V = m ÷ ρ'],
+      examples:[
+        {p:'Un liquide a une masse de 25,2 g et un volume de 18 mL. Quelle est sa masse volumique ?',s:'ρ = 25,2 ÷ 18 = 1,4 g/mL → c\'est probablement du glycérol'},
+        {p:'Quelle est la masse d\'un cube d\'or de 5 cm³ ? (ρ_or = 19,3 g/cm³)',s:'m = 19,3 × 5 = 96,5 g'},
+        {p:'Quel volume occupe 150 g d\'eau ? (ρ_eau = 1 g/mL)',s:'V = 150 ÷ 1 = 150 mL'},
+      ],
+      tips:[
+        {type:'green',icon:'💧',text:'L\'eau pure a une masse volumique de 1 g/mL — c\'est la référence universelle. Si ρ < 1, l\'objet flotte !'},
+        {type:'yellow',icon:'⚠️',text:'Attention aux unités : 1 g/cm³ = 1 g/mL = 1000 kg/m³. Vérifie toujours que m et V ont des unités compatibles.'},
+        {type:'blue',icon:'🧊',text:'La glace (ρ = 0,92 g/mL) flotte dans l\'eau (ρ = 1 g/mL) — c\'est pour ça que les icebergs flottent !'},
+      ],
+    },
+    en:{
+      title:'Density',subtitle:'ρ = m / V',
+      vars:{a:{sym:'ρ',name:'Density',unit:'g/mL or g/cm³'},b:{sym:'m',name:'Mass',unit:'g'},c:{sym:'V',name:'Volume',unit:'mL or cm³'}},
+      triangle:{top:'ρ',bl:'m',br:'V',hint:'Cover the value you want → read the formula'},
+      targets:['ρ (density)','m (mass)','V (volume)'],
+      formulas:['ρ = m ÷ V','m = ρ × V','V = m ÷ ρ'],
+      examples:[
+        {p:'A liquid has a mass of 25.2 g and a volume of 18 mL. What is its density?',s:'ρ = 25.2 ÷ 18 = 1.4 g/mL → likely glycerol'},
+        {p:'What is the mass of a 5 cm³ gold cube? (ρ_gold = 19.3 g/cm³)',s:'m = 19.3 × 5 = 96.5 g'},
+        {p:'What volume does 150 g of water occupy? (ρ_water = 1 g/mL)',s:'V = 150 ÷ 1 = 150 mL'},
+      ],
+      tips:[
+        {type:'green',icon:'💧',text:'Pure water has a density of 1 g/mL — the universal reference. If ρ < 1, the object floats!'},
+        {type:'yellow',icon:'⚠️',text:'Watch your units: 1 g/cm³ = 1 g/mL = 1000 kg/m³. Always check that m and V units are compatible.'},
+        {type:'blue',icon:'🧊',text:'Ice (ρ = 0.92 g/mL) floats in water (ρ = 1 g/mL) — that\'s why icebergs float!'},
+      ],
+    },
+    es:{
+      title:'Masa volumétrica',subtitle:'ρ = m / V',
+      vars:{a:{sym:'ρ',name:'Masa volumétrica',unit:'g/mL o g/cm³'},b:{sym:'m',name:'Masa',unit:'g'},c:{sym:'V',name:'Volumen',unit:'mL o cm³'}},
+      triangle:{top:'ρ',bl:'m',br:'V',hint:'Cubre el valor buscado → lee la fórmula'},
+      targets:['ρ (masa volumétrica)','m (masa)','V (volumen)'],
+      formulas:['ρ = m ÷ V','m = ρ × V','V = m ÷ ρ'],
+      examples:[
+        {p:'Un líquido tiene una masa de 25,2 g y un volumen de 18 mL. ¿Cuál es su masa volumétrica?',s:'ρ = 25,2 ÷ 18 = 1,4 g/mL → probablemente glicerol'},
+        {p:'¿Cuál es la masa de un cubo de oro de 5 cm³? (ρ_oro = 19,3 g/cm³)',s:'m = 19,3 × 5 = 96,5 g'},
+        {p:'¿Qué volumen ocupa 150 g de agua? (ρ_agua = 1 g/mL)',s:'V = 150 ÷ 1 = 150 mL'},
+      ],
+      tips:[
+        {type:'green',icon:'💧',text:'El agua pura tiene una masa volumétrica de 1 g/mL — es la referencia universal. Si ρ < 1, ¡el objeto flota!'},
+        {type:'yellow',icon:'⚠️',text:'Cuidado con las unidades: 1 g/cm³ = 1 g/mL = 1000 kg/m³. Verifica siempre que m y V tengan unidades compatibles.'},
+        {type:'blue',icon:'🧊',text:'El hielo (ρ = 0,92 g/mL) flota en agua (ρ = 1 g/mL) — ¡por eso flotan los icebergs!'},
+      ],
+    },
+    fields:[
+      {key:'a',sym:'ρ',unit:'g/mL',min:0.01,max:25,step:0.01,default:''},
+      {key:'b',sym:'m',unit:'g',min:0.1,max:10000,step:0.1,default:''},
+      {key:'c',sym:'V',unit:'mL',min:0.1,max:10000,step:0.1,default:''},
+    ],
+    solve:(a,b,c)=>{
+      if(b!==null&&c!==null) return {key:'a',val:b/c,eq:`ρ = ${b} ÷ ${c} = ${fmt(b/c)} g/mL`};
+      if(a!==null&&c!==null) return {key:'b',val:a*c,eq:`m = ${a} × ${c} = ${fmt(a*c)} g`};
+      if(a!==null&&b!==null) return {key:'c',val:b/a,eq:`V = ${b} ÷ ${a} = ${fmt(b/a)} mL`};
+      return null;
+    },
+  },
+  {
+    id:'concentration', cat:'chimie',
+    icon:'🧫', color:'#4ddc8a', btnColor:'linear-gradient(135deg,#1b5e20,#2e7d32)',
+    fr:{
+      title:'Concentration massique',subtitle:'C = m / V',
+      vars:{a:{sym:'C',name:'Concentration',unit:'g/L'},b:{sym:'m',name:'Masse de soluté',unit:'g'},c:{sym:'V',name:'Volume de solution',unit:'L'}},
+      triangle:{top:'C',bl:'m',br:'V',hint:'Couvre la valeur cherchée'},
+      targets:['C (concentration)','m (masse soluté)','V (volume solution)'],
+      formulas:['C = m ÷ V','m = C × V','V = m ÷ C'],
+      examples:[
+        {p:'On dissout 15 g de sel dans 0,5 L d\'eau. Quelle est la concentration ?',s:'C = 15 ÷ 0,5 = 30 g/L'},
+        {p:'Quelle masse de sucre faut-il pour préparer 2 L d\'une solution à 50 g/L ?',s:'m = 50 × 2 = 100 g'},
+        {p:'Dans quel volume faut-il dissoudre 8 g pour obtenir C = 16 g/L ?',s:'V = 8 ÷ 16 = 0,5 L'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'Attention : V est en litres (L), pas en mL ! 500 mL = 0,5 L. Toujours convertir avant de calculer.'},
+        {type:'yellow',icon:'⚠️',text:'La concentration ne change PAS si on ajoute plus de soluté ET plus de solvant en proportion égale.'},
+        {type:'blue',icon:'🔬',text:'L\'eau de mer a une concentration en sel d\'environ 35 g/L. L\'eau potable < 0,3 g/L de minéraux totaux.'},
+      ],
+    },
+    en:{
+      title:'Mass concentration',subtitle:'C = m / V',
+      vars:{a:{sym:'C',name:'Concentration',unit:'g/L'},b:{sym:'m',name:'Solute mass',unit:'g'},c:{sym:'V',name:'Solution volume',unit:'L'}},
+      triangle:{top:'C',bl:'m',br:'V',hint:'Cover the value you want'},
+      targets:['C (concentration)','m (solute mass)','V (solution volume)'],
+      formulas:['C = m ÷ V','m = C × V','V = m ÷ C'],
+      examples:[
+        {p:'15 g of salt is dissolved in 0.5 L of water. What is the concentration?',s:'C = 15 ÷ 0.5 = 30 g/L'},
+        {p:'What mass of sugar is needed to prepare 2 L of a 50 g/L solution?',s:'m = 50 × 2 = 100 g'},
+        {p:'In what volume should 8 g be dissolved to get C = 16 g/L?',s:'V = 8 ÷ 16 = 0.5 L'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'Note: V is in litres (L), not mL! 500 mL = 0.5 L. Always convert before calculating.'},
+        {type:'yellow',icon:'⚠️',text:'Concentration does NOT change if you add more solute AND more solvent in equal proportion.'},
+        {type:'blue',icon:'🔬',text:'Seawater has a salt concentration of about 35 g/L. Drinking water < 0.3 g/L total minerals.'},
+      ],
+    },
+    es:{
+      title:'Concentración másica',subtitle:'C = m / V',
+      vars:{a:{sym:'C',name:'Concentración',unit:'g/L'},b:{sym:'m',name:'Masa de soluto',unit:'g'},c:{sym:'V',name:'Volumen de solución',unit:'L'}},
+      triangle:{top:'C',bl:'m',br:'V',hint:'Cubre el valor buscado'},
+      targets:['C (concentración)','m (masa soluto)','V (volumen solución)'],
+      formulas:['C = m ÷ V','m = C × V','V = m ÷ C'],
+      examples:[
+        {p:'Se disuelven 15 g de sal en 0,5 L de agua. ¿Cuál es la concentración?',s:'C = 15 ÷ 0,5 = 30 g/L'},
+        {p:'¿Qué masa de azúcar se necesita para preparar 2 L de solución a 50 g/L?',s:'m = 50 × 2 = 100 g'},
+        {p:'¿En qué volumen disolver 8 g para obtener C = 16 g/L?',s:'V = 8 ÷ 16 = 0,5 L'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'Atención: V está en litros (L), ¡no en mL! 500 mL = 0,5 L. Siempre convertir antes de calcular.'},
+        {type:'yellow',icon:'⚠️',text:'La concentración NO cambia si se agrega más soluto Y más solvente en proporción igual.'},
+        {type:'blue',icon:'🔬',text:'El agua de mar tiene una concentración de sal de ~35 g/L. El agua potable < 0,3 g/L de minerales.'},
+      ],
+    },
+    fields:[
+      {key:'a',sym:'C',unit:'g/L',min:0.01,max:1000,step:0.01,default:''},
+      {key:'b',sym:'m',unit:'g',min:0.01,max:10000,step:0.01,default:''},
+      {key:'c',sym:'V',unit:'L',min:0.001,max:1000,step:0.001,default:''},
+    ],
+    solve:(a,b,c)=>{
+      if(b!==null&&c!==null) return {key:'a',val:b/c,eq:`C = ${b} ÷ ${c} = ${fmt(b/c)} g/L`};
+      if(a!==null&&c!==null) return {key:'b',val:a*c,eq:`m = ${a} × ${c} = ${fmt(a*c)} g`};
+      if(a!==null&&b!==null) return {key:'c',val:b/a,eq:`V = ${b} ÷ ${a} = ${fmt(b/a)} L`};
+      return null;
+    },
+  },
+  {
+    id:'dilution', cat:'chimie',
+    icon:'💧', color:'#ff6b9d', btnColor:'linear-gradient(135deg,#880e4f,#c2185b)',
+    fr:{
+      title:'Dilution',subtitle:'C₁ × V₁ = C₂ × V₂',
+      vars:{a:{sym:'C₁',name:'Concentration initiale',unit:'g/L'},b:{sym:'V₁',name:'Volume prélevé',unit:'L'},c:{sym:'C₂',name:'Concentration finale',unit:'g/L'},d:{sym:'V₂',name:'Volume final',unit:'L'}},
+      triangle:{top:'C₁V₁',bl:'C₂',br:'V₂',hint:'La quantité de soluté est conservée'},
+      targets:['C₁ (conc. initiale)','V₁ (vol. prélevé)','C₂ (conc. finale)','V₂ (vol. final)'],
+      formulas:['C₁ × V₁ = C₂ × V₂','C₁ = C₂V₂ ÷ V₁','V₁ = C₂V₂ ÷ C₁','C₂ = C₁V₁ ÷ V₂','V₂ = C₁V₁ ÷ C₂'],
+      examples:[
+        {p:'On prélève 50 mL (0,05 L) d\'une solution à 200 g/L et on complète à 500 mL (0,5 L). Quelle est C₂ ?',s:'C₂ = (200 × 0,05) ÷ 0,5 = 10 ÷ 0,5 = 20 g/L'},
+        {p:'On veut obtenir 1 L d\'une solution à 5 g/L à partir d\'une solution mère à 100 g/L. Quel volume prélever ?',s:'V₁ = (5 × 1) ÷ 100 = 0,05 L = 50 mL'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'Principe clé : la quantité de soluté ne change pas ! Ce qui change, c\'est le volume total (on ajoute du solvant).'},
+        {type:'red',icon:'🚨',text:'ERREUR FRÉQUENTE : confondre V₁ (volume prélevé) et V₂ (volume final, APRÈS ajout du solvant). V₂ > V₁ toujours.'},
+        {type:'blue',icon:'🧪',text:'Exemple réel : concentré de jus d\'orange à 500 g/L, dilué 10x → C₂ = 50 g/L dans le verre.'},
+      ],
+    },
+    en:{
+      title:'Dilution',subtitle:'C₁ × V₁ = C₂ × V₂',
+      vars:{a:{sym:'C₁',name:'Initial concentration',unit:'g/L'},b:{sym:'V₁',name:'Volume taken',unit:'L'},c:{sym:'C₂',name:'Final concentration',unit:'g/L'},d:{sym:'V₂',name:'Final volume',unit:'L'}},
+      triangle:{top:'C₁V₁',bl:'C₂',br:'V₂',hint:'Solute quantity is conserved'},
+      targets:['C₁ (initial conc.)','V₁ (vol. taken)','C₂ (final conc.)','V₂ (final vol.)'],
+      formulas:['C₁ × V₁ = C₂ × V₂','C₁ = C₂V₂ ÷ V₁','V₁ = C₂V₂ ÷ C₁','C₂ = C₁V₁ ÷ V₂','V₂ = C₁V₁ ÷ C₂'],
+      examples:[
+        {p:'50 mL (0.05 L) of a 200 g/L solution is taken and topped up to 500 mL (0.5 L). What is C₂?',s:'C₂ = (200 × 0.05) ÷ 0.5 = 10 ÷ 0.5 = 20 g/L'},
+        {p:'To get 1 L of a 5 g/L solution from a 100 g/L stock solution, what volume to take?',s:'V₁ = (5 × 1) ÷ 100 = 0.05 L = 50 mL'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'Key principle: the amount of solute does NOT change! What changes is the total volume (solvent is added).'},
+        {type:'red',icon:'🚨',text:'COMMON ERROR: confusing V₁ (volume taken) and V₂ (final volume, AFTER adding solvent). V₂ > V₁ always.'},
+        {type:'blue',icon:'🧪',text:'Real example: orange juice concentrate at 500 g/L, diluted 10x → C₂ = 50 g/L in the glass.'},
+      ],
+    },
+    es:{
+      title:'Dilución',subtitle:'C₁ × V₁ = C₂ × V₂',
+      vars:{a:{sym:'C₁',name:'Concentración inicial',unit:'g/L'},b:{sym:'V₁',name:'Volumen tomado',unit:'L'},c:{sym:'C₂',name:'Concentración final',unit:'g/L'},d:{sym:'V₂',name:'Volumen final',unit:'L'}},
+      triangle:{top:'C₁V₁',bl:'C₂',br:'V₂',hint:'La cantidad de soluto se conserva'},
+      targets:['C₁ (conc. inicial)','V₁ (vol. tomado)','C₂ (conc. final)','V₂ (vol. final)'],
+      formulas:['C₁ × V₁ = C₂ × V₂','C₁ = C₂V₂ ÷ V₁','V₁ = C₂V₂ ÷ C₁','C₂ = C₁V₁ ÷ V₂','V₂ = C₁V₁ ÷ C₂'],
+      examples:[
+        {p:'Se toman 50 mL (0,05 L) de una solución a 200 g/L y se completa a 500 mL (0,5 L). ¿Cuál es C₂?',s:'C₂ = (200 × 0,05) ÷ 0,5 = 10 ÷ 0,5 = 20 g/L'},
+        {p:'Para obtener 1 L de solución a 5 g/L de una solución madre a 100 g/L, ¿qué volumen tomar?',s:'V₁ = (5 × 1) ÷ 100 = 0,05 L = 50 mL'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'Principio clave: ¡la cantidad de soluto NO cambia! Lo que cambia es el volumen total (se agrega solvente).'},
+        {type:'red',icon:'🚨',text:'ERROR FRECUENTE: confundir V₁ (volumen tomado) y V₂ (volumen final, DESPUÉS de agregar solvente). Siempre V₂ > V₁.'},
+        {type:'blue',icon:'🧪',text:'Ejemplo real: concentrado de jugo de naranja a 500 g/L, diluido 10x → C₂ = 50 g/L en el vaso.'},
+      ],
+    },
+    fields:[
+      {key:'a',sym:'C₁',unit:'g/L',min:0,max:1000,step:0.1,default:''},
+      {key:'b',sym:'V₁',unit:'L',min:0,max:1000,step:0.001,default:''},
+      {key:'c',sym:'C₂',unit:'g/L',min:0,max:1000,step:0.1,default:''},
+      {key:'d',sym:'V₂',unit:'L',min:0,max:1000,step:0.001,default:''},
+    ],
+    solve:(a,b,c,d)=>{
+      if(b!==null&&c!==null&&d!==null) return {key:'a',val:(c*d)/b,eq:`C₁ = (${c}×${d})÷${b} = ${fmt((c*d)/b)} g/L`};
+      if(a!==null&&c!==null&&d!==null) return {key:'b',val:(c*d)/a,eq:`V₁ = (${c}×${d})÷${a} = ${fmt((c*d)/a)} L`};
+      if(a!==null&&b!==null&&d!==null) return {key:'c',val:(a*b)/d,eq:`C₂ = (${a}×${b})÷${d} = ${fmt((a*b)/d)} g/L`};
+      if(a!==null&&b!==null&&c!==null) return {key:'d',val:(a*b)/c,eq:`V₂ = (${a}×${b})÷${c} = ${fmt((a*b)/c)} L`};
+      return null;
+    },
+  },
+
+  // ═══ PHYSIQUE ══════════════════════════════════════
+  {
+    id:'pression', cat:'physique',
+    icon:'🔧', color:'#ff8c42', btnColor:'linear-gradient(135deg,#bf360c,#e64a19)',
+    fr:{
+      title:'Pression',subtitle:'P = F / A',
+      vars:{a:{sym:'P',name:'Pression',unit:'Pa (N/m²)'},b:{sym:'F',name:'Force',unit:'N'},c:{sym:'A',name:'Aire',unit:'m²'}},
+      triangle:{top:'P',bl:'F',br:'A',hint:'Couvre P pour voir F÷A'},
+      targets:['P (pression)','F (force)','A (aire / surface)'],
+      formulas:['P = F ÷ A','F = P × A','A = F ÷ P'],
+      examples:[
+        {p:'Une force de 500 N s\'exerce sur une surface de 0,25 m². Quelle est la pression ?',s:'P = 500 ÷ 0,25 = 2 000 Pa'},
+        {p:'Une pression de 150 000 Pa s\'exerce sur 0,02 m². Quelle force cela représente-t-il ?',s:'F = 150 000 × 0,02 = 3 000 N'},
+        {p:'Un patin de raquette à neige exerce une force de 700 N. Si P = 2 333 Pa, quelle est son aire ?',s:'A = 700 ÷ 2 333 = 0,3 m²'},
+      ],
+      tips:[
+        {type:'green',icon:'👟',text:'Pourquoi les skis sont larges ? Pour réduire la pression sur la neige (A grande → P petite). Les talons aiguilles font l\'inverse !'},
+        {type:'yellow',icon:'⚠️',text:'1 Pa = 1 N/m². La pression atmosphérique normale est ~101 325 Pa = ~1 atm. Très grande comparée aux exercices !'},
+        {type:'red',icon:'🚨',text:'ERREUR FRÉQUENTE : A doit être en m², pas cm²! 1 cm² = 0,0001 m². Toujours convertir.'},
+      ],
+    },
+    en:{
+      title:'Pressure',subtitle:'P = F / A',
+      vars:{a:{sym:'P',name:'Pressure',unit:'Pa (N/m²)'},b:{sym:'F',name:'Force',unit:'N'},c:{sym:'A',name:'Area',unit:'m²'}},
+      triangle:{top:'P',bl:'F',br:'A',hint:'Cover P to see F÷A'},
+      targets:['P (pressure)','F (force)','A (area / surface)'],
+      formulas:['P = F ÷ A','F = P × A','A = F ÷ P'],
+      examples:[
+        {p:'A force of 500 N acts on a surface of 0.25 m². What is the pressure?',s:'P = 500 ÷ 0.25 = 2,000 Pa'},
+        {p:'A pressure of 150,000 Pa acts on 0.02 m². What force does this represent?',s:'F = 150,000 × 0.02 = 3,000 N'},
+        {p:'A snowshoe exerts a force of 700 N. If P = 2,333 Pa, what is its area?',s:'A = 700 ÷ 2,333 = 0.3 m²'},
+      ],
+      tips:[
+        {type:'green',icon:'👟',text:'Why are skis wide? To reduce pressure on snow (large A → small P). Stiletto heels do the opposite!'},
+        {type:'yellow',icon:'⚠️',text:'1 Pa = 1 N/m². Normal atmospheric pressure is ~101,325 Pa = ~1 atm. Much larger than typical exercises!'},
+        {type:'red',icon:'🚨',text:'COMMON ERROR: A must be in m², not cm²! 1 cm² = 0.0001 m². Always convert.'},
+      ],
+    },
+    es:{
+      title:'Presión',subtitle:'P = F / A',
+      vars:{a:{sym:'P',name:'Presión',unit:'Pa (N/m²)'},b:{sym:'F',name:'Fuerza',unit:'N'},c:{sym:'A',name:'Área',unit:'m²'}},
+      triangle:{top:'P',bl:'F',br:'A',hint:'Cubre P para ver F÷A'},
+      targets:['P (presión)','F (fuerza)','A (área / superficie)'],
+      formulas:['P = F ÷ A','F = P × A','A = F ÷ P'],
+      examples:[
+        {p:'Una fuerza de 500 N actúa sobre una superficie de 0,25 m². ¿Cuál es la presión?',s:'P = 500 ÷ 0,25 = 2 000 Pa'},
+        {p:'Una presión de 150 000 Pa actúa sobre 0,02 m². ¿Qué fuerza representa?',s:'F = 150 000 × 0,02 = 3 000 N'},
+        {p:'Una raqueta de nieve ejerce 700 N. Si P = 2 333 Pa, ¿cuál es su área?',s:'A = 700 ÷ 2 333 = 0,3 m²'},
+      ],
+      tips:[
+        {type:'green',icon:'👟',text:'¿Por qué los esquís son anchos? Para reducir la presión sobre la nieve (A grande → P pequeña). ¡Los tacones hacen lo opuesto!'},
+        {type:'yellow',icon:'⚠️',text:'1 Pa = 1 N/m². La presión atmosférica normal es ~101 325 Pa = ~1 atm. ¡Mucho mayor que los ejercicios típicos!'},
+        {type:'red',icon:'🚨',text:'ERROR FRECUENTE: ¡A debe estar en m², no cm²! 1 cm² = 0,0001 m². Siempre convertir.'},
+      ],
+    },
+    fields:[
+      {key:'a',sym:'P',unit:'Pa',min:0,max:1e7,step:1,default:''},
+      {key:'b',sym:'F',unit:'N',min:0,max:1e6,step:0.1,default:''},
+      {key:'c',sym:'A',unit:'m²',min:0,max:1000,step:0.0001,default:''},
+    ],
+    solve:(a,b,c)=>{
+      if(b!==null&&c!==null&&c!==0) return {key:'a',val:b/c,eq:`P = ${b} ÷ ${c} = ${fmt(b/c)} Pa`};
+      if(a!==null&&c!==null) return {key:'b',val:a*c,eq:`F = ${a} × ${c} = ${fmt(a*c)} N`};
+      if(a!==null&&b!==null&&a!==0) return {key:'c',val:b/a,eq:`A = ${b} ÷ ${a} = ${fmt(b/a)} m²`};
+      return null;
+    },
+  },
+
+  // ═══ ÉLECTRICITÉ ═══════════════════════════════════
+  {
+    id:'ohm', cat:'electricite',
+    icon:'⚡', color:'#ffd166', btnColor:'linear-gradient(135deg,#f57f17,#f9a825)',
+    fr:{
+      title:'Loi d\'Ohm',subtitle:'V = R × I',
+      vars:{a:{sym:'V',name:'Tension',unit:'Volt (V)'},b:{sym:'R',name:'Résistance',unit:'Ohm (Ω)'},c:{sym:'I',name:'Intensité',unit:'Ampère (A)'}},
+      triangle:{top:'V',bl:'R',br:'I',hint:'Couvre la valeur cherchée'},
+      targets:['V (tension)','R (résistance)','I (intensité)'],
+      formulas:['V = R × I','R = V ÷ I','I = V ÷ R'],
+      examples:[
+        {p:'Une résistance de 10 Ω est parcourue par un courant de 2 A. Quelle tension ?',s:'V = 10 × 2 = 20 V'},
+        {p:'Une lampe de 12 V consomme 0,5 A. Quelle est sa résistance ?',s:'R = 12 ÷ 0,5 = 24 Ω'},
+        {p:'Une résistance de 5 Ω est soumise à 15 V. Quelle est l\'intensité ?',s:'I = 15 ÷ 5 = 3 A'},
+      ],
+      tips:[
+        {type:'green',icon:'🔺',text:'Astuce du triangle : écris V en haut, R×I en bas. Couvre la lettre cherchée → lis la formule directement.'},
+        {type:'blue',icon:'💡',text:'Georg Simon Ohm a découvert cette loi en 1827. L\'unité Ohm (Ω) porte son nom.'},
+        {type:'yellow',icon:'⚠️',text:'La loi d\'Ohm ne s\'applique qu\'aux résistances linéaires (pas aux diodes, ampoules à filament, etc.).'},
+      ],
+    },
+    en:{
+      title:'Ohm\'s Law',subtitle:'V = R × I',
+      vars:{a:{sym:'V',name:'Voltage',unit:'Volt (V)'},b:{sym:'R',name:'Resistance',unit:'Ohm (Ω)'},c:{sym:'I',name:'Current',unit:'Ampere (A)'}},
+      triangle:{top:'V',bl:'R',br:'I',hint:'Cover the value you want'},
+      targets:['V (voltage)','R (resistance)','I (current)'],
+      formulas:['V = R × I','R = V ÷ I','I = V ÷ R'],
+      examples:[
+        {p:'A 10 Ω resistor carries a current of 2 A. What is the voltage?',s:'V = 10 × 2 = 20 V'},
+        {p:'A 12 V bulb uses 0.5 A. What is its resistance?',s:'R = 12 ÷ 0.5 = 24 Ω'},
+        {p:'A 5 Ω resistor has 15 V across it. What is the current?',s:'I = 15 ÷ 5 = 3 A'},
+      ],
+      tips:[
+        {type:'green',icon:'🔺',text:'Triangle trick: write V on top, R×I at the bottom. Cover the letter you want → read the formula directly.'},
+        {type:'blue',icon:'💡',text:'Georg Simon Ohm discovered this law in 1827. The unit Ohm (Ω) is named after him.'},
+        {type:'yellow',icon:'⚠️',text:'Ohm\'s Law only applies to linear resistors (not diodes, filament bulbs, etc.).'},
+      ],
+    },
+    es:{
+      title:'Ley de Ohm',subtitle:'V = R × I',
+      vars:{a:{sym:'V',name:'Tensión',unit:'Volt (V)'},b:{sym:'R',name:'Resistencia',unit:'Ohm (Ω)'},c:{sym:'I',name:'Intensidad',unit:'Ampere (A)'}},
+      triangle:{top:'V',bl:'R',br:'I',hint:'Cubre el valor buscado'},
+      targets:['V (tensión)','R (resistencia)','I (intensidad)'],
+      formulas:['V = R × I','R = V ÷ I','I = V ÷ R'],
+      examples:[
+        {p:'Una resistencia de 10 Ω es recorrida por una corriente de 2 A. ¿Qué tensión?',s:'V = 10 × 2 = 20 V'},
+        {p:'Una lámpara de 12 V consume 0,5 A. ¿Cuál es su resistencia?',s:'R = 12 ÷ 0,5 = 24 Ω'},
+        {p:'Una resistencia de 5 Ω tiene 15 V. ¿Cuál es la intensidad?',s:'I = 15 ÷ 5 = 3 A'},
+      ],
+      tips:[
+        {type:'green',icon:'🔺',text:'Truco del triángulo: escribe V arriba, R×I abajo. Cubre la letra buscada → lee la fórmula directamente.'},
+        {type:'blue',icon:'💡',text:'Georg Simon Ohm descubrió esta ley en 1827. La unidad Ohm (Ω) lleva su nombre.'},
+        {type:'yellow',icon:'⚠️',text:'La ley de Ohm solo aplica a resistencias lineales (no diodos, lámparas de filamento, etc.).'},
+      ],
+    },
+    fields:[
+      {key:'a',sym:'V',unit:'V',min:0,max:1000,step:0.1,default:''},
+      {key:'b',sym:'R',unit:'Ω',min:0,max:10000,step:0.1,default:''},
+      {key:'c',sym:'I',unit:'A',min:0,max:100,step:0.01,default:''},
+    ],
+    solve:(a,b,c)=>{
+      if(b!==null&&c!==null) return {key:'a',val:b*c,eq:`V = ${b} × ${c} = ${fmt(b*c)} V`};
+      if(a!==null&&c!==null&&c!==0) return {key:'b',val:a/c,eq:`R = ${a} ÷ ${c} = ${fmt(a/c)} Ω`};
+      if(a!==null&&b!==null&&b!==0) return {key:'c',val:a/b,eq:`I = ${a} ÷ ${b} = ${fmt(a/b)} A`};
+      return null;
+    },
+  },
+  {
+    id:'puissance', cat:'electricite',
+    icon:'💡', color:'#b48bfa', btnColor:'linear-gradient(135deg,#4a148c,#6a1b9a)',
+    fr:{
+      title:'Puissance électrique',subtitle:'P = V × I',
+      vars:{a:{sym:'P',name:'Puissance',unit:'Watt (W)'},b:{sym:'V',name:'Tension',unit:'Volt (V)'},c:{sym:'I',name:'Intensité',unit:'Ampère (A)'}},
+      triangle:{top:'P',bl:'V',br:'I',hint:'Même triangle que la loi d\'Ohm !'},
+      targets:['P (puissance)','V (tension)','I (intensité)'],
+      formulas:['P = V × I','V = P ÷ I','I = P ÷ V'],
+      examples:[
+        {p:'Une ampoule de 12 V consomme 2 A. Quelle est sa puissance ?',s:'P = 12 × 2 = 24 W'},
+        {p:'Un appareil de 500 W fonctionne sous 230 V. Quelle intensité consomme-t-il ?',s:'I = 500 ÷ 230 = 2,17 A'},
+        {p:'Un fer à repasser consomme 8 A sous 230 V. Quelle est sa puissance ?',s:'P = 230 × 8 = 1 840 W = 1,84 kW'},
+      ],
+      tips:[
+        {type:'green',icon:'🏠',text:'La plupart des appareils ménagers fonctionnent sous 120 V (Amérique du Nord) ou 230 V (Europe). Le four électrique = ~4 000 W !'},
+        {type:'blue',icon:'⚡',text:'1 kWh (kilowatt-heure) = énergie d\'un appareil de 1 000 W pendant 1 heure. C\'est l\'unité sur ta facture d\'électricité.'},
+        {type:'yellow',icon:'⚠️',text:'La puissance combinée avec la loi d\'Ohm : P = V×I = R×I² = V²÷R. Trois façons de la calculer !'},
+      ],
+    },
+    en:{
+      title:'Electrical power',subtitle:'P = V × I',
+      vars:{a:{sym:'P',name:'Power',unit:'Watt (W)'},b:{sym:'V',name:'Voltage',unit:'Volt (V)'},c:{sym:'I',name:'Current',unit:'Ampere (A)'}},
+      triangle:{top:'P',bl:'V',br:'I',hint:'Same triangle as Ohm\'s Law!'},
+      targets:['P (power)','V (voltage)','I (current)'],
+      formulas:['P = V × I','V = P ÷ I','I = P ÷ V'],
+      examples:[
+        {p:'A 12 V bulb uses 2 A. What is its power?',s:'P = 12 × 2 = 24 W'},
+        {p:'A 500 W appliance runs on 230 V. What current does it use?',s:'I = 500 ÷ 230 = 2.17 A'},
+        {p:'An iron uses 8 A at 230 V. What is its power?',s:'P = 230 × 8 = 1,840 W = 1.84 kW'},
+      ],
+      tips:[
+        {type:'green',icon:'🏠',text:'Most household appliances run on 120 V (North America) or 230 V (Europe). An electric oven = ~4,000 W!'},
+        {type:'blue',icon:'⚡',text:'1 kWh (kilowatt-hour) = energy of a 1,000 W appliance for 1 hour. That\'s the unit on your electricity bill.'},
+        {type:'yellow',icon:'⚠️',text:'Power combined with Ohm\'s Law: P = V×I = R×I² = V²÷R. Three ways to calculate it!'},
+      ],
+    },
+    es:{
+      title:'Potencia eléctrica',subtitle:'P = V × I',
+      vars:{a:{sym:'P',name:'Potencia',unit:'Watt (W)'},b:{sym:'V',name:'Tensión',unit:'Volt (V)'},c:{sym:'I',name:'Intensidad',unit:'Ampere (A)'}},
+      triangle:{top:'P',bl:'V',br:'I',hint:'¡Mismo triángulo que la ley de Ohm!'},
+      targets:['P (potencia)','V (tensión)','I (intensidad)'],
+      formulas:['P = V × I','V = P ÷ I','I = P ÷ V'],
+      examples:[
+        {p:'Una lámpara de 12 V consume 2 A. ¿Cuál es su potencia?',s:'P = 12 × 2 = 24 W'},
+        {p:'Un aparato de 500 W funciona a 230 V. ¿Qué intensidad consume?',s:'I = 500 ÷ 230 = 2,17 A'},
+        {p:'Una plancha consume 8 A a 230 V. ¿Cuál es su potencia?',s:'P = 230 × 8 = 1 840 W = 1,84 kW'},
+      ],
+      tips:[
+        {type:'green',icon:'🏠',text:'La mayoría de aparatos domésticos funcionan a 120 V (América del Norte) o 230 V (Europa). ¡El horno eléctrico = ~4 000 W!'},
+        {type:'blue',icon:'⚡',text:'1 kWh (kilovatio-hora) = energía de un aparato de 1 000 W durante 1 hora. Es la unidad en tu factura de electricidad.'},
+        {type:'yellow',icon:'⚠️',text:'La potencia combinada con la ley de Ohm: P = V×I = R×I² = V²÷R. ¡Tres formas de calcularla!'},
+      ],
+    },
+    fields:[
+      {key:'a',sym:'P',unit:'W',min:0,max:100000,step:0.1,default:''},
+      {key:'b',sym:'V',unit:'V',min:0,max:10000,step:0.1,default:''},
+      {key:'c',sym:'I',unit:'A',min:0,max:1000,step:0.01,default:''},
+    ],
+    solve:(a,b,c)=>{
+      if(b!==null&&c!==null) return {key:'a',val:b*c,eq:`P = ${b} × ${c} = ${fmt(b*c)} W`};
+      if(a!==null&&c!==null&&c!==0) return {key:'b',val:a/c,eq:`V = ${a} ÷ ${c} = ${fmt(a/c)} V`};
+      if(a!==null&&b!==null&&b!==0) return {key:'c',val:a/b,eq:`I = ${a} ÷ ${b} = ${fmt(a/b)} A`};
+      return null;
+    },
+  },
+
+  // ═══ CIRCUITS ══════════════════════════════════════
+  {
+    id:'serie', cat:'electricite',
+    icon:'➡️', color:'#5bc8ff', btnColor:'linear-gradient(135deg,#01579b,#0288d1)',
+    fr:{
+      title:'Circuit série — Résistance totale',subtitle:'Rₜ = R₁ + R₂ + …',
+      vars:{a:{sym:'Rₜ',name:'Résistance totale',unit:'Ω'},b:{sym:'R₁',name:'Résistance 1',unit:'Ω'},c:{sym:'R₂',name:'Résistance 2',unit:'Ω'}},
+      triangle:{top:'Rₜ',bl:'R₁',br:'R₂',hint:'En série, tout s\'additionne'},
+      targets:['Rₜ (résistance totale)','R₁','R₂'],
+      formulas:['Rₜ = R₁ + R₂','R₁ = Rₜ − R₂','R₂ = Rₜ − R₁'],
+      examples:[
+        {p:'Deux résistances de 4 Ω et 6 Ω en série. Résistance totale ?',s:'Rₜ = 4 + 6 = 10 Ω'},
+        {p:'Rₜ = 15 Ω et R₁ = 9 Ω. Quelle est R₂ ?',s:'R₂ = 15 − 9 = 6 Ω'},
+        {p:'Trois résistances de 3 Ω, 5 Ω et 7 Ω en série. Rₜ = ?',s:'Rₜ = 3 + 5 + 7 = 15 Ω'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'En série : I est identique partout. V se divise : V = V₁ + V₂. La résistance totale est toujours PLUS GRANDE que chaque résistance.'},
+        {type:'yellow',icon:'⚠️',text:'Si une résistance en série tombe en panne → tout le circuit s\'arrête. C\'est le problème des vieilles guirlandes de Noël !'},
+      ],
+    },
+    en:{
+      title:'Series circuit — Total resistance',subtitle:'Rₜ = R₁ + R₂ + …',
+      vars:{a:{sym:'Rₜ',name:'Total resistance',unit:'Ω'},b:{sym:'R₁',name:'Resistance 1',unit:'Ω'},c:{sym:'R₂',name:'Resistance 2',unit:'Ω'}},
+      triangle:{top:'Rₜ',bl:'R₁',br:'R₂',hint:'In series, everything adds up'},
+      targets:['Rₜ (total resistance)','R₁','R₂'],
+      formulas:['Rₜ = R₁ + R₂','R₁ = Rₜ − R₂','R₂ = Rₜ − R₁'],
+      examples:[
+        {p:'Two resistors of 4 Ω and 6 Ω in series. Total resistance?',s:'Rₜ = 4 + 6 = 10 Ω'},
+        {p:'Rₜ = 15 Ω and R₁ = 9 Ω. What is R₂?',s:'R₂ = 15 − 9 = 6 Ω'},
+        {p:'Three resistors of 3 Ω, 5 Ω and 7 Ω in series. Rₜ = ?',s:'Rₜ = 3 + 5 + 7 = 15 Ω'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'In series: I is the same everywhere. V divides: V = V₁ + V₂. Total resistance is always GREATER than each individual one.'},
+        {type:'yellow',icon:'⚠️',text:'If one series resistor fails → the whole circuit stops. That\'s why old Christmas lights all go out when one bulb fails!'},
+      ],
+    },
+    es:{
+      title:'Circuito serie — Resistencia total',subtitle:'Rₜ = R₁ + R₂ + …',
+      vars:{a:{sym:'Rₜ',name:'Resistencia total',unit:'Ω'},b:{sym:'R₁',name:'Resistencia 1',unit:'Ω'},c:{sym:'R₂',name:'Resistencia 2',unit:'Ω'}},
+      triangle:{top:'Rₜ',bl:'R₁',br:'R₂',hint:'En serie, todo se suma'},
+      targets:['Rₜ (resistencia total)','R₁','R₂'],
+      formulas:['Rₜ = R₁ + R₂','R₁ = Rₜ − R₂','R₂ = Rₜ − R₁'],
+      examples:[
+        {p:'Dos resistencias de 4 Ω y 6 Ω en serie. ¿Resistencia total?',s:'Rₜ = 4 + 6 = 10 Ω'},
+        {p:'Rₜ = 15 Ω y R₁ = 9 Ω. ¿Cuál es R₂?',s:'R₂ = 15 − 9 = 6 Ω'},
+        {p:'Tres resistencias de 3 Ω, 5 Ω y 7 Ω en serie. Rₜ = ?',s:'Rₜ = 3 + 5 + 7 = 15 Ω'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'En serie: I es igual en todas partes. V se divide: V = V₁ + V₂. La resistencia total es siempre MAYOR que cada resistencia individual.'},
+        {type:'yellow',icon:'⚠️',text:'Si una resistencia en serie falla → todo el circuito se detiene. ¡Por eso las viejas luces navideñas se apagan todas cuando falla un bombillo!'},
+      ],
+    },
+    fields:[
+      {key:'a',sym:'Rₜ',unit:'Ω',min:0,max:10000,step:0.1,default:''},
+      {key:'b',sym:'R₁',unit:'Ω',min:0,max:10000,step:0.1,default:''},
+      {key:'c',sym:'R₂',unit:'Ω',min:0,max:10000,step:0.1,default:''},
+    ],
+    solve:(a,b,c)=>{
+      if(b!==null&&c!==null) return {key:'a',val:b+c,eq:`Rₜ = ${b} + ${c} = ${fmt(b+c)} Ω`};
+      if(a!==null&&c!==null) return {key:'b',val:a-c,eq:`R₁ = ${a} − ${c} = ${fmt(a-c)} Ω`};
+      if(a!==null&&b!==null) return {key:'c',val:a-b,eq:`R₂ = ${a} − ${b} = ${fmt(a-b)} Ω`};
+      return null;
+    },
+  },
+  {
+    id:'parallele', cat:'electricite',
+    icon:'⇉', color:'#4ddc8a', btnColor:'linear-gradient(135deg,#1b5e20,#388e3c)',
+    fr:{
+      title:'Circuit parallèle — Résistance totale',subtitle:'1/Rₜ = 1/R₁ + 1/R₂',
+      vars:{a:{sym:'Rₜ',name:'Résistance totale',unit:'Ω'},b:{sym:'R₁',name:'Résistance 1',unit:'Ω'},c:{sym:'R₂',name:'Résistance 2',unit:'Ω'}},
+      triangle:{top:'Rₜ',bl:'R₁',br:'R₂',hint:'En parallèle, Rₜ est plus petite !'},
+      targets:['Rₜ (résistance totale)'],
+      formulas:['1/Rₜ = 1/R₁ + 1/R₂','Rₜ = (R₁ × R₂) ÷ (R₁ + R₂)'],
+      examples:[
+        {p:'Deux résistances de 6 Ω et 6 Ω en parallèle. Rₜ = ?',s:'Rₜ = (6×6)÷(6+6) = 36÷12 = 3 Ω'},
+        {p:'R₁ = 4 Ω et R₂ = 12 Ω en parallèle. Rₜ = ?',s:'Rₜ = (4×12)÷(4+12) = 48÷16 = 3 Ω'},
+        {p:'R₁ = 10 Ω et R₂ = 10 Ω en parallèle. Rₜ = ?',s:'Rₜ = (10×10)÷(10+10) = 100÷20 = 5 Ω'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'En parallèle, Rₜ est TOUJOURS plus petite que la plus petite résistance. Deux résistances égales en parallèle → Rₜ = R/2.'},
+        {type:'blue',icon:'🏠',text:'Les appareils dans une maison sont branchés en PARALLÈLE. Chacun reçoit la même tension (120 V) et peut fonctionner indépendamment.'},
+        {type:'yellow',icon:'⚠️',text:'ERREUR FRÉQUENTE : oublier de calculer l\'inverse à la fin ! 1/Rₜ = 0,333 → Rₜ = 1/0,333 = 3 Ω (pas 0,333 Ω).'},
+      ],
+    },
+    en:{
+      title:'Parallel circuit — Total resistance',subtitle:'1/Rₜ = 1/R₁ + 1/R₂',
+      vars:{a:{sym:'Rₜ',name:'Total resistance',unit:'Ω'},b:{sym:'R₁',name:'Resistance 1',unit:'Ω'},c:{sym:'R₂',name:'Resistance 2',unit:'Ω'}},
+      triangle:{top:'Rₜ',bl:'R₁',br:'R₂',hint:'In parallel, Rₜ is smaller!'},
+      targets:['Rₜ (total resistance)'],
+      formulas:['1/Rₜ = 1/R₁ + 1/R₂','Rₜ = (R₁ × R₂) ÷ (R₁ + R₂)'],
+      examples:[
+        {p:'Two 6 Ω resistors in parallel. Rₜ = ?',s:'Rₜ = (6×6)÷(6+6) = 36÷12 = 3 Ω'},
+        {p:'R₁ = 4 Ω and R₂ = 12 Ω in parallel. Rₜ = ?',s:'Rₜ = (4×12)÷(4+12) = 48÷16 = 3 Ω'},
+        {p:'R₁ = 10 Ω and R₂ = 10 Ω in parallel. Rₜ = ?',s:'Rₜ = (10×10)÷(10+10) = 100÷20 = 5 Ω'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'In parallel, Rₜ is ALWAYS smaller than the smallest resistor. Two equal resistors in parallel → Rₜ = R/2.'},
+        {type:'blue',icon:'🏠',text:'Home appliances are connected in PARALLEL. Each receives the same voltage (120 V) and can work independently.'},
+        {type:'yellow',icon:'⚠️',text:'COMMON ERROR: forgetting to take the inverse at the end! 1/Rₜ = 0.333 → Rₜ = 1/0.333 = 3 Ω (not 0.333 Ω).'},
+      ],
+    },
+    es:{
+      title:'Circuito paralelo — Resistencia total',subtitle:'1/Rₜ = 1/R₁ + 1/R₂',
+      vars:{a:{sym:'Rₜ',name:'Resistencia total',unit:'Ω'},b:{sym:'R₁',name:'Resistencia 1',unit:'Ω'},c:{sym:'R₂',name:'Resistencia 2',unit:'Ω'}},
+      triangle:{top:'Rₜ',bl:'R₁',br:'R₂',hint:'¡En paralelo, Rₜ es más pequeña!'},
+      targets:['Rₜ (resistencia total)'],
+      formulas:['1/Rₜ = 1/R₁ + 1/R₂','Rₜ = (R₁ × R₂) ÷ (R₁ + R₂)'],
+      examples:[
+        {p:'Dos resistencias de 6 Ω en paralelo. Rₜ = ?',s:'Rₜ = (6×6)÷(6+6) = 36÷12 = 3 Ω'},
+        {p:'R₁ = 4 Ω y R₂ = 12 Ω en paralelo. Rₜ = ?',s:'Rₜ = (4×12)÷(4+12) = 48÷16 = 3 Ω'},
+        {p:'R₁ = 10 Ω y R₂ = 10 Ω en paralelo. Rₜ = ?',s:'Rₜ = (10×10)÷(10+10) = 100÷20 = 5 Ω'},
+      ],
+      tips:[
+        {type:'green',icon:'💡',text:'En paralelo, Rₜ es SIEMPRE menor que la resistencia más pequeña. Dos resistencias iguales en paralelo → Rₜ = R/2.'},
+        {type:'blue',icon:'🏠',text:'Los aparatos en casa están conectados en PARALELO. Cada uno recibe la misma tensión (120 V) y puede funcionar independientemente.'},
+        {type:'yellow',icon:'⚠️',text:'ERROR FRECUENTE: ¡olvidar calcular el inverso al final! 1/Rₜ = 0,333 → Rₜ = 1/0,333 = 3 Ω (no 0,333 Ω).'},
+      ],
+    },
+    fields:[
+      {key:'b',sym:'R₁',unit:'Ω',min:0.1,max:10000,step:0.1,default:''},
+      {key:'c',sym:'R₂',unit:'Ω',min:0.1,max:10000,step:0.1,default:''},
+    ],
+    solve:(a,b,c)=>{
+      if(b!==null&&c!==null&&b!==0&&c!==0){
+        const rt=(b*c)/(b+c);
+        return {key:'a',val:rt,eq:`Rₜ = (${b}×${c})÷(${b}+${c}) = ${fmt(b*c)}÷${fmt(b+c)} = ${fmt(rt)} Ω`};
+      }
+      return null;
+    },
+  },
+
+  // ═══ BIOLOGIE ══════════════════════════════════════
+  {
+    id:'nombre-masse', cat:'biologie',
+    icon:'⚛️', color:'#ff8c42', btnColor:'linear-gradient(135deg,#bf360c,#d84315)',
+    fr:{
+      title:'Nombre de masse',subtitle:'A = Z + N',
+      vars:{a:{sym:'A',name:'Nombre de masse',unit:'(sans unité)'},b:{sym:'Z',name:'Numéro atomique (protons)',unit:''},c:{sym:'N',name:'Nombre de neutrons',unit:''}},
+      triangle:{top:'A',bl:'Z',br:'N',hint:'A = protons + neutrons'},
+      targets:['A (nombre de masse)','Z (protons)','N (neutrons)'],
+      formulas:['A = Z + N','Z = A − N','N = A − Z'],
+      examples:[
+        {p:'Le carbone a Z=6 et N=6. Quel est son nombre de masse ?',s:'A = 6 + 6 = 12 → C-12'},
+        {p:'L\'oxygène-18 a A=18 et Z=8. Combien de neutrons ?',s:'N = 18 − 8 = 10 neutrons'},
+        {p:'Un atome a A=23 et N=12. Quel est son numéro atomique Z ?',s:'Z = 23 − 12 = 11 → c\'est le sodium (Na)'},
+      ],
+      tips:[
+        {type:'green',icon:'⚛️',text:'Z = numéro atomique = nombre de protons = identité de l\'élément. Changer Z → changer d\'élément. Changer N → isotope du même élément.'},
+        {type:'blue',icon:'🔬',text:'C-12 (A=12,Z=6) et C-14 (A=14,Z=6) sont des isotopes du carbone. Le C-14 est radioactif et sert à dater les fossiles !'},
+        {type:'yellow',icon:'⚠️',text:'A et Z sont des nombres entiers. Les électrons n\'influencent pas A (leur masse est négligeable).'},
+      ],
+    },
+    en:{
+      title:'Mass number',subtitle:'A = Z + N',
+      vars:{a:{sym:'A',name:'Mass number',unit:'(no unit)'},b:{sym:'Z',name:'Atomic number (protons)',unit:''},c:{sym:'N',name:'Number of neutrons',unit:''}},
+      triangle:{top:'A',bl:'Z',br:'N',hint:'A = protons + neutrons'},
+      targets:['A (mass number)','Z (protons)','N (neutrons)'],
+      formulas:['A = Z + N','Z = A − N','N = A − Z'],
+      examples:[
+        {p:'Carbon has Z=6 and N=6. What is its mass number?',s:'A = 6 + 6 = 12 → C-12'},
+        {p:'Oxygen-18 has A=18 and Z=8. How many neutrons?',s:'N = 18 − 8 = 10 neutrons'},
+        {p:'An atom has A=23 and N=12. What is its atomic number Z?',s:'Z = 23 − 12 = 11 → that\'s sodium (Na)'},
+      ],
+      tips:[
+        {type:'green',icon:'⚛️',text:'Z = atomic number = proton count = element identity. Change Z → different element. Change N → isotope of same element.'},
+        {type:'blue',icon:'🔬',text:'C-12 (A=12,Z=6) and C-14 (A=14,Z=6) are carbon isotopes. C-14 is radioactive and used to date fossils!'},
+        {type:'yellow',icon:'⚠️',text:'A and Z are whole numbers. Electrons don\'t affect A (their mass is negligible).'},
+      ],
+    },
+    es:{
+      title:'Número de masa',subtitle:'A = Z + N',
+      vars:{a:{sym:'A',name:'Número de masa',unit:'(sin unidad)'},b:{sym:'Z',name:'Número atómico (protones)',unit:''},c:{sym:'N',name:'Número de neutrones',unit:''}},
+      triangle:{top:'A',bl:'Z',br:'N',hint:'A = protones + neutrones'},
+      targets:['A (número de masa)','Z (protones)','N (neutrones)'],
+      formulas:['A = Z + N','Z = A − N','N = A − Z'],
+      examples:[
+        {p:'El carbono tiene Z=6 y N=6. ¿Cuál es su número de masa?',s:'A = 6 + 6 = 12 → C-12'},
+        {p:'El oxígeno-18 tiene A=18 y Z=8. ¿Cuántos neutrones?',s:'N = 18 − 8 = 10 neutrones'},
+        {p:'Un átomo tiene A=23 y N=12. ¿Cuál es su número atómico Z?',s:'Z = 23 − 12 = 11 → es el sodio (Na)'},
+      ],
+      tips:[
+        {type:'green',icon:'⚛️',text:'Z = número atómico = número de protones = identidad del elemento. Cambiar Z → cambiar de elemento. Cambiar N → isótopo del mismo elemento.'},
+        {type:'blue',icon:'🔬',text:'C-12 (A=12,Z=6) y C-14 (A=14,Z=6) son isótopos del carbono. ¡El C-14 es radiactivo y se usa para datar fósiles!'},
+        {type:'yellow',icon:'⚠️',text:'A y Z son números enteros. Los electrones no afectan A (su masa es despreciable).'},
+      ],
+    },
+    fields:[
+      {key:'a',sym:'A',unit:'',min:1,max:300,step:1,default:''},
+      {key:'b',sym:'Z',unit:'',min:1,max:120,step:1,default:''},
+      {key:'c',sym:'N',unit:'',min:0,max:200,step:1,default:''},
+    ],
+    solve:(a,b,c)=>{
+      if(b!==null&&c!==null) return {key:'a',val:b+c,eq:`A = ${b} + ${c} = ${fmt(b+c)}`};
+      if(a!==null&&c!==null) return {key:'b',val:a-c,eq:`Z = ${a} − ${c} = ${fmt(a-c)}`};
+      if(a!==null&&b!==null) return {key:'c',val:a-b,eq:`N = ${a} − ${b} = ${fmt(a-b)}`};
+      return null;
+    },
+  },
+];
+
+// ═══════════════════════════════════════════════════════
+//  CATEGORY META
+// ═══════════════════════════════════════════════════════
+const CATS = {
+  all:  {fr:'Toutes',en:'All',es:'Todas',icon:'🔬',color:'#ddeeff'},
+  chimie:{fr:'Chimie',en:'Chemistry',es:'Química',icon:'⚗️',color:'#5bc8ff'},
+  physique:{fr:'Physique',en:'Physics',es:'Física',icon:'🔧',color:'#ff8c42'},
+  electricite:{fr:'Électricité',en:'Electricity',es:'Electricidad',icon:'⚡',color:'#ffd166'},
+  biologie:{fr:'Biologie',en:'Biology',es:'Biología',icon:'⚛️',color:'#4ddc8a'},
+};
+
+const HERO_TEXT = {
+  fr:{tag:'STE Secondaire 3 · Québec',h1:'Formules <em>interactives</em>',p:'Entre 2 valeurs connues → calcule la 3e automatiquement'},
+  en:{tag:'STE Grade 9 · Québec',h1:'Interactive <em>formulas</em>',p:'Enter 2 known values → automatically calculate the 3rd'},
+  es:{tag:'STE Secundaria 3 · Québec',h1:'Fórmulas <em>interactivas</em>',p:'Ingresa 2 valores conocidos → calcula el 3ro automáticamente'},
+};
+
+const BTN_TEXT = {
+  fr:{solve:'Calculer',clear:'Effacer',showSol:'Voir la solution',hideSol:'Masquer'},
+  en:{solve:'Calculate',clear:'Clear',showSol:'Show solution',hideSol:'Hide'},
+  es:{solve:'Calcular',clear:'Borrar',showSol:'Ver la solución',hideSol:'Ocultar'},
+};
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let lang = 'fr';
+let activeCat = 'all';
+let openCards = new Set();
+let fieldVals = {}; // {formulaId: {key: value}}
+let exShown = {}; // {formulaId_exIdx: bool}
+
+function fmt(n){
+  if(isNaN(n)||!isFinite(n)) return '?';
+  const r = Math.round(n*10000)/10000;
+  return r % 1 === 0 ? r.toString() : r.toFixed(4).replace(/\.?0+$/,'');
+}
+
+// ═══════════════════════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════════════════════
+function setLang(l){
+  lang = l;
+  document.querySelectorAll('.lb').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  const tx = HERO_TEXT[l];
+  document.getElementById('hero-tag').textContent = tx.tag;
+  document.getElementById('hero-h1').innerHTML = tx.h1;
+  document.getElementById('hero-p').textContent = tx.p;
+  renderCatTabs();
+  renderFormulas();
+}
+
+// ═══════════════════════════════════════════════════════
+//  CATEGORY TABS
+// ═══════════════════════════════════════════════════════
+function renderCatTabs(){
+  const wrap = document.getElementById('cat-tabs');
+  wrap.innerHTML = Object.entries(CATS).map(([id, meta]) => `
+    <button class="cat-tab${activeCat===id?' active':''}"
+      style="${activeCat===id?`background:${meta.color};border-color:${meta.color};color:#07090f`:''}"
+      onclick="setCat('${id}')">
+      ${meta.icon} ${meta[lang]}
+    </button>
+  `).join('');
+}
+
+function setCat(id){
+  activeCat = id;
+  renderCatTabs();
+  renderFormulas();
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER FORMULA CARDS
+// ═══════════════════════════════════════════════════════
+function renderFormulas(){
+  const filtered = activeCat === 'all' ? FORMULAS : FORMULAS.filter(f => f.cat === activeCat);
+  const grid = document.getElementById('formula-grid');
+  grid.innerHTML = '';
+  filtered.forEach(f => {
+    grid.appendChild(buildCard(f));
+  });
+}
+
+function buildCard(f){
+  const d = f[lang];
+  const isOpen = openCards.has(f.id);
+  const card = document.createElement('div');
+  card.className = 'formula-card';
+  card.id = `card-${f.id}`;
+
+  card.innerHTML = `
+    <div class="fc-header" onclick="toggleCard('${f.id}')">
+      <div class="fc-icon">${f.icon}</div>
+      <div class="fc-title-wrap">
+        <div class="fc-title" style="color:${f.color}">${d.title}</div>
+        <div class="fc-subtitle">${d.subtitle}</div>
+      </div>
+      <div class="fc-expand${isOpen?' open':''}">⌄</div>
+    </div>
+    <div class="fc-body${isOpen?' open':''}">
+      ${buildCardBody(f, d)}
+    </div>
+  `;
+  return card;
+}
+
+function buildCardBody(f, d){
+  const bt = BTN_TEXT[lang];
+  const vals = fieldVals[f.id] || {};
+
+  // formula display
+  let html = `
+    <div class="formula-display">
+      <div class="formula-main">${d.subtitle}</div>
+      <div class="formula-vars">
+        ${Object.values(d.vars).map(v => `<span class="fv">${v.sym} = ${v.name} [${v.unit}]</span>`).join('')}
+      </div>
+    </div>
+  `;
+
+  // all rearranged formulas
+  html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.25rem">
+    ${d.formulas.map(fm => `<div style="font-family:var(--mono);font-size:13px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:5px 12px;color:var(--yellow)">${fm}</div>`).join('')}
+  </div>`;
+
+  // calculator
+  html += `<div id="calc-${f.id}">`;
+  html += `<div class="calc-grid">`;
+  f.fields.forEach(field => {
+    const v = vals[field.key];
+    html += `
+      <div class="calc-field" id="field-${f.id}-${field.key}">
+        <div class="cf-label">${field.sym} <span class="cf-unit">${field.unit}</span></div>
+        <input class="cf-input" type="number" placeholder="?" step="${field.step}" min="${field.min}" max="${field.max}"
+          id="input-${f.id}-${field.key}"
+          value="${v !== undefined ? v : ''}"
+          oninput="setField('${f.id}','${field.key}',this.value)"/>
+        <div class="cf-solve-indicator">→ RÉSULTAT</div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  // result box
+  html += `<div class="result-box" id="result-${f.id}"></div>`;
+
+  // buttons
+  html += `<div class="calc-actions">
+    <button class="btn-solve" style="background:${f.btnColor};color:#fff"
+      onclick="solveFormula('${f.id}')">${bt.solve}</button>
+    <button class="btn-clear-calc" onclick="clearFormula('${f.id}')">${bt.clear}</button>
+  </div>`;
+
+  html += `</div>`; // /calc
+
+  // examples
+  if(d.examples && d.examples.length){
+    html += `<div class="examples-wrap">
+      <div class="examples-title" style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem">
+        Exemples réels — clique pour voir la solution
+      </div>`;
+    d.examples.forEach((ex, i) => {
+      const key = `${f.id}_${i}`;
+      const shown = exShown[key];
+      html += `
+        <div class="example-item" onclick="toggleEx('${key}')">
+          <div class="ex-problem">📝 ${ex.p}</div>
+          <div class="ex-solution${shown?' show':''}" id="ex-${key}">✅ ${ex.s}</div>
+          <div class="ex-hint" id="exhint-${key}">${shown?'Clic pour masquer':'Clic pour voir la solution'}</div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // tips
+  if(d.tips && d.tips.length){
+    html += d.tips.map(tip => `
+      <div class="tip-box tip-${tip.type}">
+        <div class="tip-icon">${tip.icon}</div>
+        <div>${tip.text}</div>
+      </div>`).join('');
+  }
+
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  INTERACTIONS
+// ═══════════════════════════════════════════════════════
+function toggleCard(id){
+  if(openCards.has(id)) openCards.delete(id);
+  else openCards.add(id);
+  // re-render just this card
+  const f = FORMULAS.find(x => x.id === id);
+  const card = document.getElementById(`card-${id}`);
+  if(!card || !f) return;
+  const isOpen = openCards.has(id);
+  card.querySelector('.fc-expand').classList.toggle('open', isOpen);
+  const body = card.querySelector('.fc-body');
+  if(isOpen){
+    body.innerHTML = buildCardBody(f, f[lang]);
+    body.classList.add('open');
+  } else {
+    body.classList.remove('open');
+  }
+}
+
+function setField(fid, key, val){
+  if(!fieldVals[fid]) fieldVals[fid] = {};
+  fieldVals[fid][key] = val === '' ? null : parseFloat(val);
+}
+
+function solveFormula(fid){
+  const f = FORMULAS.find(x => x.id === fid);
+  if(!f) return;
+  const vals = fieldVals[fid] || {};
+  const args = f.fields.map(field => {
+    const v = vals[field.key];
+    return (v === undefined || v === null || isNaN(v)) ? null : v;
+  });
+
+  const result = f.solve(...args);
+  const resultBox = document.getElementById(`result-${fid}`);
+
+  // clear highlights
+  f.fields.forEach(field => {
+    const el = document.getElementById(`field-${fid}-${field.key}`);
+    if(el) el.classList.remove('solving');
+  });
+
+  if(!result){
+    resultBox.className = 'result-box show';
+    resultBox.style.background = 'rgba(255,95,109,.08)';
+    resultBox.style.borderColor = 'rgba(255,95,109,.3)';
+    const needMore = {fr:'Entre au moins 2 valeurs connues pour calculer la 3e.',en:'Enter at least 2 known values to calculate the 3rd.',es:'Ingresa al menos 2 valores conocidos para calcular el 3ro.'};
+    resultBox.innerHTML = `<div style="color:var(--red);font-family:var(--mono);font-size:13px">⚠ ${needMore[lang]}</div>`;
+    return;
+  }
+
+  // set result in input
+  const targetField = f.fields.find(fl => fl.key === result.key);
+  const inputEl = document.getElementById(`input-${fid}-${result.key}`);
+  const fieldEl = document.getElementById(`field-${fid}-${result.key}`);
+  if(inputEl) { inputEl.value = fmt(result.val); inputEl.classList.add('result-field'); }
+  if(fieldEl) fieldEl.classList.add('solving');
+
+  resultBox.className = 'result-box show';
+  resultBox.style.background = '';
+  resultBox.style.borderColor = '';
+  resultBox.innerHTML = `
+    <div class="result-equation">= ${fmt(result.val)} ${targetField ? targetField.unit : ''}</div>
+    <div class="result-check" style="font-family:var(--mono);font-size:12px;color:rgba(255,209,102,.7)">${result.eq}</div>`;
+}
+
+function clearFormula(fid){
+  fieldVals[fid] = {};
+  const f = FORMULAS.find(x => x.id === fid);
+  if(!f) return;
+  f.fields.forEach(field => {
+    const inp = document.getElementById(`input-${fid}-${field.key}`);
+    const el = document.getElementById(`field-${fid}-${field.key}`);
+    if(inp){ inp.value = ''; inp.classList.remove('result-field'); }
+    if(el) el.classList.remove('solving');
+  });
+  const rb = document.getElementById(`result-${fid}`);
+  if(rb) rb.className = 'result-box';
+}
+
+function toggleEx(key){
+  exShown[key] = !exShown[key];
+  const sol = document.getElementById(`ex-${key}`);
+  const hint = document.getElementById(`exhint-${key}`);
+  if(sol) sol.classList.toggle('show', exShown[key]);
+  const hintTexts = {
+    fr:['Clic pour voir la solution','Clic pour masquer'],
+    en:['Click to see solution','Click to hide'],
+    es:['Clic para ver la solución','Clic para ocultar'],
+  };
+  if(hint) hint.textContent = hintTexts[lang][exShown[key]?1:0];
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+renderCatTabs();
+renderFormulas();
+
+// auto-open first card
+setTimeout(()=>{ if(FORMULAS.length) toggleCard(FORMULAS[0].id); }, 200);
+</script>
+</body>
+</html>

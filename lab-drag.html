@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Laboratoire — Ordonner & Glisser · STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;
+  --bg2:#0d1117;
+  --bg3:#131a24;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.15);
+  --text:#d8e6f3;
+  --muted:#4e6280;
+  --accent:#5bc8ff;
+  --green:#4ddc8a;
+  --red:#ff5f6d;
+  --yellow:#ffd166;
+  --font:'Familjen Grotesk',sans-serif;
+  --mono:'Azeret Mono',monospace;
+  --r:10px;
+}
+html{font-size:16px}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--font);min-height:100vh;
+  overflow-x:hidden;
+}
+/* blueprint grid */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(91,200,255,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(91,200,255,0.04) 1px,transparent 1px);
+  background-size:32px 32px;
+  pointer-events:none;z-index:0;
+}
+
+/* ── LANG BAR ── */
+#lang-bar{
+  position:relative;z-index:10;
+  display:flex;gap:6px;justify-content:flex-end;
+  padding:1rem 1.25rem 0;
+}
+.lang-btn{
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  padding:5px 12px;border-radius:4px;
+  border:1px solid var(--border2);
+  background:transparent;color:var(--muted);
+  cursor:pointer;transition:all .2s;
+}
+.lang-btn:hover{color:var(--text)}
+.lang-btn.active{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:500}
+
+/* ── APP ── */
+#app{
+  position:relative;z-index:1;
+  max-width:720px;margin:0 auto;
+  padding:1.25rem 1.25rem 4rem;
+}
+
+/* ── SCREENS ── */
+.screen{display:none;animation:fadeUp .35s ease}
+.screen.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── HOME ── */
+.home-hero{text-align:center;padding:2rem 0 2.5rem}
+.home-hero .tag{
+  font-family:var(--mono);font-size:10px;
+  letter-spacing:.2em;text-transform:uppercase;
+  color:var(--muted);display:block;margin-bottom:1rem;
+}
+.home-hero h1{
+  font-size:clamp(2rem,7vw,3.2rem);font-weight:700;
+  letter-spacing:-.03em;line-height:1.1;
+  color:var(--text);margin-bottom:.5rem;
+}
+.home-hero h1 em{font-style:normal;color:var(--accent)}
+.home-hero p{font-size:13px;color:var(--muted)}
+
+.module-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:2rem}
+.module-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.5rem 1.25rem;
+  cursor:pointer;transition:border-color .2s,transform .15s,background .2s;
+  position:relative;overflow:hidden;
+}
+.module-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent 60%,rgba(255,255,255,0.02));
+  pointer-events:none;
+}
+.module-card:hover{border-color:var(--border2);transform:translateY(-3px);background:var(--bg3)}
+.module-card .mc-icon{font-size:32px;margin-bottom:.75rem;display:block}
+.module-card .mc-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:.35rem}
+.module-card .mc-sub{font-size:12px;color:var(--muted);line-height:1.55}
+.module-card .mc-badge{
+  display:inline-block;margin-top:.65rem;
+  font-family:var(--mono);font-size:10px;
+  padding:3px 9px;border-radius:20px;
+  border:1px solid var(--border2);color:var(--muted);
+}
+
+/* ── MODULE SCREEN ── */
+.module-header{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:1.5rem;flex-wrap:wrap;
+}
+.back-btn{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  background:transparent;border:1px solid var(--border);
+  border-radius:6px;padding:6px 12px;cursor:pointer;
+  transition:all .2s;
+}
+.back-btn:hover{color:var(--text);border-color:var(--border2)}
+.mod-title{font-size:18px;font-weight:700;letter-spacing:-.02em}
+.mod-lang-note{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+/* instructions */
+.instructions{
+  background:var(--bg2);border:1px solid var(--border);
+  border-left:3px solid var(--accent);
+  border-radius:0 var(--r) var(--r) 0;
+  padding:.85rem 1.1rem;margin-bottom:1.5rem;
+  font-size:13px;color:rgba(216,230,243,.8);line-height:1.6;
+}
+.instructions strong{color:var(--text)}
+
+/* ── DRAG AREA ── */
+.drag-area{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:1rem;margin-bottom:1.25rem;
+}
+@media(max-width:520px){.drag-area{grid-template-columns:1fr}}
+
+.pool-col,.slots-col{display:flex;flex-direction:column;gap:8px}
+.col-label{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:.12em;text-transform:uppercase;
+  margin-bottom:2px;display:flex;align-items:center;gap:8px;
+}
+.col-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* draggable piece */
+.piece{
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:8px;padding:.75rem 1rem;
+  cursor:grab;user-select:none;
+  font-size:13px;font-weight:500;
+  transition:border-color .15s,transform .15s,box-shadow .15s,opacity .15s;
+  display:flex;align-items:flex-start;gap:10px;
+  -webkit-touch-callout:none;
+}
+.piece:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.piece.dragging{opacity:.4;transform:scale(0.97)}
+.piece .p-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.piece .p-text{flex:1;line-height:1.4}
+.piece .p-num{
+  font-family:var(--mono);font-size:10px;
+  color:var(--muted);flex-shrink:0;
+  margin-top:2px;
+}
+
+/* slot */
+.slot{
+  background:rgba(255,255,255,0.025);
+  border:1.5px dashed var(--border2);
+  border-radius:8px;padding:.75rem 1rem;
+  min-height:60px;
+  transition:border-color .2s,background .2s;
+  position:relative;display:flex;align-items:center;
+  gap:10px;
+}
+.slot.drag-over{border-color:var(--accent);background:rgba(91,200,255,0.07)}
+.slot .slot-num{
+  font-family:var(--mono);font-size:22px;font-weight:500;
+  color:var(--border2);flex-shrink:0;line-height:1;
+  min-width:24px;text-align:center;
+}
+.slot .slot-hint{font-size:12px;color:var(--muted);font-style:italic}
+.slot.filled .slot-num{color:var(--muted)}
+.slot.correct-slot{border-color:var(--green);background:rgba(77,220,138,.08);border-style:solid}
+.slot.wrong-slot{border-color:var(--red);background:rgba(255,95,109,.08);border-style:solid;animation:shake .3s ease}
+.slot.correct-slot .slot-num{color:var(--green)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+/* piece inside slot */
+.slot .piece{
+  flex:1;margin:0;cursor:grab;
+  border:none;background:transparent;padding:0;
+}
+.slot.correct-slot .piece{color:var(--green);cursor:default}
+.slot.wrong-slot .piece{color:var(--red)}
+
+/* ── ACTION ROW ── */
+.action-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.25rem}
+.btn-check{
+  font-family:var(--font);font-weight:700;font-size:14px;
+  padding:11px 22px;border:none;border-radius:8px;
+  background:var(--accent);color:var(--bg);
+  cursor:pointer;transition:transform .15s,box-shadow .2s;
+  flex:1;
+}
+.btn-check:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(91,200,255,.3)}
+.btn-check:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-reset{
+  font-family:var(--font);font-size:14px;
+  padding:11px 18px;border:1px solid var(--border2);border-radius:8px;
+  background:transparent;color:var(--muted);
+  cursor:pointer;transition:all .2s;
+}
+.btn-reset:hover{color:var(--text);border-color:var(--text)}
+
+/* ── RESULT PANEL ── */
+.result-panel{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.25rem;
+  margin-bottom:1rem;display:none;animation:fadeUp .3s ease;
+}
+.result-panel.show{display:block}
+.result-row{display:flex;align-items:center;gap:12px;margin-bottom:.75rem}
+.result-icon{font-size:36px}
+.result-text h3{font-size:17px;font-weight:700;margin-bottom:3px}
+.result-text p{font-size:13px;color:var(--muted)}
+
+/* ── THEORY PANEL ── */
+.theory-panel{
+  background:var(--bg2);border:1px solid var(--border);
+  border-left:3px solid var(--yellow);
+  border-radius:0 var(--r) var(--r) 0;
+  padding:1.1rem 1.25rem;margin-bottom:1.25rem;
+  font-size:13px;line-height:1.8;
+  color:rgba(216,230,243,.8);display:none;
+}
+.theory-panel.show{display:block;animation:fadeUp .3s ease}
+.theory-panel h3{font-family:var(--font);font-size:14px;font-weight:700;color:var(--text);margin-bottom:.5rem}
+.toggle-theory{
+  font-family:var(--mono);font-size:11px;color:var(--yellow);
+  background:transparent;border:1px solid rgba(255,209,102,.3);
+  border-radius:6px;padding:6px 12px;cursor:pointer;
+  margin-bottom:1rem;transition:all .2s;
+}
+.toggle-theory:hover{background:rgba(255,209,102,.08)}
+
+/* ── PROGRESS DOTS ── */
+.progress-dots{
+  display:flex;gap:6px;justify-content:center;margin-bottom:1.5rem;
+}
+.pdot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--border2);transition:background .3s;
+}
+.pdot.done{background:var(--green)}
+.pdot.active{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+
+/* ── TOUCH ghost ── */
+#drag-ghost{
+  position:fixed;pointer-events:none;z-index:9999;
+  opacity:.85;transform:scale(1.05);
+  background:var(--bg3);border:1.5px solid var(--accent);
+  border-radius:8px;padding:.65rem 1rem;
+  font-family:var(--font);font-size:13px;font-weight:500;
+  color:var(--accent);white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,.6);
+  display:none;
+  gap:8px;align-items:center;
+}
+</style>
+</head>
+<body>
+
+<!-- touch ghost -->
+<div id="drag-ghost"></div>
+
+<div id="lang-bar">
+  <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('es')">ES</button>
+</div>
+
+<div id="app">
+
+  <!-- ════════════ HOME ════════════ -->
+  <div id="screen-home" class="screen active">
+    <div class="home-hero">
+      <span class="tag" id="home-tag">STE Secondaire 3 · Laboratoire</span>
+      <h1 id="home-title">Glisse &amp; <em>Ordonne</em></h1>
+      <p id="home-sub">Maîtrise les processus biologiques et géologiques</p>
+    </div>
+    <div class="module-grid" id="module-grid"></div>
+  </div>
+
+  <!-- ════════════ MODULE ════════════ -->
+  <div id="screen-module" class="screen">
+    <div class="module-header">
+      <button class="back-btn" onclick="goHome()" id="back-btn">← Accueil</button>
+      <div class="mod-title" id="mod-title"></div>
+    </div>
+
+    <div class="progress-dots" id="progress-dots"></div>
+
+    <div class="instructions" id="instructions"></div>
+
+    <div class="drag-area">
+      <div class="pool-col">
+        <div class="col-label" id="col-pool-label">Pièces</div>
+        <div id="pool"></div>
+      </div>
+      <div class="slots-col">
+        <div class="col-label" id="col-slots-label">Ordre correct</div>
+        <div id="slots"></div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-check" id="btn-check" onclick="checkAnswers()"></button>
+      <button class="btn-reset" id="btn-reset" onclick="resetModule()"></button>
+    </div>
+
+    <div class="result-panel" id="result-panel">
+      <div class="result-row">
+        <div class="result-icon" id="result-icon"></div>
+        <div class="result-text">
+          <h3 id="result-h3"></h3>
+          <p id="result-p"></p>
+        </div>
+      </div>
+    </div>
+
+    <button class="toggle-theory" onclick="toggleTheory()" id="toggle-theory-btn"></button>
+    <div class="theory-panel" id="theory-panel"></div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DATA — modules
+// ═══════════════════════════════════════════════════════════
+const MODULES = [
+  // ── MITOSIS ────────────────────────────────────────────
+  {
+    id:'mitosis',
+    icon:'🧬',
+    color:'#4ddc8a',
+    fr:{
+      title:'Phases de la mitose',
+      sub:'Division cellulaire · 6 étapes',
+      badge:'Univers vivant',
+      instructions:'<strong>Glisse</strong> chaque phase de la mitose dans le bon ordre (1→6). La mitose produit 2 cellules filles génétiquement identiques à la cellule mère.',
+      colPool:'Phases à placer',
+      colSlots:'Ordre (1 → 6)',
+      slotHint:'Phase ?',
+      btnCheck:'Vérifier l\'ordre',
+      btnReset:'Recommencer',
+      theoryBtn:'📖 Voir la théorie',
+      theoryClose:'Fermer la théorie',
+      theory:`<h3>La mitose — division cellulaire</h3>
+La mitose est le processus par lequel une cellule mère se divise en <strong>2 cellules filles identiques</strong>, avec le même nombre de chromosomes.<br><br>
+<strong>1. Interphase</strong> — La cellule grandit et réplique son ADN (chaque chromosome est copié).<br>
+<strong>2. Prophase</strong> — Les chromosomes se condensent et deviennent visibles. L'enveloppe nucléaire disparaît.<br>
+<strong>3. Métaphase</strong> — Les chromosomes s'alignent au centre de la cellule (plaque équatoriale).<br>
+<strong>4. Anaphase</strong> — Les chromatides sœurs se séparent et migrent vers les pôles opposés.<br>
+<strong>5. Télophase</strong> — Une nouvelle enveloppe nucléaire se forme autour de chaque groupe de chromosomes.<br>
+<strong>6. Cytocinèse</strong> — Le cytoplasme se divise : deux cellules filles sont formées.<br><br>
+💡 <em>Mémoire : <strong>I PM AT Cy</strong> = Interphase, Prophase, Métaphase, Anaphase, Télophase, Cytocinèse</em>`,
+      pieces:[
+        {icon:'🔵',text:'Interphase',detail:'Réplication de l\'ADN',ans:1},
+        {icon:'🔴',text:'Prophase',detail:'Chromosomes visibles',ans:2},
+        {icon:'🟡',text:'Métaphase',detail:'Alignement au centre',ans:3},
+        {icon:'🟠',text:'Anaphase',detail:'Séparation des chromatides',ans:4},
+        {icon:'🟢',text:'Télophase',detail:'Nouvelle enveloppe nucléaire',ans:5},
+        {icon:'⚪',text:'Cytocinèse',detail:'Division du cytoplasme',ans:6},
+      ],
+    },
+    en:{
+      title:'Phases of Mitosis',
+      sub:'Cell division · 6 steps',
+      badge:'Living Universe',
+      instructions:'<strong>Drag</strong> each phase of mitosis into the correct order (1→6). Mitosis produces 2 daughter cells genetically identical to the parent cell.',
+      colPool:'Phases to place',
+      colSlots:'Order (1 → 6)',
+      slotHint:'Phase?',
+      btnCheck:'Check order',
+      btnReset:'Reset',
+      theoryBtn:'📖 View theory',
+      theoryClose:'Close theory',
+      theory:`<h3>Mitosis — cell division</h3>
+Mitosis is the process by which a parent cell divides into <strong>2 identical daughter cells</strong>, with the same number of chromosomes.<br><br>
+<strong>1. Interphase</strong> — Cell grows and replicates its DNA.<br>
+<strong>2. Prophase</strong> — Chromosomes condense and become visible. Nuclear envelope disappears.<br>
+<strong>3. Metaphase</strong> — Chromosomes align at the cell centre (equatorial plate).<br>
+<strong>4. Anaphase</strong> — Sister chromatids separate and migrate to opposite poles.<br>
+<strong>5. Telophase</strong> — A new nuclear envelope forms around each chromosome group.<br>
+<strong>6. Cytokinesis</strong> — Cytoplasm divides: two daughter cells are formed.<br><br>
+💡 <em>Memory aid: <strong>I PM AT Cy</strong></em>`,
+      pieces:[
+        {icon:'🔵',text:'Interphase',detail:'DNA replication',ans:1},
+        {icon:'🔴',text:'Prophase',detail:'Chromosomes visible',ans:2},
+        {icon:'🟡',text:'Metaphase',detail:'Alignment at centre',ans:3},
+        {icon:'🟠',text:'Anaphase',detail:'Chromatids separate',ans:4},
+        {icon:'🟢',text:'Telophase',detail:'New nuclear envelope',ans:5},
+        {icon:'⚪',text:'Cytokinesis',detail:'Cytoplasm divides',ans:6},
+      ],
+    },
+    es:{
+      title:'Fases de la Mitosis',
+      sub:'División celular · 6 pasos',
+      badge:'Universo viviente',
+      instructions:'<strong>Arrastra</strong> cada fase de la mitosis al orden correcto (1→6). La mitosis produce 2 células hijas genéticamente idénticas a la célula madre.',
+      colPool:'Fases a colocar',
+      colSlots:'Orden (1 → 6)',
+      slotHint:'¿Fase?',
+      btnCheck:'Verificar orden',
+      btnReset:'Reiniciar',
+      theoryBtn:'📖 Ver la teoría',
+      theoryClose:'Cerrar teoría',
+      theory:`<h3>La mitosis — división celular</h3>
+La mitosis es el proceso por el cual una célula madre se divide en <strong>2 células hijas idénticas</strong>, con el mismo número de cromosomas.<br><br>
+<strong>1. Interfase</strong> — La célula crece y replica su ADN.<br>
+<strong>2. Profase</strong> — Los cromosomas se condensan y se vuelven visibles. La envoltura nuclear desaparece.<br>
+<strong>3. Metafase</strong> — Los cromosomas se alinean en el centro (placa ecuatorial).<br>
+<strong>4. Anafase</strong> — Las cromátidas hermanas se separan y migran hacia los polos opuestos.<br>
+<strong>5. Telofase</strong> — Se forma una nueva envoltura nuclear alrededor de cada grupo de cromosomas.<br>
+<strong>6. Citocinesis</strong> — El citoplasma se divide: se forman dos células hijas.<br><br>
+💡 <em>Regla mnemónica: <strong>I Pro Meta Ana Telo Cito</strong></em>`,
+      pieces:[
+        {icon:'🔵',text:'Interfase',detail:'Replicación del ADN',ans:1},
+        {icon:'🔴',text:'Profase',detail:'Cromosomas visibles',ans:2},
+        {icon:'🟡',text:'Metafase',detail:'Alineación en el centro',ans:3},
+        {icon:'🟠',text:'Anafase',detail:'Separación de cromátidas',ans:4},
+        {icon:'🟢',text:'Telofase',detail:'Nueva envoltura nuclear',ans:5},
+        {icon:'⚪',text:'Citocinesis',detail:'División del citoplasma',ans:6},
+      ],
+    },
+  },
+
+  // ── DIGESTION ───────────────────────────────────────────
+  {
+    id:'digestion',
+    icon:'🫁',
+    color:'#ffd166',
+    fr:{
+      title:'Trajet de la digestion',
+      sub:'Système digestif · 7 étapes',
+      badge:'Univers vivant',
+      instructions:'<strong>Glisse</strong> chaque organe ou étape dans l\'ordre où les aliments les traversent, de la bouche jusqu\'à l\'élimination.',
+      colPool:'Organes à placer',
+      colSlots:'Trajet (1 → 7)',
+      slotHint:'Organe ?',
+      btnCheck:'Vérifier le trajet',
+      btnReset:'Recommencer',
+      theoryBtn:'📖 Voir la théorie',
+      theoryClose:'Fermer la théorie',
+      theory:`<h3>Le système digestif</h3>
+La digestion transforme les aliments en nutriments absorbables par le sang.<br><br>
+<strong>1. Bouche</strong> — Mastication mécanique + amylase salivaire (début digestion des glucides).<br>
+<strong>2. Œsophage</strong> — Tube musculaire qui transporte les aliments vers l'estomac par péristaltisme.<br>
+<strong>3. Estomac</strong> — Brassage mécanique + acide gastrique (HCl) + pepsine → décompose les protéines. pH ≈ 2.<br>
+<strong>4. Intestin grêle</strong> — Absorption des nutriments dans le sang. Bile (foie) + enzymes pancréatiques.<br>
+<strong>5. Gros intestin (côlon)</strong> — Absorption de l'eau et des minéraux. Formation des fèces.<br>
+<strong>6. Rectum</strong> — Stockage temporaire des fèces.<br>
+<strong>7. Anus</strong> — Élimination des déchets.<br><br>
+💡 Organes accessoires : <em>foie</em> (bile), <em>pancréas</em> (enzymes), <em>vésicule biliaire</em>`,
+      pieces:[
+        {icon:'👄',text:'Bouche',detail:'Mastication + amylase',ans:1},
+        {icon:'🔀',text:'Œsophage',detail:'Péristaltisme',ans:2},
+        {icon:'🫙',text:'Estomac',detail:'HCl + pepsine, pH ≈ 2',ans:3},
+        {icon:'〰️',text:'Intestin grêle',detail:'Absorption dans le sang',ans:4},
+        {icon:'🌀',text:'Gros intestin',detail:'Absorption eau + minéraux',ans:5},
+        {icon:'📦',text:'Rectum',detail:'Stockage fèces',ans:6},
+        {icon:'🚪',text:'Anus',detail:'Élimination',ans:7},
+      ],
+    },
+    en:{
+      title:'Digestive Pathway',
+      sub:'Digestive system · 7 steps',
+      badge:'Living Universe',
+      instructions:'<strong>Drag</strong> each organ or step into the order food travels through them, from the mouth to elimination.',
+      colPool:'Organs to place',
+      colSlots:'Pathway (1 → 7)',
+      slotHint:'Organ?',
+      btnCheck:'Check pathway',
+      btnReset:'Reset',
+      theoryBtn:'📖 View theory',
+      theoryClose:'Close theory',
+      theory:`<h3>The digestive system</h3>
+Digestion transforms food into nutrients that can be absorbed into the blood.<br><br>
+<strong>1. Mouth</strong> — Mechanical chewing + salivary amylase (starts carbohydrate digestion).<br>
+<strong>2. Oesophagus</strong> — Muscular tube transporting food to stomach via peristalsis.<br>
+<strong>3. Stomach</strong> — Mechanical churning + gastric acid (HCl) + pepsin → breaks down proteins. pH ≈ 2.<br>
+<strong>4. Small intestine</strong> — Nutrient absorption into blood. Bile (liver) + pancreatic enzymes.<br>
+<strong>5. Large intestine (colon)</strong> — Water and mineral absorption. Faeces formation.<br>
+<strong>6. Rectum</strong> — Temporary storage of faeces.<br>
+<strong>7. Anus</strong> — Waste elimination.<br><br>
+💡 Accessory organs: <em>liver</em> (bile), <em>pancreas</em> (enzymes), <em>gallbladder</em>`,
+      pieces:[
+        {icon:'👄',text:'Mouth',detail:'Chewing + amylase',ans:1},
+        {icon:'🔀',text:'Oesophagus',detail:'Peristalsis',ans:2},
+        {icon:'🫙',text:'Stomach',detail:'HCl + pepsin, pH ≈ 2',ans:3},
+        {icon:'〰️',text:'Small intestine',detail:'Absorption into blood',ans:4},
+        {icon:'🌀',text:'Large intestine',detail:'Water + mineral absorption',ans:5},
+        {icon:'📦',text:'Rectum',detail:'Faeces storage',ans:6},
+        {icon:'🚪',text:'Anus',detail:'Elimination',ans:7},
+      ],
+    },
+    es:{
+      title:'Recorrido de la Digestión',
+      sub:'Sistema digestivo · 7 etapas',
+      badge:'Universo viviente',
+      instructions:'<strong>Arrastra</strong> cada órgano o etapa al orden en que los alimentos los recorren, desde la boca hasta la eliminación.',
+      colPool:'Órganos a colocar',
+      colSlots:'Recorrido (1 → 7)',
+      slotHint:'¿Órgano?',
+      btnCheck:'Verificar recorrido',
+      btnReset:'Reiniciar',
+      theoryBtn:'📖 Ver la teoría',
+      theoryClose:'Cerrar teoría',
+      theory:`<h3>El sistema digestivo</h3>
+La digestión transforma los alimentos en nutrientes absorbibles por la sangre.<br><br>
+<strong>1. Boca</strong> — Masticación mecánica + amilasa salival (inicia digestión de carbohidratos).<br>
+<strong>2. Esófago</strong> — Tubo muscular que transporta alimentos al estómago por peristaltismo.<br>
+<strong>3. Estómago</strong> — Mezcla mecánica + ácido gástrico (HCl) + pepsina → descompone proteínas. pH ≈ 2.<br>
+<strong>4. Intestino delgado</strong> — Absorción de nutrientes en la sangre. Bilis (hígado) + enzimas pancreáticas.<br>
+<strong>5. Intestino grueso (colon)</strong> — Absorción de agua y minerales. Formación de heces.<br>
+<strong>6. Recto</strong> — Almacenamiento temporal de heces.<br>
+<strong>7. Ano</strong> — Eliminación de desechos.<br><br>
+💡 Órganos accesorios: <em>hígado</em> (bilis), <em>páncreas</em> (enzimas), <em>vesícula biliar</em>`,
+      pieces:[
+        {icon:'👄',text:'Boca',detail:'Masticación + amilasa',ans:1},
+        {icon:'🔀',text:'Esófago',detail:'Peristaltismo',ans:2},
+        {icon:'🫙',text:'Estómago',detail:'HCl + pepsina, pH ≈ 2',ans:3},
+        {icon:'〰️',text:'Intestino delgado',detail:'Absorción en la sangre',ans:4},
+        {icon:'🌀',text:'Intestino grueso',detail:'Absorción agua + minerales',ans:5},
+        {icon:'📦',text:'Recto',detail:'Almacenamiento heces',ans:6},
+        {icon:'🚪',text:'Ano',detail:'Eliminación',ans:7},
+      ],
+    },
+  },
+
+  // ── EARTH LAYERS ────────────────────────────────────────
+  {
+    id:'earth',
+    icon:'🌍',
+    color:'#ff8c42',
+    fr:{
+      title:'Couches internes de la Terre',
+      sub:'Géologie · 5 couches (surface → centre)',
+      badge:'Terre et espace',
+      instructions:'<strong>Glisse</strong> chaque couche de la Terre dans l\'ordre correct, en commençant par la surface (1) jusqu\'au centre (5).',
+      colPool:'Couches à placer',
+      colSlots:'Surface → Centre',
+      slotHint:'Couche ?',
+      btnCheck:'Vérifier les couches',
+      btnReset:'Recommencer',
+      theoryBtn:'📖 Voir la théorie',
+      theoryClose:'Fermer la théorie',
+      theory:`<h3>Structure interne de la Terre</h3>
+La Terre est composée de plusieurs couches concentriques aux propriétés très différentes.<br><br>
+<strong>1. Lithosphère (croûte)</strong> — Couche externe rigide. Croûte continentale (30 km) et océanique (7 km). Contient les plaques tectoniques.<br>
+<strong>2. Asthénosphère</strong> — Manteau supérieur semi-fluide. Permet le mouvement des plaques. T° ≈ 1 300°C.<br>
+<strong>3. Manteau inférieur</strong> — Roche solide sous haute pression, convection thermique lente. T° jusqu'à 2 500°C.<br>
+<strong>4. Noyau externe</strong> — Fer et nickel liquides. Son mouvement génère le <em>champ magnétique terrestre</em>. T° ≈ 4 000°C.<br>
+<strong>5. Noyau interne</strong> — Fer solide malgré ~5 000°C, car la pression extrême empêche la fusion.<br><br>
+💡 Moyen mnémotechnique : <em>Litho-Asthéno-Manteau-Noyau ext.-Noyau int.</em>`,
+      pieces:[
+        {icon:'🟫',text:'Lithosphère',detail:'Croûte rigide, 0–100 km',ans:1},
+        {icon:'🟧',text:'Asthénosphère',detail:'Semi-fluide, ~1 300°C',ans:2},
+        {icon:'🟥',text:'Manteau inférieur',detail:'Solide, convection, ~2 500°C',ans:3},
+        {icon:'🔶',text:'Noyau externe',detail:'Fer/nickel liquide, ~4 000°C',ans:4},
+        {icon:'🟠',text:'Noyau interne',detail:'Fer solide, ~5 000°C',ans:5},
+      ],
+    },
+    en:{
+      title:'Earth\'s Internal Layers',
+      sub:'Geology · 5 layers (surface → centre)',
+      badge:'Earth & Space',
+      instructions:'<strong>Drag</strong> each Earth layer into the correct order, starting from the surface (1) to the centre (5).',
+      colPool:'Layers to place',
+      colSlots:'Surface → Centre',
+      slotHint:'Layer?',
+      btnCheck:'Check layers',
+      btnReset:'Reset',
+      theoryBtn:'📖 View theory',
+      theoryClose:'Close theory',
+      theory:`<h3>Earth's internal structure</h3>
+The Earth is made of several concentric layers with very different properties.<br><br>
+<strong>1. Lithosphere (crust)</strong> — Rigid outer layer. Continental crust (30 km) and oceanic crust (7 km). Contains tectonic plates.<br>
+<strong>2. Asthenosphere</strong> — Semi-fluid upper mantle. Allows plate movement. T° ≈ 1,300°C.<br>
+<strong>3. Lower mantle</strong> — Solid rock under high pressure, slow thermal convection. T° up to 2,500°C.<br>
+<strong>4. Outer core</strong> — Liquid iron and nickel. Its motion generates Earth's <em>magnetic field</em>. T° ≈ 4,000°C.<br>
+<strong>5. Inner core</strong> — Solid iron despite ~5,000°C; extreme pressure prevents melting.<br><br>
+💡 Memory: <em>Litho-Astheno-Lower mantle-Outer core-Inner core</em>`,
+      pieces:[
+        {icon:'🟫',text:'Lithosphere',detail:'Rigid crust, 0–100 km',ans:1},
+        {icon:'🟧',text:'Asthenosphere',detail:'Semi-fluid, ~1,300°C',ans:2},
+        {icon:'🟥',text:'Lower mantle',detail:'Solid, convection, ~2,500°C',ans:3},
+        {icon:'🔶',text:'Outer core',detail:'Liquid Fe/Ni, ~4,000°C',ans:4},
+        {icon:'🟠',text:'Inner core',detail:'Solid iron, ~5,000°C',ans:5},
+      ],
+    },
+    es:{
+      title:'Capas Internas de la Tierra',
+      sub:'Geología · 5 capas (superficie → centro)',
+      badge:'Tierra y Espacio',
+      instructions:'<strong>Arrastra</strong> cada capa de la Tierra al orden correcto, desde la superficie (1) hasta el centro (5).',
+      colPool:'Capas a colocar',
+      colSlots:'Superficie → Centro',
+      slotHint:'¿Capa?',
+      btnCheck:'Verificar capas',
+      btnReset:'Reiniciar',
+      theoryBtn:'📖 Ver la teoría',
+      theoryClose:'Cerrar teoría',
+      theory:`<h3>Estructura interna de la Tierra</h3>
+La Tierra está compuesta por varias capas concéntricas con propiedades muy diferentes.<br><br>
+<strong>1. Litosfera (corteza)</strong> — Capa externa rígida. Corteza continental (30 km) y oceánica (7 km). Contiene las placas tectónicas.<br>
+<strong>2. Astenosfera</strong> — Manto superior semifluido. Permite el movimiento de placas. T° ≈ 1 300°C.<br>
+<strong>3. Manto inferior</strong> — Roca sólida bajo alta presión, convección térmica lenta. T° hasta 2 500°C.<br>
+<strong>4. Núcleo externo</strong> — Hierro y níquel líquidos. Su movimiento genera el <em>campo magnético terrestre</em>. T° ≈ 4 000°C.<br>
+<strong>5. Núcleo interno</strong> — Hierro sólido pese a ~5 000°C; la presión extrema impide la fusión.<br><br>
+💡 Regla mnemónica: <em>Lito-Asteno-Manto inf.-Núcleo ext.-Núcleo int.</em>`,
+      pieces:[
+        {icon:'🟫',text:'Litosfera',detail:'Corteza rígida, 0–100 km',ans:1},
+        {icon:'🟧',text:'Astenosfera',detail:'Semifluida, ~1 300°C',ans:2},
+        {icon:'🟥',text:'Manto inferior',detail:'Sólido, convección, ~2 500°C',ans:3},
+        {icon:'🔶',text:'Núcleo externo',detail:'Fe/Ni líquido, ~4 000°C',ans:4},
+        {icon:'🟠',text:'Núcleo interno',detail:'Hierro sólido, ~5 000°C',ans:5},
+      ],
+    },
+  },
+
+  // ── PHASE CHANGES ───────────────────────────────────────
+  {
+    id:'phases',
+    icon:'💧',
+    color:'#a78bfa',
+    fr:{
+      title:'Changements de phase',
+      sub:'Univers matériel · 6 transformations',
+      badge:'Univers matériel',
+      instructions:'<strong>Glisse</strong> chaque changement de phase dans le bon ordre croissant d\'énergie (du plus froid/bas au plus chaud/haut).',
+      colPool:'Changements à classer',
+      colSlots:'Ordre (+ froid → + chaud)',
+      slotHint:'Changement ?',
+      btnCheck:'Vérifier l\'ordre',
+      btnReset:'Recommencer',
+      theoryBtn:'📖 Voir la théorie',
+      theoryClose:'Fermer la théorie',
+      theory:`<h3>Les changements de phase</h3>
+La matière peut exister sous trois états : <strong>solide, liquide, gaz</strong>. Les changements de phase dépendent de l'énergie (température, pression).<br><br>
+<strong>1. Déposition</strong> (gaz → solide) — Ex: givre sur une vitre. Perte maximale d'énergie.<br>
+<strong>2. Solidification</strong> (liquide → solide) — Ex: eau qui gèle à 0°C. Perte d'énergie.<br>
+<strong>3. Condensation</strong> (gaz → liquide) — Ex: buée sur un miroir. Perte d'énergie.<br>
+<strong>4. Fusion</strong> (solide → liquide) — Ex: glace qui fond. Gain d'énergie.<br>
+<strong>5. Évaporation / Ébullition</strong> (liquide → gaz) — Ex: eau qui bout à 100°C. Gain d'énergie.<br>
+<strong>6. Sublimation</strong> (solide → gaz) — Ex: glace sèche (CO₂). Gain maximal d'énergie.<br><br>
+💡 <em>Les changements endothermiques (absorbent chaleur) : fusion, évaporation, sublimation.<br>Les changements exothermiques (libèrent chaleur) : solidification, condensation, déposition.</em>`,
+      pieces:[
+        {icon:'❄️',text:'Déposition',detail:'Gaz → Solide',ans:1},
+        {icon:'🧊',text:'Solidification',detail:'Liquide → Solide',ans:2},
+        {icon:'💦',text:'Condensation',detail:'Gaz → Liquide',ans:3},
+        {icon:'🌡️',text:'Fusion',detail:'Solide → Liquide',ans:4},
+        {icon:'♨️',text:'Évaporation',detail:'Liquide → Gaz',ans:5},
+        {icon:'🌫️',text:'Sublimation',detail:'Solide → Gaz',ans:6},
+      ],
+    },
+    en:{
+      title:'Phase Changes',
+      sub:'Material universe · 6 transformations',
+      badge:'Material Universe',
+      instructions:'<strong>Drag</strong> each phase change into the correct order of increasing energy (coldest/lowest to hottest/highest).',
+      colPool:'Changes to sort',
+      colSlots:'Order (coldest → hottest)',
+      slotHint:'Change?',
+      btnCheck:'Check order',
+      btnReset:'Reset',
+      theoryBtn:'📖 View theory',
+      theoryClose:'Close theory',
+      theory:`<h3>Phase changes</h3>
+Matter exists in three states: <strong>solid, liquid, gas</strong>. Phase changes depend on energy (temperature, pressure).<br><br>
+<strong>1. Deposition</strong> (gas → solid) — E.g. frost on a window. Maximum energy loss.<br>
+<strong>2. Solidification / Freezing</strong> (liquid → solid) — E.g. water freezing at 0°C. Energy loss.<br>
+<strong>3. Condensation</strong> (gas → liquid) — E.g. steam on a mirror. Energy loss.<br>
+<strong>4. Melting / Fusion</strong> (solid → liquid) — E.g. ice melting. Energy gain.<br>
+<strong>5. Evaporation / Boiling</strong> (liquid → gas) — E.g. water boiling at 100°C. Energy gain.<br>
+<strong>6. Sublimation</strong> (solid → gas) — E.g. dry ice (CO₂). Maximum energy gain.<br><br>
+💡 <em>Endothermic (absorb heat): melting, evaporation, sublimation.<br>Exothermic (release heat): solidification, condensation, deposition.</em>`,
+      pieces:[
+        {icon:'❄️',text:'Deposition',detail:'Gas → Solid',ans:1},
+        {icon:'🧊',text:'Solidification',detail:'Liquid → Solid',ans:2},
+        {icon:'💦',text:'Condensation',detail:'Gas → Liquid',ans:3},
+        {icon:'🌡️',text:'Melting',detail:'Solid → Liquid',ans:4},
+        {icon:'♨️',text:'Evaporation',detail:'Liquid → Gas',ans:5},
+        {icon:'🌫️',text:'Sublimation',detail:'Solid → Gas',ans:6},
+      ],
+    },
+    es:{
+      title:'Cambios de Fase',
+      sub:'Universo material · 6 transformaciones',
+      badge:'Universo Material',
+      instructions:'<strong>Arrastra</strong> cada cambio de fase al orden correcto de energía creciente (más frío/bajo → más caliente/alto).',
+      colPool:'Cambios a ordenar',
+      colSlots:'Orden (más frío → más caliente)',
+      slotHint:'¿Cambio?',
+      btnCheck:'Verificar orden',
+      btnReset:'Reiniciar',
+      theoryBtn:'📖 Ver la teoría',
+      theoryClose:'Cerrar teoría',
+      theory:`<h3>Cambios de fase</h3>
+La materia existe en tres estados: <strong>sólido, líquido, gas</strong>. Los cambios de fase dependen de la energía (temperatura, presión).<br><br>
+<strong>1. Deposición</strong> (gas → sólido) — Ej: escarcha en una ventana. Pérdida máxima de energía.<br>
+<strong>2. Solidificación</strong> (líquido → sólido) — Ej: agua que se congela a 0°C. Pérdida de energía.<br>
+<strong>3. Condensación</strong> (gas → líquido) — Ej: vaho en un espejo. Pérdida de energía.<br>
+<strong>4. Fusión</strong> (sólido → líquido) — Ej: hielo que se derrite. Ganancia de energía.<br>
+<strong>5. Evaporación / Ebullición</strong> (líquido → gas) — Ej: agua hirviendo a 100°C. Ganancia de energía.<br>
+<strong>6. Sublimación</strong> (sólido → gas) — Ej: hielo seco (CO₂). Ganancia máxima de energía.<br><br>
+💡 <em>Endotérmicos (absorben calor): fusión, evaporación, sublimación.<br>Exotérmicos (liberan calor): solidificación, condensación, deposición.</em>`,
+      pieces:[
+        {icon:'❄️',text:'Deposición',detail:'Gas → Sólido',ans:1},
+        {icon:'🧊',text:'Solidificación',detail:'Líquido → Sólido',ans:2},
+        {icon:'💦',text:'Condensación',detail:'Gas → Líquido',ans:3},
+        {icon:'🌡️',text:'Fusión',detail:'Sólido → Líquido',ans:4},
+        {icon:'♨️',text:'Evaporación',detail:'Líquido → Gas',ans:5},
+        {icon:'🌫️',text:'Sublimación',detail:'Sólido → Gas',ans:6},
+      ],
+    },
+  },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let lang = 'fr';
+let currentModule = null;
+let slotContents = []; // slotContents[slotIndex] = pieceIndex or null
+let shuffledPieces = [];
+let theoryOpen = false;
+let dragSrc = null; // {type:'pool'|'slot', idx:number}
+
+// ═══════════════════════════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════════════════════════
+function setLang(l){
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent === l.toUpperCase())
+  );
+  renderHome();
+  if(currentModule) loadModule(currentModule, false);
+}
+function tx(){ return currentModule ? currentModule[lang] : null; }
+
+// ═══════════════════════════════════════════════════════════
+//  HOME
+// ═══════════════════════════════════════════════════════════
+const HOME_TEXTS = {
+  fr:{tag:'STE Secondaire 3 · Laboratoire',title:'Glisse & <em>Ordonne</em>',sub:'Maîtrise les processus biologiques et géologiques'},
+  en:{tag:'STE Grade 9 · Laboratory',title:'Drag & <em>Order</em>',sub:'Master biological and geological processes'},
+  es:{tag:'STE Secundaria 3 · Laboratorio',title:'Arrastra & <em>Ordena</em>',sub:'Domina los procesos biológicos y geológicos'},
+};
+function renderHome(){
+  const h = HOME_TEXTS[lang];
+  document.getElementById('home-tag').textContent = h.tag;
+  document.getElementById('home-title').innerHTML = h.title;
+  document.getElementById('home-sub').textContent = h.sub;
+
+  const grid = document.getElementById('module-grid');
+  grid.innerHTML = MODULES.map(m => `
+    <div class="module-card" onclick="loadModule(MODULES.find(x=>x.id==='${m.id}'))">
+      <span class="mc-icon">${m.icon}</span>
+      <div class="mc-title">${m[lang].title}</div>
+      <div class="mc-sub">${m[lang].sub}</div>
+      <span class="mc-badge" style="border-color:${m.color}22;color:${m.color}">${m[lang].badge}</span>
+    </div>
+  `).join('');
+
+  const backTx = {fr:'← Accueil',en:'← Home',es:'← Inicio'};
+  document.getElementById('back-btn').textContent = backTx[lang];
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOAD MODULE
+// ═══════════════════════════════════════════════════════════
+function loadModule(mod, resetState=true){
+  currentModule = mod;
+  const d = mod[lang];
+
+  document.getElementById('mod-title').textContent = mod.icon + ' ' + d.title;
+  document.getElementById('instructions').innerHTML = d.instructions;
+  document.getElementById('btn-check').textContent = d.btnCheck;
+  document.getElementById('btn-reset').textContent = d.btnReset;
+  document.getElementById('toggle-theory-btn').textContent = d.theoryBtn;
+  document.getElementById('theory-panel').innerHTML = d.theory;
+  document.getElementById('col-pool-label').textContent = d.colPool;
+  document.getElementById('col-slots-label').textContent = d.colSlots;
+  document.getElementById('result-panel').className = 'result-panel';
+  document.getElementById('theory-panel').className = 'theory-panel';
+  theoryOpen = false;
+
+  if(resetState){
+    shuffledPieces = shuffle([...Array(d.pieces.length).keys()]);
+    slotContents = Array(d.pieces.length).fill(null);
+  }
+
+  renderDragArea();
+  buildProgressDots();
+  showScreen('screen-module');
+}
+
+function buildProgressDots(){
+  const mods = MODULES;
+  const dots = document.getElementById('progress-dots');
+  dots.innerHTML = mods.map(m => `
+    <div class="pdot${m.id===currentModule.id?' active':''}" title="${m[lang].title}"></div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER DRAG AREA
+// ═══════════════════════════════════════════════════════════
+function renderDragArea(){
+  const d = currentModule[lang];
+  const pieces = d.pieces;
+
+  // pool: show pieces not yet placed
+  const placedPieceIdxs = new Set(slotContents.filter(x=>x!==null));
+  const pool = document.getElementById('pool');
+  pool.innerHTML = '';
+
+  shuffledPieces.forEach((pieceIdx, poolPos) => {
+    if(placedPieceIdxs.has(pieceIdx)) return;
+    const p = pieces[pieceIdx];
+    const el = createPieceEl(p, pieceIdx, 'pool', poolPos);
+    pool.appendChild(el);
+  });
+  if(pool.children.length === 0){
+    pool.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:.5rem;font-family:var(--mono)">${{fr:'Toutes les pièces sont placées ✓',en:'All pieces placed ✓',es:'Todas las piezas colocadas ✓'}[lang]}</div>`;
+  }
+
+  // slots
+  const slotsEl = document.getElementById('slots');
+  slotsEl.innerHTML = '';
+  slotContents.forEach((pieceIdx, slotIdx) => {
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.dataset.slotIdx = slotIdx;
+    setupSlotDrop(slot, slotIdx);
+
+    const numEl = document.createElement('div');
+    numEl.className = 'slot-num';
+    numEl.textContent = slotIdx + 1;
+    slot.appendChild(numEl);
+
+    if(pieceIdx !== null){
+      const p = pieces[pieceIdx];
+      const pel = createPieceEl(p, pieceIdx, 'slot', slotIdx);
+      slot.appendChild(pel);
+      slot.classList.add('filled');
+    } else {
+      const hint = document.createElement('div');
+      hint.className = 'slot-hint';
+      hint.textContent = d.slotHint;
+      slot.appendChild(hint);
+    }
+    slotsEl.appendChild(slot);
+  });
+
+  document.getElementById('btn-check').disabled = slotContents.includes(null);
+}
+
+function createPieceEl(p, pieceIdx, source, sourcePos){
+  const el = document.createElement('div');
+  el.className = 'piece';
+  el.dataset.pieceIdx = pieceIdx;
+  el.dataset.source = source;
+  el.dataset.sourcePos = sourcePos;
+  el.innerHTML = `<span class="p-icon">${p.icon}</span><span class="p-text">${p.text}<br><span style="font-size:11px;color:var(--muted)">${p.detail}</span></span>`;
+  el.draggable = true;
+
+  // Desktop drag
+  el.addEventListener('dragstart', e => {
+    dragSrc = {type: source, idx: sourcePos, pieceIdx};
+    el.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', pieceIdx);
+  });
+  el.addEventListener('dragend', () => el.classList.remove('dragging'));
+
+  // Touch drag
+  setupTouchDrag(el, pieceIdx, source, sourcePos);
+
+  return el;
+}
+
+function setupSlotDrop(slot, slotIdx){
+  slot.addEventListener('dragover', e => {
+    e.preventDefault();
+    slot.classList.add('drag-over');
+  });
+  slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+  slot.addEventListener('drop', e => {
+    e.preventDefault();
+    slot.classList.remove('drag-over');
+    const pieceIdx = parseInt(e.dataTransfer.getData('text/plain'));
+    dropPieceToSlot(pieceIdx, slotIdx, dragSrc);
+  });
+  // also allow dropping back to pool
+  const pool = document.getElementById('pool');
+  if(!pool._hasDropListener){
+    pool._hasDropListener = true;
+    pool.addEventListener('dragover', e => { e.preventDefault(); });
+    pool.addEventListener('drop', e => {
+      e.preventDefault();
+      const pieceIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      if(dragSrc && dragSrc.type === 'slot'){
+        slotContents[dragSrc.idx] = null;
+        renderDragArea();
+      }
+    });
+  }
+}
+
+function dropPieceToSlot(pieceIdx, slotIdx, src){
+  // if slot already has a piece, swap it back to pool
+  const existing = slotContents[slotIdx];
+  // if came from another slot, clear that slot
+  if(src && src.type === 'slot' && src.idx !== slotIdx){
+    slotContents[src.idx] = existing; // swap
+  }
+  slotContents[slotIdx] = pieceIdx;
+  document.getElementById('result-panel').className = 'result-panel';
+  renderDragArea();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOUCH DRAG
+// ═══════════════════════════════════════════════════════════
+let touchPiece = null;
+let touchPieceIdx = null;
+let touchSource = null;
+let touchSourcePos = null;
+const ghost = document.getElementById('drag-ghost');
+
+function setupTouchDrag(el, pieceIdx, source, sourcePos){
+  el.addEventListener('touchstart', e => {
+    touchPiece = el;
+    touchPieceIdx = pieceIdx;
+    touchSource = source;
+    touchSourcePos = sourcePos;
+    const p = currentModule[lang].pieces[pieceIdx];
+    ghost.innerHTML = p.icon + ' ' + p.text;
+    ghost.style.display = 'flex';
+    el.style.opacity = '.4';
+  },{passive:true});
+
+  el.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    ghost.style.left = (t.clientX - 60) + 'px';
+    ghost.style.top = (t.clientY - 25) + 'px';
+    // highlight slot under finger
+    const el2 = document.elementFromPoint(t.clientX, t.clientY);
+    document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-over'));
+    const slot = el2 && el2.closest('.slot');
+    if(slot) slot.classList.add('drag-over');
+  },{passive:true});
+
+  el.addEventListener('touchend', e => {
+    ghost.style.display = 'none';
+    if(touchPiece) touchPiece.style.opacity = '1';
+    document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-over'));
+
+    const t = e.changedTouches[0];
+    const target = document.elementFromPoint(t.clientX, t.clientY);
+    const slot = target && target.closest('.slot');
+    const pool = target && target.closest('#pool');
+
+    if(slot){
+      const slotIdx = parseInt(slot.dataset.slotIdx);
+      dropPieceToSlot(touchPieceIdx, slotIdx, {type:touchSource, idx:touchSourcePos, pieceIdx:touchPieceIdx});
+    } else if(pool && touchSource === 'slot'){
+      slotContents[touchSourcePos] = null;
+      renderDragArea();
+    }
+    touchPiece = touchSource = touchSourcePos = touchPieceIdx = null;
+  },{passive:true});
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CHECK ANSWERS
+// ═══════════════════════════════════════════════════════════
+function checkAnswers(){
+  const d = currentModule[lang];
+  const pieces = d.pieces;
+  let correct = 0;
+  const slots = document.querySelectorAll('.slot');
+
+  slotContents.forEach((pieceIdx, slotIdx) => {
+    const slot = slots[slotIdx];
+    slot.classList.remove('correct-slot','wrong-slot');
+    if(pieceIdx === null) return;
+    const p = pieces[pieceIdx];
+    if(p.ans === slotIdx + 1){
+      correct++;
+      slot.classList.add('correct-slot');
+    } else {
+      slot.classList.add('wrong-slot');
+    }
+  });
+
+  const total = d.pieces.length;
+  const pct = Math.round((correct/total)*100);
+  const panel = document.getElementById('result-panel');
+  panel.className = 'result-panel show';
+
+  const verdicts = {
+    fr:[
+      {min:100,icon:'🏆',h:'Parfait !',p:'Toutes les étapes dans le bon ordre !'},
+      {min:60,icon:'👍',h:'Presque !',p:`${correct}/${total} correctes. Retente !`},
+      {min:0,icon:'🔄',h:'Réessaie !',p:'Glisse encore et recheck la théorie.'},
+    ],
+    en:[
+      {min:100,icon:'🏆',h:'Perfect!',p:'All steps in the right order!'},
+      {min:60,icon:'👍',h:'Almost!',p:`${correct}/${total} correct. Try again!`},
+      {min:0,icon:'🔄',h:'Try again!',p:'Keep dragging and review the theory.'},
+    ],
+    es:[
+      {min:100,icon:'🏆',h:'¡Perfecto!',p:'¡Todas las etapas en el orden correcto!'},
+      {min:60,icon:'👍',h:'¡Casi!',p:`${correct}/${total} correctas. ¡Inténtalo de nuevo!`},
+      {min:0,icon:'🔄',h:'¡Inténtalo de nuevo!',p:'Sigue arrastrando y repasa la teoría.'},
+    ],
+  };
+  const v = verdicts[lang].find(x => pct >= x.min);
+  document.getElementById('result-icon').textContent = v.icon;
+  document.getElementById('result-h3').textContent = v.h;
+  document.getElementById('result-p').textContent = v.p;
+
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  // disable check after full correct
+  if(correct === total) document.getElementById('btn-check').disabled = true;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESET / THEORY / NAV
+// ═══════════════════════════════════════════════════════════
+function resetModule(){
+  loadModule(currentModule, true);
+}
+
+function toggleTheory(){
+  theoryOpen = !theoryOpen;
+  const panel = document.getElementById('theory-panel');
+  const btn = document.getElementById('toggle-theory-btn');
+  const d = currentModule[lang];
+  panel.className = 'theory-panel' + (theoryOpen?' show':'');
+  btn.textContent = theoryOpen ? d.theoryClose : d.theoryBtn;
+}
+
+function goHome(){
+  currentModule = null;
+  renderHome();
+  showScreen('screen-home');
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function shuffle(arr){return arr.sort(()=>Math.random()-.5)}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+renderHome();
+</script>
+</body>
+</html>

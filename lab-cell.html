@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cellule interactive · STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--bg2:#0d1420;--bg3:#121d2e;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --text:#dce8f8;--muted:#4a6282;
+  --green:#4ddc8a;--red:#ff5f6d;--yellow:#ffd166;--blue:#5bc8ff;--purple:#b48bfa;
+  --font:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:12px;
+}
+html{font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;
+  background-image:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.3) 0%,transparent 100%),
+  radial-gradient(1px 1px at 75% 15%,rgba(255,255,255,.35) 0%,transparent 100%),
+  radial-gradient(1.5px 1.5px at 50% 80%,rgba(255,255,255,.25) 0%,transparent 100%),
+  radial-gradient(1px 1px at 90% 60%,rgba(255,255,255,.3) 0%,transparent 100%),
+  radial-gradient(1px 1px at 10% 70%,rgba(255,255,255,.2) 0%,transparent 100%);
+  pointer-events:none;z-index:0}
+
+#lang-bar{position:relative;z-index:10;display:flex;gap:6px;justify-content:flex-end;padding:1rem 1.25rem 0}
+.lang-btn{font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:5px 12px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.lang-btn.active{background:var(--green);color:var(--bg);border-color:var(--green)}
+
+#app{position:relative;z-index:1;max-width:740px;margin:0 auto;padding:1.25rem 1.25rem 4rem}
+
+.hero{text-align:center;padding:1.25rem 0 1.75rem}
+.hero-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:.6rem}
+.hero h1{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:900;letter-spacing:-.03em;margin-bottom:.3rem}
+.hero h1 em{font-style:normal;color:var(--green)}
+.hero p{font-size:13px;color:var(--muted)}
+
+.sec{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:.85rem}
+.sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* cell type toggle */
+.cell-toggle{display:flex;gap:8px;margin-bottom:1.25rem}
+.toggle-btn{flex:1;padding:10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);font-family:var(--font);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;text-align:center}
+.toggle-btn.active{border-color:var(--green);color:var(--green);background:rgba(77,220,138,.08)}
+
+/* cell viewer */
+.cell-layout{display:grid;grid-template-columns:1fr 280px;gap:1.25rem;margin-bottom:1.5rem;align-items:start}
+@media(max-width:580px){.cell-layout{grid-template-columns:1fr}}
+
+.cell-wrap{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.cell-wrap svg{width:100%;display:block;cursor:pointer}
+
+/* organelle highlight */
+.organelle{transition:opacity .2s;cursor:pointer}
+.organelle:hover{opacity:.8}
+.organelle.selected{filter:drop-shadow(0 0 8px currentColor)}
+
+/* info panel */
+.info-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;min-height:200px;display:flex;flex-direction:column;gap:.75rem}
+.info-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;color:var(--muted);font-size:13px;gap:.5rem;padding:1rem}
+.info-empty .arrow{font-size:28px;animation:bounce 1.5s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.info-icon{font-size:32px;margin-bottom:4px}
+.info-name{font-size:18px;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+.info-badge{display:inline-block;font-family:var(--mono);font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid var(--border2);color:var(--muted);margin-bottom:.5rem}
+.info-fn{font-size:13px;line-height:1.7;color:rgba(220,232,248,.85)}
+.info-fact{background:var(--bg3);border-left:3px solid var(--yellow);border-radius:0 8px 8px 0;padding:.6rem .9rem;font-size:12px;color:rgba(220,232,248,.7);line-height:1.6;margin-top:.25rem}
+.info-fact strong{color:var(--yellow)}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.25rem}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);padding:4px 10px;border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all .15s;background:var(--bg2)}
+.leg-item:hover{border-color:var(--border2);color:var(--text)}
+.leg-item.active{border-color:currentColor}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* theory */
+.theory-box{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:0 var(--r) var(--r) 0;padding:1rem 1.25rem;font-size:13px;line-height:1.8;color:rgba(220,232,248,.8);margin-bottom:1.25rem}
+.theory-box h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:.5rem}
+
+/* quiz */
+.q-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1rem;margin-bottom:.75rem}
+.q-num{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.1em;margin-bottom:.4rem}
+.q-text{font-size:14px;line-height:1.6;margin-bottom:.75rem}
+.q-opts{display:grid;gap:6px}
+.q-opt{display:block;width:100%;text-align:left;padding:9px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:13px;color:var(--text);cursor:pointer;transition:all .15s}
+.q-opt:hover:not(:disabled){border-color:var(--border2);transform:translateX(3px)}
+.q-opt:disabled{cursor:default}
+.q-opt.correct{background:rgba(77,220,138,.12);border-color:var(--green);color:#a7f3ca}
+.q-opt.wrong{background:rgba(255,95,109,.1);border-color:var(--red);color:#fca5a5}
+.q-opt.reveal{background:rgba(77,220,138,.07);border-color:rgba(77,220,138,.4);color:#a7f3ca}
+.q-fb{display:none;margin-top:.6rem;padding:.65rem .9rem;border-radius:7px;font-size:12.5px;line-height:1.65}
+.q-fb.show{display:block;animation:fadeUp .2s ease}
+.q-fb.ok{background:rgba(77,220,138,.08);color:#a7f3ca;border-left:3px solid var(--green)}
+.q-fb.bad{background:rgba(255,95,109,.08);color:#fca5a5;border-left:3px solid var(--red)}
+.result-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;text-align:center;display:none;margin-top:1rem}
+.result-card.show{display:block;animation:fadeUp .4s ease}
+.result-pct{font-size:3rem;font-weight:900;letter-spacing:-.04em;margin-bottom:.3rem}
+.result-msg{font-size:13px;color:var(--muted);margin-bottom:1rem}
+.btn-retry{font-family:var(--font);font-weight:700;font-size:14px;padding:11px 24px;border:none;border-radius:8px;background:var(--green);color:var(--bg);cursor:pointer;transition:all .2s}
+.btn-retry:hover{transform:translateY(-2px)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="lang-bar">
+  <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('es')">ES</button>
+</div>
+<div id="app">
+  <div class="hero">
+    <span class="hero-tag" id="hero-tag">STE Secondaire 3 · Laboratoire</span>
+    <h1 id="hero-h1">La <em>Cellule</em> vivante</h1>
+    <p id="hero-p">Clique sur chaque organite pour découvrir sa fonction</p>
+  </div>
+
+  <p class="sec" id="sec-type">Type de cellule</p>
+  <div class="cell-toggle">
+    <button class="toggle-btn active" id="btn-animal" onclick="setCell('animal')">🐾 <span id="lbl-animal">Cellule animale</span></button>
+    <button class="toggle-btn" id="btn-plant" onclick="setCell('plant')">🌿 <span id="lbl-plant">Cellule végétale</span></button>
+  </div>
+
+  <div class="cell-layout">
+    <div class="cell-wrap">
+      <svg id="cell-svg" viewBox="0 0 420 380" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="info-panel" id="info-panel">
+      <div class="info-empty" id="info-empty">
+        <span class="arrow">👆</span>
+        <span id="info-empty-text">Clique sur un organite pour voir son rôle</span>
+      </div>
+      <div id="info-content" style="display:none;flex-direction:column;gap:.6rem">
+        <div class="info-icon" id="info-icon"></div>
+        <div class="info-name" id="info-name"></div>
+        <span class="info-badge" id="info-badge"></span>
+        <div class="info-fn" id="info-fn"></div>
+        <div class="info-fact" id="info-fact"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="sec" id="sec-legend">Organites</p>
+  <div class="legend" id="legend"></div>
+
+  <p class="sec" id="sec-theory">Théorie</p>
+  <div class="theory-box" id="theory-box"></div>
+
+  <p class="sec" id="sec-quiz">Quiz</p>
+  <div id="quiz-body"></div>
+  <div class="result-card" id="result-card">
+    <div class="result-pct" id="result-pct"></div>
+    <div class="result-msg" id="result-msg"></div>
+    <button class="btn-retry" onclick="initQuiz()" id="btn-retry"></button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  ORGANELLE DATA
+// ═══════════════════════════════════════
+const ORGANELLES = {
+  membrane:{
+    color:'#5bc8ff', both:true,
+    fr:{name:'Membrane plasmique',badge:'Enveloppe cellulaire',fn:'Délimite la cellule et contrôle les échanges avec l\'extérieur. Elle est semi-perméable : elle laisse passer certaines molécules et en bloque d\'autres.',fact:'<strong>Fait :</strong> La membrane est formée d\'une double couche de phospholipides — comme un sandwich de molécules grasses avec les têtes hydrophiles à l\'extérieur.'},
+    en:{name:'Cell membrane',badge:'Cell envelope',fn:'Defines the cell boundary and controls exchanges with the outside. It is semi-permeable: it lets some molecules through and blocks others.',fact:'<strong>Fact:</strong> The membrane is a phospholipid bilayer — like a sandwich of fatty molecules with hydrophilic heads facing outward.'},
+    es:{name:'Membrana plasmática',badge:'Envoltura celular',fn:'Delimita la célula y controla los intercambios con el exterior. Es semipermeable: deja pasar ciertas moléculas y bloquea otras.',fact:'<strong>Dato:</strong> La membrana está formada por una doble capa de fosfolípidos — como un sándwich de moléculas grasas con las cabezas hidrófilas hacia afuera.'},
+  },
+  nucleus:{
+    color:'#b48bfa', both:true,
+    fr:{name:'Noyau',badge:'Centre de contrôle',fn:'Contient l\'ADN (information génétique) organisé en chromosomes. Il dirige toutes les activités cellulaires et la synthèse des protéines.',fact:'<strong>Fait :</strong> Le noyau humain contient environ 2 mètres d\'ADN enroulé sur lui-même — tout cela dans une cellule de 10 µm !'},
+    en:{name:'Nucleus',badge:'Control centre',fn:'Contains DNA (genetic information) organised into chromosomes. It directs all cell activities and protein synthesis.',fact:'<strong>Fact:</strong> The human nucleus contains about 2 metres of DNA coiled up — all inside a cell just 10 µm wide!'},
+    es:{name:'Núcleo',badge:'Centro de control',fn:'Contiene el ADN (información genética) organizado en cromosomas. Dirige todas las actividades celulares y la síntesis de proteínas.',fact:'<strong>Dato:</strong> El núcleo humano contiene unos 2 metros de ADN enrollado — ¡todo dentro de una célula de 10 µm!'},
+  },
+  mitochondria:{
+    color:'#ff8c42', both:true,
+    fr:{name:'Mitochondrie',badge:'Centrale énergétique',fn:'Produit l\'énergie cellulaire (ATP) par respiration cellulaire. Elle décompose le glucose en présence d\'oxygène pour libérer de l\'énergie.',fact:'<strong>Fait :</strong> La mitochondrie possède son propre ADN — preuve qu\'elle était autrefois une bactérie libre qui a été absorbée il y a ~1,5 milliard d\'années.'},
+    en:{name:'Mitochondrion',badge:'Energy powerhouse',fn:'Produces cellular energy (ATP) through cellular respiration. It breaks down glucose in the presence of oxygen to release energy.',fact:'<strong>Fact:</strong> Mitochondria have their own DNA — evidence they were once free-living bacteria absorbed about 1.5 billion years ago.'},
+    es:{name:'Mitocondria',badge:'Central energética',fn:'Produce energía celular (ATP) por respiración celular. Descompone la glucosa en presencia de oxígeno para liberar energía.',fact:'<strong>Dato:</strong> La mitocondria tiene su propio ADN — prueba de que era una bacteria libre que fue absorbida hace ~1500 millones de años.'},
+  },
+  ribosome:{
+    color:'#ffd166', both:true,
+    fr:{name:'Ribosome',badge:'Usine à protéines',fn:'Synthétise les protéines à partir des instructions de l\'ARN messager. Il lit le code génétique et assemble les acides aminés.',fact:'<strong>Fait :</strong> Une cellule humaine peut contenir jusqu\'à 10 millions de ribosomes ! Ce sont les organites les plus nombreux.'},
+    en:{name:'Ribosome',badge:'Protein factory',fn:'Synthesises proteins from messenger RNA instructions. It reads the genetic code and assembles amino acids.',fact:'<strong>Fact:</strong> A human cell can contain up to 10 million ribosomes! They are the most numerous organelles.'},
+    es:{name:'Ribosoma',badge:'Fábrica de proteínas',fn:'Sintetiza proteínas a partir de las instrucciones del ARNm. Lee el código genético y ensambla aminoácidos.',fact:'<strong>Dato:</strong> ¡Una célula humana puede contener hasta 10 millones de ribosomas! Son los orgánulos más numerosos.'},
+  },
+  reticulum:{
+    color:'#ff6b9d', both:true,
+    fr:{name:'Réticulum endoplasmique',badge:'Réseau de transport',fn:'Réseau de membranes internes. La forme rugueuse (avec ribosomes) synthétise les protéines. La forme lisse synthétise les lipides et détoxifie.',fact:'<strong>Fait :</strong> Si on dépliait le réticulum d\'une seule cellule hépatique, sa surface serait plus grande qu\'un terrain de basketball !'},
+    en:{name:'Endoplasmic reticulum',badge:'Transport network',fn:'Network of internal membranes. Rough ER (with ribosomes) synthesises proteins. Smooth ER synthesises lipids and detoxifies.',fact:'<strong>Fact:</strong> If you unfolded the ER of a single liver cell, its surface area would be larger than a basketball court!'},
+    es:{name:'Retículo endoplasmático',badge:'Red de transporte',fn:'Red de membranas internas. El RE rugoso (con ribosomas) sintetiza proteínas. El RE liso sintetiza lípidos y desintoxica.',fact:'<strong>Dato:</strong> ¡Si se desplegara el retículo de una sola célula hepática, su superficie sería mayor que una cancha de baloncesto!'},
+  },
+  golgi:{
+    color:'#4ddc8a', both:true,
+    fr:{name:'Appareil de Golgi',badge:'Centre de tri et d\'expédition',fn:'Reçoit les protéines du réticulum, les modifie, les trie et les envoie vers leur destination finale (membrane, lysosomes, extérieur).',fact:'<strong>Fait :</strong> L\'appareil de Golgi ressemble à une pile de crêpes aplaties — chaque couche (cisterne) traite les protéines différemment.'},
+    en:{name:'Golgi apparatus',badge:'Sorting & shipping centre',fn:'Receives proteins from the ER, modifies them, sorts them and sends them to their final destination (membrane, lysosomes, outside).',fact:'<strong>Fact:</strong> The Golgi apparatus looks like a stack of flattened pancakes — each layer (cisterna) processes proteins differently.'},
+    es:{name:'Aparato de Golgi',badge:'Centro de clasificación',fn:'Recibe proteínas del retículo, las modifica, clasifica y envía a su destino final (membrana, lisosomas, exterior).',fact:'<strong>Dato:</strong> El aparato de Golgi parece una pila de panqueques aplanados — cada capa (cisterna) procesa las proteínas de forma diferente.'},
+  },
+  lysosome:{
+    color:'#ff5252', both:false, animalOnly:true,
+    fr:{name:'Lysosome',badge:'Organite de dégradation',fn:'Contient des enzymes digestives qui décomposent les déchets cellulaires, les organites usés et les agents pathogènes. C\'est le "système digestif" de la cellule.',fact:'<strong>Fait :</strong> Les lysosomes maintiennent un pH de ~4,5 (très acide) pour que leurs enzymes fonctionnent. Si un lysosome se brise, les enzymes s\'auto-détruisent dans le cytoplasme neutre.'},
+    en:{name:'Lysosome',badge:'Degradation organelle',fn:'Contains digestive enzymes that break down cell waste, worn-out organelles, and pathogens. It is the cell\'s "digestive system".',fact:'<strong>Fact:</strong> Lysosomes maintain a pH of ~4.5 (very acidic) for their enzymes to work. If a lysosome breaks, the enzymes self-destruct in the neutral cytoplasm.'},
+    es:{name:'Lisosoma',badge:'Orgánulo de degradación',fn:'Contiene enzimas digestivas que descomponen los desechos celulares, orgánulos usados y patógenos. Es el "sistema digestivo" de la célula.',fact:'<strong>Dato:</strong> Los lisosomas mantienen un pH de ~4,5 (muy ácido) para que sus enzimas funcionen. Si un lisosoma se rompe, las enzimas se autodestruyen en el citoplasma neutro.'},
+  },
+  vacuole:{
+    color:'#5bc8ff', both:true,
+    fr:{name:'Vacuole',badge:'Compartiment de stockage',fn:'Stocke l\'eau, les nutriments et les déchets. Dans les cellules végétales, la grande vacuole centrale maintient la turgescence (rigidité) de la cellule.',fact:'<strong>Fait :</strong> La vacuole centrale d\'une cellule végétale peut occuper jusqu\'à 90% du volume cellulaire ! Elle fonctionne comme un ballon gonflé d\'eau.'},
+    en:{name:'Vacuole',badge:'Storage compartment',fn:'Stores water, nutrients and waste. In plant cells, the large central vacuole maintains cell turgidity (rigidity).',fact:'<strong>Fact:</strong> The central vacuole of a plant cell can occupy up to 90% of the cell volume! It works like a water-filled balloon.'},
+    es:{name:'Vacuola',badge:'Compartimento de almacenamiento',fn:'Almacena agua, nutrientes y desechos. En células vegetales, la gran vacuola central mantiene la turgencia (rigidez) de la célula.',fact:'<strong>Dato:</strong> ¡La vacuola central de una célula vegetal puede ocupar hasta el 90% del volumen celular! Funciona como un globo lleno de agua.'},
+  },
+  chloroplast:{
+    color:'#4ddc8a', both:false, plantOnly:true,
+    fr:{name:'Chloroplaste',badge:'Centrale photosynthétique',fn:'Réalise la photosynthèse : transforme la lumière solaire + CO₂ + eau en glucose + oxygène. Contient la chlorophylle qui capte la lumière.',fact:'<strong>Fait :</strong> Comme la mitochondrie, le chloroplaste possède son propre ADN. Il était autrefois une cyanobactérie libre il y a ~1,5 milliard d\'années.'},
+    en:{name:'Chloroplast',badge:'Photosynthetic powerhouse',fn:'Carries out photosynthesis: transforms sunlight + CO₂ + water into glucose + oxygen. Contains chlorophyll that captures light.',fact:'<strong>Fact:</strong> Like the mitochondrion, the chloroplast has its own DNA. It was once a free-living cyanobacterium about 1.5 billion years ago.'},
+    es:{name:'Cloroplasto',badge:'Central fotosintética',fn:'Realiza la fotosíntesis: transforma la luz solar + CO₂ + agua en glucosa + oxígeno. Contiene clorofila que capta la luz.',fact:'<strong>Dato:</strong> Como la mitocondria, el cloroplasto tiene su propio ADN. Era una cianobacteria libre hace ~1500 millones de años.'},
+  },
+  wall:{
+    color:'#a78bfa', both:false, plantOnly:true,
+    fr:{name:'Paroi cellulaire',badge:'Structure de soutien',fn:'Couche rigide de cellulose entourant la membrane. Elle donne sa forme à la cellule végétale, résiste à la pression osmotique et protège la cellule.',fact:'<strong>Fait :</strong> La paroi cellulaire est absente dans les cellules animales — c\'est pourquoi les animaux peuvent avoir des formes corporelles si variées.'},
+    en:{name:'Cell wall',badge:'Support structure',fn:'Rigid cellulose layer surrounding the membrane. It gives plant cells their shape, resists osmotic pressure and protects the cell.',fact:'<strong>Fact:</strong> The cell wall is absent in animal cells — that\'s why animals can have such varied body shapes.'},
+    es:{name:'Pared celular',badge:'Estructura de soporte',fn:'Capa rígida de celulosa que rodea la membrana. Da forma a la célula vegetal, resiste la presión osmótica y protege la célula.',fact:'<strong>Dato:</strong> La pared celular está ausente en las células animales — por eso los animales pueden tener formas corporales tan variadas.'},
+  },
+  cytoplasm:{
+    color:'#607d8b', both:true,
+    fr:{name:'Cytoplasme',badge:'Milieu intracellulaire',fn:'Gel aqueux (cytosol) qui remplit la cellule et dans lequel baignent tous les organites. Il contient des protéines, des ions et des métabolites.',fact:'<strong>Fait :</strong> Le cytoplasme est en mouvement constant — un phénomène appelé courant cytoplasmique ou cytose, visible au microscope.'},
+    en:{name:'Cytoplasm',badge:'Intracellular medium',fn:'Aqueous gel (cytosol) that fills the cell and in which all organelles are suspended. It contains proteins, ions and metabolites.',fact:'<strong>Fact:</strong> The cytoplasm is in constant motion — a phenomenon called cytoplasmic streaming or cyclosis, visible under a microscope.'},
+    es:{name:'Citoplasma',badge:'Medio intracelular',fn:'Gel acuoso (citosol) que llena la célula y en el que están suspendidos todos los orgánulos. Contiene proteínas, iones y metabolitos.',fact:'<strong>Dato:</strong> El citoplasma está en constante movimiento — un fenómeno llamado corriente citoplasmática o citosis, visible al microscopio.'},
+  },
+};
+
+// ═══════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════
+const TX = {
+  fr:{
+    tag:'STE Secondaire 3 · Laboratoire',h1:'La <em>Cellule</em> vivante',
+    p:'Clique sur chaque organite pour découvrir sa fonction',
+    secType:'Type de cellule',lbl_animal:'Cellule animale',lbl_plant:'Cellule végétale',
+    secLegend:'Organites',secTheory:'Théorie',secQuiz:'Quiz',
+    emptyText:'Clique sur un organite pour voir son rôle',
+    theory:`<h3>La cellule — unité fondamentale du vivant</h3>
+Toute vie est composée de cellules. La cellule est la plus petite unité capable de réaliser toutes les fonctions vitales.<br><br>
+<strong>Cellule animale vs végétale :</strong><br>
+• Les deux ont : membrane plasmique, noyau, mitochondries, ribosomes, réticulum, Golgi, cytoplasme<br>
+• Végétales seulement : <strong>paroi cellulaire</strong> (cellulose), <strong>chloroplastes</strong> (photosynthèse), <strong>grande vacuole centrale</strong><br><br>
+<strong>Fonctions vitales cellulaires :</strong><br>
+• Respiration cellulaire : Glucose + O₂ → ATP + CO₂ + H₂O (mitochondries)<br>
+• Photosynthèse : CO₂ + H₂O + lumière → Glucose + O₂ (chloroplastes)<br>
+• Synthèse protéique : ADN → ARN → Protéines (ribosomes)<br>
+• Division : mitose (croissance), méiose (reproduction)`,
+    btnRetry:'Réessayer',
+    verdicts:[
+      {min:87,icon:'🦠',msg:'Maîtrise totale de la cellule !'},
+      {min:62,icon:'🔬',msg:'Bien ! Explore encore la cellule et réessaie.'},
+      {min:0,icon:'📚',msg:'Continue ! Clique sur chaque organite et lis la théorie.'},
+    ],
+    questions:[
+      {q:'Quel organite est responsable de la production d\'énergie (ATP) ?',opts:['Noyau','Ribosome','Mitochondrie','Vacuole'],ans:2,exp:'La mitochondrie produit l\'ATP par respiration cellulaire : Glucose + O₂ → ATP + CO₂ + H₂O.'},
+      {q:'Quelle structure est présente dans les cellules végétales mais PAS dans les cellules animales ?',opts:['Noyau','Mitochondrie','Membrane plasmique','Chloroplaste'],ans:3,exp:'Le chloroplaste est exclusif aux cellules végétales (et algues). Il contient la chlorophylle pour la photosynthèse.'},
+      {q:'L\'ADN est contenu dans quel organite ?',opts:['Ribosome','Mitochondrie','Noyau','Golgi'],ans:2,exp:'L\'ADN est dans le noyau, enroulé sur des chromosomes. Il porte l\'information génétique de la cellule.'},
+      {q:'Quel organite synthétise les protéines ?',opts:['Lysosome','Ribosome','Vacuole','Membrane'],ans:1,exp:'Les ribosomes lisent l\'ARN messager et assemblent les acides aminés pour former des protéines.'},
+      {q:'La paroi cellulaire des végétaux est composée principalement de…',opts:['Protéines','Lipides','Cellulose','ADN'],ans:2,exp:'La paroi cellulaire végétale est faite de cellulose — un polymère de glucose qui donne rigidité et résistance.'},
+      {q:'Quel organite trie et expédie les protéines vers leur destination finale ?',opts:['Réticulum endoplasmique','Appareil de Golgi','Lysosome','Vacuole'],ans:1,exp:'L\'appareil de Golgi reçoit les protéines du RE, les modifie, les conditionne et les envoie vers la membrane, les lysosomes ou l\'extérieur.'},
+      {q:'Quelle est la fonction de la membrane plasmique ?',opts:['Produire de l\'énergie','Synthétiser l\'ADN','Contrôler les échanges entre la cellule et l\'extérieur','Réaliser la photosynthèse'],ans:2,exp:'La membrane plasmique est semi-perméable : elle régule ce qui entre et sort de la cellule (nutriments, déchets, signaux).'},
+      {q:'La grande vacuole centrale des cellules végétales sert principalement à…',opts:['Produire du glucose','Stocker l\'eau et maintenir la turgescence','Synthétiser les protéines','Digérer les déchets'],ans:1,exp:'La vacuole centrale stocke l\'eau et maintient la pression interne (turgescence) qui donne sa rigidité à la cellule végétale.'},
+    ],
+  },
+  en:{
+    tag:'STE Grade 9 · Laboratory',h1:'The Living <em>Cell</em>',
+    p:'Click on each organelle to discover its function',
+    secType:'Cell type',lbl_animal:'Animal cell',lbl_plant:'Plant cell',
+    secLegend:'Organelles',secTheory:'Theory',secQuiz:'Quiz',
+    emptyText:'Click on an organelle to see its role',
+    theory:`<h3>The cell — fundamental unit of life</h3>
+All life is made of cells. The cell is the smallest unit capable of carrying out all vital functions.<br><br>
+<strong>Animal vs plant cell:</strong><br>
+• Both have: cell membrane, nucleus, mitochondria, ribosomes, ER, Golgi, cytoplasm<br>
+• Plants only: <strong>cell wall</strong> (cellulose), <strong>chloroplasts</strong> (photosynthesis), <strong>large central vacuole</strong><br><br>
+<strong>Cellular vital functions:</strong><br>
+• Cellular respiration: Glucose + O₂ → ATP + CO₂ + H₂O (mitochondria)<br>
+• Photosynthesis: CO₂ + H₂O + light → Glucose + O₂ (chloroplasts)<br>
+• Protein synthesis: DNA → RNA → Proteins (ribosomes)<br>
+• Division: mitosis (growth), meiosis (reproduction)`,
+    btnRetry:'Try again',
+    verdicts:[
+      {min:87,icon:'🦠',msg:'Total mastery of the cell!'},
+      {min:62,icon:'🔬',msg:'Good! Explore the cell more and try again.'},
+      {min:0,icon:'📚',msg:'Keep going! Click each organelle and read the theory.'},
+    ],
+    questions:[
+      {q:'Which organelle is responsible for producing energy (ATP)?',opts:['Nucleus','Ribosome','Mitochondrion','Vacuole'],ans:2,exp:'The mitochondrion produces ATP through cellular respiration: Glucose + O₂ → ATP + CO₂ + H₂O.'},
+      {q:'Which structure is present in plant cells but NOT in animal cells?',opts:['Nucleus','Mitochondrion','Cell membrane','Chloroplast'],ans:3,exp:'The chloroplast is exclusive to plant cells (and algae). It contains chlorophyll for photosynthesis.'},
+      {q:'DNA is contained in which organelle?',opts:['Ribosome','Mitochondrion','Nucleus','Golgi'],ans:2,exp:'DNA is in the nucleus, coiled on chromosomes. It carries the cell\'s genetic information.'},
+      {q:'Which organelle synthesises proteins?',opts:['Lysosome','Ribosome','Vacuole','Membrane'],ans:1,exp:'Ribosomes read messenger RNA and assemble amino acids to form proteins.'},
+      {q:'The plant cell wall is mainly made of…',opts:['Proteins','Lipids','Cellulose','DNA'],ans:2,exp:'The plant cell wall is made of cellulose — a glucose polymer that provides rigidity and strength.'},
+      {q:'Which organelle sorts and ships proteins to their final destination?',opts:['Endoplasmic reticulum','Golgi apparatus','Lysosome','Vacuole'],ans:1,exp:'The Golgi apparatus receives proteins from the ER, modifies them, packages them and sends them to the membrane, lysosomes or outside.'},
+      {q:'What is the function of the cell membrane?',opts:['Produce energy','Synthesise DNA','Control exchanges between cell and outside','Carry out photosynthesis'],ans:2,exp:'The cell membrane is semi-permeable: it regulates what enters and leaves the cell (nutrients, waste, signals).'},
+      {q:'The large central vacuole of plant cells mainly serves to…',opts:['Produce glucose','Store water and maintain turgidity','Synthesise proteins','Digest waste'],ans:1,exp:'The central vacuole stores water and maintains internal pressure (turgidity) that gives the plant cell its rigidity.'},
+    ],
+  },
+  es:{
+    tag:'STE Secundaria 3 · Laboratorio',h1:'La <em>Célula</em> viviente',
+    p:'Haz clic en cada orgánulo para descubrir su función',
+    secType:'Tipo de célula',lbl_animal:'Célula animal',lbl_plant:'Célula vegetal',
+    secLegend:'Orgánulos',secTheory:'Teoría',secQuiz:'Quiz',
+    emptyText:'Haz clic en un orgánulo para ver su rol',
+    theory:`<h3>La célula — unidad fundamental de la vida</h3>
+Toda la vida está compuesta por células. La célula es la unidad más pequeña capaz de realizar todas las funciones vitales.<br><br>
+<strong>Célula animal vs vegetal:</strong><br>
+• Ambas tienen: membrana plasmática, núcleo, mitocondrias, ribosomas, retículo, Golgi, citoplasma<br>
+• Solo vegetales: <strong>pared celular</strong> (celulosa), <strong>cloroplastos</strong> (fotosíntesis), <strong>gran vacuola central</strong><br><br>
+<strong>Funciones vitales celulares:</strong><br>
+• Respiración celular: Glucosa + O₂ → ATP + CO₂ + H₂O (mitocondrias)<br>
+• Fotosíntesis: CO₂ + H₂O + luz → Glucosa + O₂ (cloroplastos)<br>
+• Síntesis proteica: ADN → ARN → Proteínas (ribosomas)<br>
+• División: mitosis (crecimiento), meiosis (reproducción)`,
+    btnRetry:'Intentar de nuevo',
+    verdicts:[
+      {min:87,icon:'🦠',msg:'¡Dominio total de la célula!'},
+      {min:62,icon:'🔬',msg:'¡Bien! Explora más la célula e inténtalo de nuevo.'},
+      {min:0,icon:'📚',msg:'¡Sigue adelante! Haz clic en cada orgánulo y lee la teoría.'},
+    ],
+    questions:[
+      {q:'¿Qué orgánulo es responsable de producir energía (ATP)?',opts:['Núcleo','Ribosoma','Mitocondria','Vacuola'],ans:2,exp:'La mitocondria produce ATP mediante la respiración celular: Glucosa + O₂ → ATP + CO₂ + H₂O.'},
+      {q:'¿Qué estructura está presente en células vegetales pero NO en células animales?',opts:['Núcleo','Mitocondria','Membrana plasmática','Cloroplasto'],ans:3,exp:'El cloroplasto es exclusivo de células vegetales (y algas). Contiene clorofila para la fotosíntesis.'},
+      {q:'El ADN está contenido en qué orgánulo?',opts:['Ribosoma','Mitocondria','Núcleo','Golgi'],ans:2,exp:'El ADN está en el núcleo, enrollado en cromosomas. Porta la información genética de la célula.'},
+      {q:'¿Qué orgánulo sintetiza proteínas?',opts:['Lisosoma','Ribosoma','Vacuola','Membrana'],ans:1,exp:'Los ribosomas leen el ARNm y ensamblan aminoácidos para formar proteínas.'},
+      {q:'La pared celular vegetal está compuesta principalmente de…',opts:['Proteínas','Lípidos','Celulosa','ADN'],ans:2,exp:'La pared celular vegetal está hecha de celulosa — un polímero de glucosa que da rigidez y resistencia.'},
+      {q:'¿Qué orgánulo clasifica y envía proteínas a su destino final?',opts:['Retículo endoplasmático','Aparato de Golgi','Lisosoma','Vacuola'],ans:1,exp:'El aparato de Golgi recibe proteínas del RE, las modifica, empaqueta y envía a la membrana, lisosomas o exterior.'},
+      {q:'¿Cuál es la función de la membrana plasmática?',opts:['Producir energía','Sintetizar ADN','Controlar intercambios entre célula y exterior','Realizar fotosíntesis'],ans:2,exp:'La membrana plasmática es semipermeable: regula lo que entra y sale de la célula (nutrientes, desechos, señales).'},
+      {q:'La gran vacuola central de las células vegetales sirve principalmente para…',opts:['Producir glucosa','Almacenar agua y mantener la turgencia','Sintetizar proteínas','Digerir desechos'],ans:1,exp:'La vacuola central almacena agua y mantiene la presión interna (turgencia) que da rigidez a la célula vegetal.'},
+    ],
+  },
+};
+
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let lang = 'fr';
+let cellType = 'animal';
+let selectedOrg = null;
+let quizAnswers = [];
+
+// ═══════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════
+function setLang(l){
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  applyTexts();
+  drawCell();
+  buildLegend();
+  initQuiz();
+  if(selectedOrg) showInfo(selectedOrg);
+}
+
+function applyTexts(){
+  const tx = TX[lang];
+  document.getElementById('hero-tag').textContent = tx.tag;
+  document.getElementById('hero-h1').innerHTML = tx.h1;
+  document.getElementById('hero-p').textContent = tx.p;
+  document.getElementById('sec-type').childNodes[0].textContent = tx.secType;
+  document.getElementById('lbl-animal').textContent = tx.lbl_animal;
+  document.getElementById('lbl-plant').textContent = tx.lbl_plant;
+  document.getElementById('sec-legend').childNodes[0].textContent = tx.secLegend;
+  document.getElementById('sec-theory').childNodes[0].textContent = tx.secTheory;
+  document.getElementById('sec-quiz').childNodes[0].textContent = tx.secQuiz;
+  document.getElementById('info-empty-text').textContent = tx.emptyText;
+  document.getElementById('theory-box').innerHTML = tx.theory;
+  document.getElementById('btn-retry').textContent = tx.btnRetry;
+}
+
+// ═══════════════════════════════════════
+//  CELL TYPE
+// ═══════════════════════════════════════
+function setCell(type){
+  cellType = type;
+  selectedOrg = null;
+  document.getElementById('btn-animal').classList.toggle('active', type === 'animal');
+  document.getElementById('btn-plant').classList.toggle('active', type === 'plant');
+  document.getElementById('info-empty').style.display = 'flex';
+  document.getElementById('info-content').style.display = 'none';
+  drawCell();
+  buildLegend();
+}
+
+// ═══════════════════════════════════════
+//  DRAW CELL SVG
+// ═══════════════════════════════════════
+const ICONS = {
+  membrane:'🔵', nucleus:'🟣', mitochondria:'🟠', ribosome:'🟡',
+  reticulum:'🩷', golgi:'🟢', lysosome:'🔴', vacuole:'🔵',
+  chloroplast:'🌿', wall:'🪵', cytoplasm:'⚪',
+};
+
+function drawCell(){
+  const svg = document.getElementById('cell-svg');
+  svg.innerHTML = '';
+
+  if(cellType === 'animal') drawAnimalCell(svg);
+  else drawPlantCell(svg);
+}
+
+function makeSVGEl(tag, attrs){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(const [k,v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function addClickable(el, orgKey){
+  el.style.cursor = 'pointer';
+  el.addEventListener('click', e => { e.stopPropagation(); selectOrg(orgKey); });
+  el.addEventListener('touchend', e => { e.preventDefault(); selectOrg(orgKey); });
+}
+
+function selectOrg(key){
+  selectedOrg = key;
+  document.querySelectorAll('.organelle').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll(`[data-org="${key}"]`).forEach(el => el.classList.add('selected'));
+  document.querySelectorAll('.leg-item').forEach(el => el.classList.toggle('active', el.dataset.org === key));
+  showInfo(key);
+}
+
+function showInfo(key){
+  const org = ORGANELLES[key];
+  const d = org[lang];
+  document.getElementById('info-empty').style.display = 'none';
+  const content = document.getElementById('info-content');
+  content.style.display = 'flex';
+  document.getElementById('info-icon').textContent = ICONS[key] || '🔬';
+  document.getElementById('info-name').textContent = d.name;
+  document.getElementById('info-name').style.color = org.color;
+  document.getElementById('info-badge').textContent = d.badge;
+  document.getElementById('info-badge').style.borderColor = org.color + '55';
+  document.getElementById('info-badge').style.color = org.color;
+  document.getElementById('info-fn').textContent = d.fn;
+  document.getElementById('info-fact').innerHTML = d.fact;
+}
+
+// ─── ANIMAL CELL ────────────────────
+function drawAnimalCell(svg){
+  // cytoplasm / outer membrane (irregular ellipse feel)
+  const bg = makeSVGEl('ellipse',{cx:210,cy:195,rx:195,ry:175,fill:'rgba(91,200,255,0.07)',stroke:'#5bc8ff',
+    'stroke-width':'2.5','stroke-dasharray':'8,4',class:'organelle',
+    'data-org':'cytoplasm',style:'cursor:pointer'});
+  addClickable(bg,'cytoplasm'); svg.appendChild(bg);
+
+  const memb = makeSVGEl('ellipse',{cx:210,cy:195,rx:195,ry:175,fill:'none',stroke:'#5bc8ff',
+    'stroke-width':'3.5',class:'organelle','data-org':'membrane',style:'cursor:pointer',opacity:.9});
+  addClickable(memb,'membrane'); svg.appendChild(memb);
+
+  // reticulum (wavy lines left side)
+  const retG = makeSVGEl('g',{class:'organelle','data-org':'reticulum'});
+  for(let i=0;i<5;i++){
+    const y = 145+i*22;
+    const p = makeSVGEl('path',{d:`M ${95+i*3} ${y} Q ${115+i*3} ${y-8} ${135+i*3} ${y} Q ${155+i*3} ${y+8} ${175+i*3} ${y}`,
+      fill:'none',stroke:'#ff6b9d','stroke-width':'2',opacity:'0.7'});
+    retG.appendChild(p);
+  }
+  addClickable(retG,'reticulum'); svg.appendChild(retG);
+
+  // nucleus
+  const nucG = makeSVGEl('g',{class:'organelle','data-org':'nucleus'});
+  const nucBg = makeSVGEl('ellipse',{cx:215,cy:185,rx:62,ry:52,fill:'rgba(180,139,250,0.18)',stroke:'#b48bfa','stroke-width':'2.5'});
+  const nucInner = makeSVGEl('ellipse',{cx:215,cy:185,rx:55,ry:45,fill:'rgba(180,139,250,0.12)',stroke:'rgba(180,139,250,0.4)','stroke-width':'1','stroke-dasharray':'4,3'});
+  const nucText = makeSVGEl('text',{x:'215',y:'190',fill:'#b48bfa','font-size':'13','font-weight':'700','text-anchor':'middle','font-family':'JetBrains Mono'});
+  nucText.textContent='ADN';
+  nucG.append(nucBg, nucInner, nucText);
+  addClickable(nucG,'nucleus'); svg.appendChild(nucG);
+
+  // mitochondria (3x)
+  [[310,120],[100,260],[320,270]].forEach(([cx,cy],i) => {
+    const mG = makeSVGEl('g',{class:'organelle','data-org':'mitochondria'});
+    const rot = i*25;
+    mG.setAttribute('transform',`rotate(${rot},${cx},${cy})`);
+    const outer = makeSVGEl('ellipse',{cx,cy,rx:'32',ry:'16',fill:'rgba(255,140,66,0.2)',stroke:'#ff8c42','stroke-width':'2'});
+    const inner = makeSVGEl('path',{d:`M ${cx-18} ${cy} Q ${cx} ${cy-10} ${cx+18} ${cy}`,fill:'none',stroke:'#ff8c42','stroke-width':'1.5',opacity:'0.6'});
+    mG.append(outer,inner);
+    addClickable(mG,'mitochondria'); svg.appendChild(mG);
+  });
+
+  // golgi (stacked arcs)
+  const golgiG = makeSVGEl('g',{class:'organelle','data-org':'golgi'});
+  for(let i=0;i<4;i++){
+    const arc = makeSVGEl('path',{
+      d:`M ${130} ${295+i*10} Q ${160} ${280+i*10} ${190} ${295+i*10}`,
+      fill:'none',stroke:'#4ddc8a','stroke-width':'6','stroke-linecap':'round',opacity:`${0.5+i*0.15}`});
+    golgiG.appendChild(arc);
+  }
+  addClickable(golgiG,'golgi'); svg.appendChild(golgiG);
+
+  // ribosomes (dots)
+  const ribG = makeSVGEl('g',{class:'organelle','data-org':'ribosome'});
+  [[85,165],[90,185],[285,140],[290,155],[265,310],[250,300],[180,120],[195,115],[290,230],[305,240]].forEach(([x,y]) => {
+    const d = makeSVGEl('circle',{cx:x,cy:y,r:'4',fill:'#ffd166'});
+    ribG.appendChild(d);
+  });
+  addClickable(ribG,'ribosome'); svg.appendChild(ribG);
+
+  // lysosome
+  const lysG = makeSVGEl('g',{class:'organelle','data-org':'lysosome'});
+  const lysBg = makeSVGEl('circle',{cx:300,cy:310,r:'18',fill:'rgba(255,82,82,0.2)',stroke:'#ff5252','stroke-width':'2'});
+  const lysT = makeSVGEl('text',{x:'300',y:'315',fill:'#ff5252','font-size':'10','text-anchor':'middle','font-family':'JetBrains Mono'});
+  lysT.textContent='L';
+  lysG.append(lysBg,lysT);
+  addClickable(lysG,'lysosome'); svg.appendChild(lysG);
+
+  // small vacuole
+  const vacG = makeSVGEl('g',{class:'organelle','data-org':'vacuole'});
+  const vacBg = makeSVGEl('ellipse',{cx:155,cy:285,rx:'22',ry:'18',fill:'rgba(91,200,255,0.15)',stroke:'#5bc8ff','stroke-width':'1.5','stroke-dasharray':'4,2'});
+  vacG.appendChild(vacBg);
+  addClickable(vacG,'vacuole'); svg.appendChild(vacG);
+
+  // labels
+  addLabel(svg, 215, 250, 'Noyau', '#b48bfa');
+  addLabel(svg, 310, 107, 'Mitochondrie', '#ff8c42');
+  addLabel(svg, 158, 360, 'Golgi', '#4ddc8a');
+}
+
+// ─── PLANT CELL ─────────────────────
+function drawPlantCell(svg){
+  // cell wall (outer rect)
+  const wallG = makeSVGEl('g',{class:'organelle','data-org':'wall'});
+  const wallRect = makeSVGEl('rect',{x:'15',y:'15',width:'390',height:'350',rx:'18',fill:'rgba(167,139,250,0.1)',stroke:'#a78bfa','stroke-width':'5'});
+  wallG.appendChild(wallRect);
+  addClickable(wallG,'wall'); svg.appendChild(wallG);
+
+  // membrane (inside wall)
+  const membG = makeSVGEl('g',{class:'organelle','data-org':'membrane'});
+  const membRect = makeSVGEl('rect',{x:'25',y:'25',width:'370',height:'330',rx:'14',fill:'rgba(91,200,255,0.05)',stroke:'#5bc8ff','stroke-width':'2','stroke-dasharray':'6,3'});
+  membG.appendChild(membRect);
+  addClickable(membG,'membrane'); svg.appendChild(membG);
+
+  // large central vacuole
+  const vacG = makeSVGEl('g',{class:'organelle','data-org':'vacuole'});
+  const vacRect = makeSVGEl('ellipse',{cx:'200',cy:'195',rx:'105',ry:'90',fill:'rgba(91,200,255,0.12)',stroke:'#5bc8ff','stroke-width':'2'});
+  const vacT = makeSVGEl('text',{x:'200',y:'200',fill:'#5bc8ff','font-size':'11','text-anchor':'middle','font-family':'JetBrains Mono'});
+  vacT.textContent='Vacuole centrale';
+  vacG.append(vacRect, vacT);
+  addClickable(vacG,'vacuole'); svg.appendChild(vacG);
+
+  // nucleus
+  const nucG = makeSVGEl('g',{class:'organelle','data-org':'nucleus'});
+  const nucBg = makeSVGEl('ellipse',{cx:'310',cy:'110',rx:'52',ry:'44',fill:'rgba(180,139,250,0.2)',stroke:'#b48bfa','stroke-width':'2.5'});
+  const nucT = makeSVGEl('text',{x:'310',y:'115',fill:'#b48bfa','font-size':'12','font-weight':'700','text-anchor':'middle','font-family':'JetBrains Mono'});
+  nucT.textContent='Noyau';
+  nucG.append(nucBg,nucT);
+  addClickable(nucG,'nucleus'); svg.appendChild(nucG);
+
+  // chloroplasts (4x — oval green)
+  [[80,70],[60,170],[330,280],[95,300]].forEach(([cx,cy],i) => {
+    const cG = makeSVGEl('g',{class:'organelle','data-org':'chloroplast'});
+    const rot = i*30;
+    cG.setAttribute('transform',`rotate(${rot},${cx},${cy})`);
+    const outer = makeSVGEl('ellipse',{cx,cy,rx:'28',ry:'14',fill:'rgba(77,220,138,0.25)',stroke:'#4ddc8a','stroke-width':'2'});
+    const inner = makeSVGEl('ellipse',{cx,cy,rx:'18',ry:'8',fill:'rgba(77,220,138,0.35)',stroke:'rgba(77,220,138,0.5)','stroke-width':'1'});
+    cG.append(outer,inner);
+    addClickable(cG,'chloroplast'); svg.appendChild(cG);
+  });
+
+  // mitochondria (2x)
+  [[350,200],[340,320]].forEach(([cx,cy]) => {
+    const mG = makeSVGEl('g',{class:'organelle','data-org':'mitochondria'});
+    const outer = makeSVGEl('ellipse',{cx,cy,rx:'24',ry:'13',fill:'rgba(255,140,66,0.2)',stroke:'#ff8c42','stroke-width':'1.5'});
+    mG.appendChild(outer);
+    addClickable(mG,'mitochondria'); svg.appendChild(mG);
+  });
+
+  // golgi
+  const golgiG = makeSVGEl('g',{class:'organelle','data-org':'golgi'});
+  for(let i=0;i<4;i++){
+    const arc = makeSVGEl('path',{
+      d:`M ${200} ${310+i*9} Q ${235} ${298+i*9} ${270} ${310+i*9}`,
+      fill:'none',stroke:'#4ddc8a','stroke-width':'5','stroke-linecap':'round',opacity:`${0.5+i*0.13}`});
+    golgiG.appendChild(arc);
+  }
+  addClickable(golgiG,'golgi'); svg.appendChild(golgiG);
+
+  // ribosomes
+  const ribG = makeSVGEl('g',{class:'organelle','data-org':'ribosome'});
+  [[55,110],[50,130],[360,150],[365,170],[140,320],[155,335],[40,250],[50,265]].forEach(([x,y]) => {
+    ribG.appendChild(makeSVGEl('circle',{cx:x,cy:y,r:'4',fill:'#ffd166'}));
+  });
+  addClickable(ribG,'ribosome'); svg.appendChild(ribG);
+
+  // reticulum
+  const retG = makeSVGEl('g',{class:'organelle','data-org':'reticulum'});
+  for(let i=0;i<4;i++){
+    const y=85+i*18;
+    retG.appendChild(makeSVGEl('path',{d:`M ${340} ${y} Q ${355} ${y-7} ${370} ${y} Q ${385} ${y+7} ${400} ${y}`,
+      fill:'none',stroke:'#ff6b9d','stroke-width':'2',opacity:'0.7'}));
+  }
+  addClickable(retG,'reticulum'); svg.appendChild(retG);
+}
+
+function addLabel(svg, x, y, text, color){
+  const t = makeSVGEl('text',{x,y,fill:color,'font-size':'11','text-anchor':'middle','font-family':'JetBrains Mono',opacity:'0.7'});
+  t.textContent = text;
+  svg.appendChild(t);
+}
+
+// ═══════════════════════════════════════
+//  LEGEND
+// ═══════════════════════════════════════
+function buildLegend(){
+  const wrap = document.getElementById('legend');
+  wrap.innerHTML = '';
+  const show = cellType === 'animal'
+    ? ['membrane','nucleus','mitochondria','ribosome','reticulum','golgi','lysosome','vacuole','cytoplasm']
+    : ['wall','membrane','nucleus','chloroplast','mitochondria','ribosome','reticulum','golgi','vacuole'];
+  show.forEach(key => {
+    const org = ORGANELLES[key];
+    const d = org[lang];
+    const item = document.createElement('div');
+    item.className = 'leg-item';
+    item.dataset.org = key;
+    item.style.color = org.color;
+    item.innerHTML = `<span class="leg-dot" style="background:${org.color}"></span>${d.name}`;
+    item.onclick = () => selectOrg(key);
+    wrap.appendChild(item);
+  });
+}
+
+// ═══════════════════════════════════════
+//  QUIZ
+// ═══════════════════════════════════════
+function initQuiz(){
+  quizAnswers = [];
+  document.getElementById('result-card').className = 'result-card';
+  const tx = TX[lang];
+  document.getElementById('btn-retry').textContent = tx.btnRetry;
+  const body = document.getElementById('quiz-body');
+  body.innerHTML = tx.questions.map((q,i) => `
+    <div class="q-block" id="qb-${i}">
+      <div class="q-num">🦠 Q${i+1}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-opts">
+        ${q.opts.map((o,j) => `<button class="q-opt" id="qo-${i}-${j}" onclick="answerQ(${i},${j})">${o}</button>`).join('')}
+      </div>
+      <div class="q-fb" id="qfb-${i}"></div>
+    </div>
+  `).join('');
+}
+
+function answerQ(qi,oi){
+  if(quizAnswers[qi] !== undefined) return;
+  quizAnswers[qi] = oi;
+  const tx = TX[lang];
+  const q = tx.questions[qi];
+  const ok = oi === q.ans;
+  for(let j=0;j<q.opts.length;j++){
+    const btn = document.getElementById(`qo-${qi}-${j}`);
+    btn.disabled = true;
+    if(j === q.ans) btn.classList.add(ok ? 'correct' : 'reveal');
+    if(j === oi && !ok) btn.classList.add('wrong');
+  }
+  const fb = document.getElementById(`qfb-${qi}`);
+  fb.className = 'q-fb show ' + (ok ? 'ok' : 'bad');
+  fb.innerHTML = (ok ? '✓ ' : '✗ ') + q.exp;
+  document.getElementById(`qb-${qi}`).style.borderColor = ok ? '#4ddc8a' : '#ff5f6d';
+  if(quizAnswers.filter(a => a !== undefined).length === tx.questions.length) setTimeout(showResults, 500);
+}
+
+function showResults(){
+  const tx = TX[lang];
+  const correct = quizAnswers.filter((a,i) => a === tx.questions[i].ans).length;
+  const pct = Math.round((correct/tx.questions.length)*100);
+  const v = tx.verdicts.find(x => pct >= x.min);
+  document.getElementById('result-pct').textContent = v.icon + ' ' + pct + '%';
+  document.getElementById('result-msg').textContent = v.msg;
+  document.getElementById('result-card').className = 'result-card show';
+  document.getElementById('result-card').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+applyTexts();
+drawCell();
+buildLegend();
+initQuiz();
+</script>
+</body>
+</html>

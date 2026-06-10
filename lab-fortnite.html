@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mode Fortnite · STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080a10;--bg2:#0f1420;--bg3:#161d2e;
+  --text:#f0f6ff;--muted:#506070;
+  --a:#00d4ff;--b:#9f5afd;--c:#ff5f6d;--d:#ffd166;
+  --green:#4ddc8a;--font:'Barlow Condensed',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font);}
+
+/* ── ANIMATED BG ── */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden}
+.bg-particle{position:absolute;border-radius:50%;opacity:.15;animation:drift linear infinite}
+@keyframes drift{0%{transform:translateY(100vh) scale(0)}100%{transform:translateY(-20vh) scale(1)}}
+
+/* ── LANG ── */
+#lang-bar{position:fixed;top:0;right:0;z-index:200;display:flex;gap:4px;padding:.5rem .8rem;background:rgba(8,10,16,.9);border-bottom:1px solid rgba(255,255,255,.08);border-left:1px solid rgba(255,255,255,.08);border-radius:0 0 0 8px}
+.lb{font-family:var(--mono);font-size:10px;padding:4px 9px;border-radius:3px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.lb.active{background:var(--a);color:#000;border-color:var(--a)}
+
+/* ── SCREENS ── */
+#app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem}
+.screen{display:none;width:100%;max-width:680px;animation:popIn .25s ease}
+.screen.active{display:flex;flex-direction:column;align-items:center}
+@keyframes popIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+
+/* ── MENU ── */
+.menu-badge{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem}
+.menu-title{font-size:clamp(3rem,10vw,6rem);font-weight:900;letter-spacing:-.03em;line-height:.9;text-align:center;margin-bottom:.5rem}
+.menu-title .t1{color:var(--text)}
+.menu-title .t2{color:var(--a);text-shadow:0 0 40px rgba(0,212,255,.5)}
+.menu-sub{font-size:16px;color:var(--muted);text-align:center;margin-bottom:.5rem;font-weight:400}
+.menu-motiv{font-size:14px;color:var(--d);font-style:italic;text-align:center;margin-bottom:2rem;min-height:18px}
+
+.key-legend{display:flex;gap:12px;justify-content:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.key-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.key-badge{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:14px;color:#fff;
+  box-shadow:0 4px 0 rgba(0,0,0,.5);
+  font-family:var(--mono);
+}
+
+.diff-row{display:flex;gap:8px;justify-content:center;margin-bottom:1.5rem}
+.diff-btn{padding:8px 20px;border-radius:6px;border:2px solid transparent;background:var(--bg3);font-family:var(--font);font-size:14px;font-weight:700;color:var(--muted);cursor:pointer;transition:all .2s}
+.diff-btn.active{color:#000}
+.diff-btn.easy{border-color:var(--green);color:var(--green)}
+.diff-btn.easy.active{background:var(--green)}
+.diff-btn.med{border-color:var(--d);color:var(--d)}
+.diff-btn.med.active{background:var(--d)}
+.diff-btn.hard{border-color:var(--c);color:var(--c)}
+.diff-btn.hard.active{background:var(--c)}
+
+.btn-play{
+  font-family:var(--font);font-size:22px;font-weight:900;letter-spacing:.05em;
+  padding:16px 48px;border:none;border-radius:8px;
+  background:linear-gradient(135deg,var(--a),var(--b));
+  color:#fff;cursor:pointer;
+  box-shadow:0 0 40px rgba(0,212,255,.4),0 6px 0 rgba(0,0,0,.4);
+  transition:transform .1s,box-shadow .2s;
+  text-transform:uppercase;
+}
+.btn-play:hover{transform:translateY(-3px);box-shadow:0 0 60px rgba(0,212,255,.6),0 9px 0 rgba(0,0,0,.4)}
+.btn-play:active{transform:translateY(2px);box-shadow:0 0 20px rgba(0,212,255,.3),0 2px 0 rgba(0,0,0,.4)}
+
+/* ── GAME SCREEN ── */
+#screen-game{justify-content:flex-start;padding-top:.5rem}
+.hud{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:.75rem;flex-wrap:wrap;gap:6px;
+}
+.hud-left{display:flex;align-items:center;gap:10px}
+.hud-timer-wrap{position:relative;width:64px;height:64px}
+.hud-timer-wrap svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.hud-timer-num{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:22px;font-weight:700;
+}
+.hud-score{font-size:28px;font-weight:900;letter-spacing:-.02em;color:var(--d)}
+.hud-score span{font-size:13px;font-weight:400;color:var(--muted);display:block;text-align:right}
+.hud-streak{font-size:14px;color:var(--d);min-width:80px;text-align:center}
+.hud-right{text-align:right}
+.hud-q{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.hud-univ{font-size:13px;font-weight:700}
+
+.motiv-flash{
+  width:100%;text-align:center;font-size:16px;font-weight:700;
+  color:var(--a);letter-spacing:.08em;text-transform:uppercase;
+  min-height:22px;margin-bottom:.5rem;transition:opacity .3s;
+}
+
+.question-box{
+  width:100%;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);border-radius:12px;
+  padding:1.1rem 1.25rem;margin-bottom:.75rem;
+  font-size:clamp(16px,2.5vw,20px);font-weight:700;line-height:1.4;
+  text-align:center;
+}
+
+.options-grid{
+  width:100%;display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;margin-bottom:.75rem;
+}
+
+.opt-big{
+  position:relative;padding:1rem .75rem .9rem;
+  border-radius:10px;border:2px solid transparent;
+  cursor:pointer;text-align:left;
+  font-family:var(--font);font-size:15px;font-weight:700;
+  color:#fff;transition:all .15s;
+  display:flex;align-items:flex-start;gap:10px;
+  min-height:70px;
+}
+.opt-big .key-tag{
+  width:28px;height:28px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  flex-shrink:0;box-shadow:0 3px 0 rgba(0,0,0,.4);
+}
+.opt-big .opt-text{flex:1;line-height:1.35}
+.opt-big:disabled{cursor:default}
+.opt-big:hover:not(:disabled){transform:scale(1.02)}
+.opt-big:active:not(:disabled){transform:scale(.98)}
+
+.opt-a{background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.4)}
+.opt-a .key-tag{background:var(--a);color:#000}
+.opt-a:hover:not(:disabled){background:rgba(0,212,255,.2);border-color:var(--a)}
+
+.opt-b{background:rgba(159,90,253,.12);border-color:rgba(159,90,253,.4)}
+.opt-b .key-tag{background:var(--b);color:#fff}
+.opt-b:hover:not(:disabled){background:rgba(159,90,253,.2);border-color:var(--b)}
+
+.opt-c{background:rgba(255,95,109,.12);border-color:rgba(255,95,109,.4)}
+.opt-c .key-tag{background:var(--c);color:#fff}
+.opt-c:hover:not(:disabled){background:rgba(255,95,109,.2);border-color:var(--c)}
+
+.opt-d{background:rgba(255,209,102,.12);border-color:rgba(255,209,102,.4)}
+.opt-d .key-tag{background:var(--d);color:#000}
+.opt-d:hover:not(:disabled){background:rgba(255,209,102,.2);border-color:var(--d)}
+
+.opt-big.correct{background:rgba(77,220,138,.2)!important;border-color:var(--green)!important;animation:flashGreen .4s ease}
+.opt-big.wrong{background:rgba(255,95,109,.15)!important;border-color:var(--c)!important}
+.opt-big.reveal{background:rgba(77,220,138,.1)!important;border-color:rgba(77,220,138,.5)!important}
+@keyframes flashGreen{0%{transform:scale(1)}30%{transform:scale(1.04)}100%{transform:scale(1)}}
+
+/* feedback strip */
+.feedback-strip{
+  width:100%;text-align:center;font-size:14px;font-weight:700;
+  min-height:20px;padding:.4rem;border-radius:6px;margin-bottom:.5rem;
+  display:none;
+}
+.feedback-strip.show{display:block;animation:popIn .15s ease}
+.feedback-strip.ok{color:var(--green);background:rgba(77,220,138,.08)}
+.feedback-strip.bad{color:var(--c);background:rgba(255,95,109,.08)}
+
+/* key hint bottom */
+.key-hint{
+  width:100%;display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+}
+
+/* ── RESULTS ── */
+#screen-results{text-align:center;gap:.75rem}
+.res-icon{font-size:64px;animation:bounceIn .5s ease}
+@keyframes bounceIn{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+.res-pct{font-size:5rem;font-weight:900;letter-spacing:-.04em;line-height:1;
+  background:linear-gradient(135deg,var(--a),var(--b));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.res-msg{font-size:22px;font-weight:700;color:var(--text)}
+.res-motiv{font-size:14px;color:var(--d);font-style:italic}
+.res-stats{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin:.5rem 0}
+.res-stat{background:var(--bg3);border-radius:10px;padding:.75rem 1.25rem;text-align:center;min-width:90px}
+.rs-num{font-size:2rem;font-weight:900;display:block}
+.rs-lbl{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.btn-again{font-family:var(--font);font-size:18px;font-weight:900;padding:13px 36px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--a),var(--b));color:#fff;cursor:pointer;box-shadow:0 0 30px rgba(0,212,255,.4);transition:all .2s;text-transform:uppercase}
+.btn-again:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(0,212,255,.6)}
+.btn-back{font-family:var(--font);font-size:15px;padding:10px 24px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.btn-back:hover{color:var(--text);border-color:var(--text)}
+
+/* ── DIFFICULTY TAG ── */
+.diff-tag{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:3px;margin-left:8px;vertical-align:middle}
+.dt-easy{background:rgba(77,220,138,.15);color:var(--green)}
+.dt-med{background:rgba(255,209,102,.15);color:var(--d)}
+.dt-hard{background:rgba(255,95,109,.15);color:var(--c)}
+
+/* ── SCREEN TRANSITION OVERLAY ── */
+#trans-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,212,255,.15);pointer-events:none;opacity:0;transition:opacity .15s}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="trans-overlay"></div>
+
+<div id="lang-bar">
+  <button class="lb active" onclick="setLang('fr')">FR</button>
+  <button class="lb" onclick="setLang('en')">EN</button>
+  <button class="lb" onclick="setLang('es')">ES</button>
+</div>
+
+<div id="app">
+
+  <!-- MENU -->
+  <div id="screen-menu" class="screen active">
+    <div class="menu-badge" id="mb-badge">STE Sec 3 · Mode Fortnite</div>
+    <div class="menu-title">
+      <div class="t1" id="mt1">FORTNITE</div>
+      <div class="t2" id="mt2">QUIZ</div>
+    </div>
+    <p class="menu-sub" id="msub">Réponds avec les touches A · B · C · D</p>
+    <p class="menu-motiv" id="mmotiv"></p>
+
+    <div class="key-legend" id="key-legend"></div>
+
+    <div class="diff-row">
+      <button class="diff-btn easy" id="diff-easy" onclick="setDiff('easy')"></button>
+      <button class="diff-btn med active" id="diff-med" onclick="setDiff('med')"></button>
+      <button class="diff-btn hard" id="diff-hard" onclick="setDiff('hard')"></button>
+    </div>
+
+    <button class="btn-play" id="btn-play" onclick="startGame()"></button>
+  </div>
+
+  <!-- GAME -->
+  <div id="screen-game" class="screen">
+    <div class="hud">
+      <div class="hud-left">
+        <div class="hud-timer-wrap">
+          <svg viewBox="0 0 64 64" width="64" height="64">
+            <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="4"/>
+            <circle id="timer-ring" cx="32" cy="32" r="28" fill="none" stroke="var(--a)" stroke-width="4"
+              stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="0"
+              style="transition:stroke-dashoffset .1s linear,stroke .3s"/>
+          </svg>
+          <div class="hud-timer-num" id="timer-num">--</div>
+        </div>
+        <div>
+          <div class="hud-score" id="hud-score">0 <span id="hud-score-lbl">pts</span></div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div class="hud-streak" id="hud-streak"></div>
+      </div>
+      <div class="hud-right">
+        <div class="hud-univ" id="hud-univ"></div>
+        <div class="hud-q" id="hud-q"></div>
+      </div>
+    </div>
+
+    <div class="motiv-flash" id="motiv-flash"></div>
+    <div class="question-box" id="question-box"></div>
+
+    <div class="options-grid" id="options-grid"></div>
+
+    <div class="feedback-strip" id="feedback-strip"></div>
+
+    <div class="key-hint">
+      <span id="kh-left"></span>
+      <span id="kh-right"></span>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="screen-results" class="screen">
+    <div class="res-icon" id="res-icon">🏆</div>
+    <div class="res-pct" id="res-pct">0%</div>
+    <div class="res-msg" id="res-msg"></div>
+    <div class="res-motiv" id="res-motiv"></div>
+    <div class="res-stats">
+      <div class="res-stat"><span class="rs-num" id="rs-score" style="color:var(--d)">0</span><span class="rs-lbl" id="rs-lbl-score">Score</span></div>
+      <div class="res-stat"><span class="rs-num" id="rs-correct" style="color:var(--green)">0</span><span class="rs-lbl" id="rs-lbl-correct">Correct</span></div>
+      <div class="res-stat"><span class="rs-num" id="rs-streak" style="color:var(--a)">0</span><span class="rs-lbl" id="rs-lbl-streak">Série</span></div>
+      <div class="res-stat"><span class="rs-num" id="rs-time" style="color:var(--b)">0s</span><span class="rs-lbl" id="rs-lbl-time">Temps</span></div>
+    </div>
+    <button class="btn-again" onclick="goMenu()" id="btn-again"></button>
+    <button class="btn-back" onclick="window.location='index.html'" id="btn-back"></button>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════════════
+const TX = {
+  fr:{
+    badge:'STE Sec 3 · Mode Fortnite',t1:'FORTNITE',t2:'QUIZ',
+    sub:'Réponds avec les touches A · B · C · D',
+    diffs:{easy:'FACILE',med:'NORMAL',hard:'LÉGENDAIRE'},
+    timers:{easy:25,med:15,hard:8},
+    play:'JOUER !',
+    pts:'pts',streak:'Série',q:'Q',
+    khLeft:'A/B/C/D = Répondre',khRight:'Chrono = points bonus',
+    motivMenu:['🎮 Prêt pour la bataille scientifique ?','⚡ Les meilleurs scientifiques jouent vite !','🏆 Bats ton record de vitesse !','🔬 Science + Fortnite = imbattable !','🚀 Chaque seconde gagnée = plus de points !'],
+    motivStreak:['🔥 HEADSHOT ! Série en cours !','⚡ DOMINATION ! Tu écrases le quiz !','🎯 BULLSEYE ! Parfait !','💥 UNSTOPPABLE !','👑 CHAMPION !'],
+    motivCorrect:['✓ EXACT !','✓ PARFAIT !','✓ BOOM !','✓ GG !'],
+    motivWrong:['✗ Dommage !','✗ Raté !','✗ Prochaine fois !'],
+    verdicts:[
+      {min:90,icon:'👑',msg:'LÉGENDAIRE !',motiv:'Tu es dans le top 1%. Imbattable !'},
+      {min:75,icon:'🏆',msg:'CHAMPION !',motiv:'Performance exceptionnelle. Continue !'},
+      {min:60,icon:'⭐',msg:'PRO !',motiv:'Bon jeu ! Encore un peu et tu seras légendaire.'},
+      {min:40,icon:'🎮',msg:'EN PROGRESSION',motiv:'Continue à jouer, tu vas t\'améliorer !'},
+      {min:0, icon:'💪',msg:'ROOKIE',motiv:'Chaque partie te rend plus fort. Rejoue !'},
+    ],
+    rsLbls:{score:'Score',correct:'Correct',streak:'Série max',time:'Temps moy.'},
+    again:'REJOUER',back:'← Accueil',
+    correct:'Bonne réponse',total:'Questions',
+  },
+  en:{
+    badge:'STE Sec 3 · Fortnite Mode',t1:'FORTNITE',t2:'QUIZ',
+    sub:'Answer with keys A · B · C · D',
+    diffs:{easy:'EASY',med:'NORMAL',hard:'LEGENDARY'},
+    timers:{easy:25,med:15,hard:8},
+    play:'PLAY !',
+    pts:'pts',streak:'Streak',q:'Q',
+    khLeft:'A/B/C/D = Answer',khRight:'Timer = bonus points',
+    motivMenu:['🎮 Ready for the science battle?','⚡ The best scientists play fast!','🏆 Beat your speed record!','🔬 Science + Fortnite = unbeatable!','🚀 Every second saved = more points!'],
+    motivStreak:['🔥 HEADSHOT! Streak on!','⚡ DOMINATION! Crushing the quiz!','🎯 BULLSEYE! Perfect!','💥 UNSTOPPABLE!','👑 CHAMPION!'],
+    motivCorrect:['✓ EXACT!','✓ PERFECT!','✓ BOOM!','✓ GG!'],
+    motivWrong:['✗ Too bad!','✗ Missed!','✗ Next time!'],
+    verdicts:[
+      {min:90,icon:'👑',msg:'LEGENDARY!',motiv:'You\'re in the top 1%. Unbeatable!'},
+      {min:75,icon:'🏆',msg:'CHAMPION!',motiv:'Exceptional performance. Keep going!'},
+      {min:60,icon:'⭐',msg:'PRO!',motiv:'Good game! A bit more and you\'ll be legendary.'},
+      {min:40,icon:'🎮',msg:'PROGRESSING',motiv:'Keep playing, you\'ll improve!'},
+      {min:0, icon:'💪',msg:'ROOKIE',motiv:'Every game makes you stronger. Play again!'},
+    ],
+    rsLbls:{score:'Score',correct:'Correct',streak:'Max streak',time:'Avg time'},
+    again:'PLAY AGAIN',back:'← Home',
+    correct:'Correct',total:'Questions',
+  },
+  es:{
+    badge:'STE Sec 3 · Modo Fortnite',t1:'FORTNITE',t2:'QUIZ',
+    sub:'Responde con las teclas A · B · C · D',
+    diffs:{easy:'FÁCIL',med:'NORMAL',hard:'LEGENDARIO'},
+    timers:{easy:25,med:15,hard:8},
+    play:'¡JUGAR !',
+    pts:'pts',streak:'Racha',q:'P',
+    khLeft:'A/B/C/D = Responder',khRight:'Cronómetro = puntos extra',
+    motivMenu:['🎮 ¿Listo para la batalla científica?','⚡ ¡Los mejores científicos juegan rápido!','🏆 ¡Supera tu récord de velocidad!','🔬 ¡Ciencia + Fortnite = invencible!','🚀 ¡Cada segundo ganado = más puntos!'],
+    motivStreak:['🔥 ¡HEADSHOT! ¡Racha activa!','⚡ ¡DOMINACIÓN! ¡Aplastando el quiz!','🎯 ¡BULLSEYE! ¡Perfecto!','💥 ¡IMPARABLE!','👑 ¡CAMPEÓN!'],
+    motivCorrect:['✓ ¡EXACTO!','✓ ¡PERFECTO!','✓ ¡BOOM!','✓ ¡GG!'],
+    motivWrong:['✗ ¡Lástima!','✗ ¡Fallaste!','✗ ¡La próxima!'],
+    verdicts:[
+      {min:90,icon:'👑',msg:'¡LEGENDARIO!',motiv:'Estás en el top 1%. ¡Invencible!'},
+      {min:75,icon:'🏆',msg:'¡CAMPEÓN!',motiv:'¡Rendimiento excepcional. Continúa!'},
+      {min:60,icon:'⭐',msg:'¡PRO!',motiv:'¡Buen juego! Un poco más y serás legendario.'},
+      {min:40,icon:'🎮',msg:'EN PROGRESO',motiv:'¡Sigue jugando, mejorarás!'},
+      {min:0, icon:'💪',msg:'NOVATO',motiv:'¡Cada partida te hace más fuerte. Vuelve a jugar!'},
+    ],
+    rsLbls:{score:'Puntos',correct:'Correctas',streak:'Racha máx',time:'T. medio'},
+    again:'JUGAR DE NUEVO',back:'← Inicio',
+    correct:'Correcta',total:'Preguntas',
+  },
+};
+
+// ═══════════════════════════════════════════════
+//  QUESTIONS (same trilingual set + randomized)
+// ═══════════════════════════════════════════════
+const Q_RAW = [
+  {u:'⚗️',fr:{q:'Formule chimique de l\'eau ?',o:['H₂O','CO₂','NaCl','O₂'],a:0},en:{q:'Chemical formula for water?',o:['H₂O','CO₂','NaCl','O₂'],a:0},es:{q:'¿Fórmula química del agua?',o:['H₂O','CO₂','NaCl','O₂'],a:0}},
+  {u:'⚗️',fr:{q:'Solution acide = pH…',o:['< 7','= 7','> 7','= 14'],a:0},en:{q:'Acidic solution = pH…',o:['< 7','= 7','> 7','= 14'],a:0},es:{q:'Solución ácida = pH…',o:['< 7','= 7','> 7','= 14'],a:0}},
+  {u:'⚗️',fr:{q:'Masse volumique eau pure ?',o:['1 g/mL','0,5 g/mL','10 g/mL','2 g/mL'],a:0},en:{q:'Density of pure water?',o:['1 g/mL','0.5 g/mL','10 g/mL','2 g/mL'],a:0},es:{q:'¿Masa volumétrica del agua pura?',o:['1 g/mL','0,5 g/mL','10 g/mL','2 g/mL'],a:0}},
+  {u:'⚗️',fr:{q:'C = m/V s\'exprime en…',o:['g/L','g/mL','mol','kg/m³'],a:0},en:{q:'C = m/V is expressed in…',o:['g/L','g/mL','mol','kg/m³'],a:0},es:{q:'C = m/V se expresa en…',o:['g/L','g/mL','mol','kg/m³'],a:0}},
+  {u:'⚗️',fr:{q:'Fusion = ?',o:['Solide → Liquide','Liquide → Gaz','Gaz → Liquide','Liquide → Solide'],a:0},en:{q:'Melting = ?',o:['Solid → Liquid','Liquid → Gas','Gas → Liquid','Liquid → Solid'],a:0},es:{q:'Fusión = ?',o:['Sólido → Líquido','Líquido → Gas','Gas → Líquido','Líquido → Sólido'],a:0}},
+  {u:'⚗️',fr:{q:'Mélange hétérogène = ?',o:['Composants visibles','Composants uniformes','Un seul type','Toujours liquide'],a:0},en:{q:'Heterogeneous mixture = ?',o:['Visible components','Uniform components','One type only','Always liquid'],a:0},es:{q:'Mezcla heterogénea = ?',o:['Componentes visibles','Componentes uniformes','Un solo tipo','Siempre líquida'],a:0}},
+  {u:'⚗️',fr:{q:'Changement chimique produit…',o:['Nouvelles substances','Même substance autre forme','Aucun changement','Seulement de la chaleur'],a:0},en:{q:'Chemical change produces…',o:['New substances','Same substance different form','No change','Only heat'],a:0},es:{q:'Cambio químico produce…',o:['Nuevas sustancias','Misma sustancia otra forma','Ningún cambio','Solo calor'],a:0}},
+  {u:'🧬',fr:{q:'Organite producteur d\'ATP ?',o:['Mitochondrie','Noyau','Ribosome','Vacuole'],a:0},en:{q:'ATP-producing organelle?',o:['Mitochondrion','Nucleus','Ribosome','Vacuole'],a:0},es:{q:'¿Orgánulo productor de ATP?',o:['Mitocondria','Núcleo','Ribosoma','Vacuola'],a:0}},
+  {u:'🧬',fr:{q:'ADN situé dans…',o:['Le noyau','Le cytoplasme','La membrane','Golgi'],a:0},en:{q:'DNA located in…',o:['Nucleus','Cytoplasm','Membrane','Golgi'],a:0},es:{q:'ADN ubicado en…',o:['El núcleo','El citoplasma','La membrana','Golgi'],a:0}},
+  {u:'🧬',fr:{q:'Mitose → combien de cellules filles ?',o:['2 identiques','4 haploïdes','1 plus grande','3 différentes'],a:0},en:{q:'Mitosis → how many daughter cells?',o:['2 identical','4 haploid','1 larger','3 different'],a:0},es:{q:'Mitosis → ¿cuántas células hijas?',o:['2 idénticas','4 haploides','1 más grande','3 diferentes'],a:0}},
+  {u:'🧬',fr:{q:'Photosynthèse dans…',o:['Chloroplastes','Mitochondries','Noyau','Ribosomes'],a:0},en:{q:'Photosynthesis in…',o:['Chloroplasts','Mitochondria','Nucleus','Ribosomes'],a:0},es:{q:'Fotosíntesis en…',o:['Cloroplastos','Mitocondrias','Núcleo','Ribosomas'],a:0}},
+  {u:'🧬',fr:{q:'Absorption nutriments → sang via…',o:['Intestin grêle','Estomac','Gros intestin','Bouche'],a:0},en:{q:'Nutrient absorption into blood via…',o:['Small intestine','Stomach','Large intestine','Mouth'],a:0},es:{q:'Absorción nutrientes → sangre via…',o:['Intestino delgado','Estómago','Intestino grueso','Boca'],a:0}},
+  {u:'🧬',fr:{q:'Globules blancs → fonction ?',o:['Défense immunitaire','Transport O₂','Coagulation','Hormones'],a:0},en:{q:'White blood cells → function?',o:['Immune defence','O₂ transport','Clotting','Hormones'],a:0},es:{q:'Glóbulos blancos → ¿función?',o:['Defensa inmunitaria','Transporte O₂','Coagulación','Hormonas'],a:0}},
+  {u:'🌍',fr:{q:'Couche externe rigide Terre ?',o:['Lithosphère','Asthénosphère','Manteau','Noyau'],a:0},en:{q:'Rigid outer layer of Earth?',o:['Lithosphere','Asthenosphere','Mantle','Core'],a:0},es:{q:'¿Capa externa rígida de la Tierra?',o:['Litosfera','Astenosfera','Manto','Núcleo'],a:0}},
+  {u:'🌍',fr:{q:'Tectonique des plaques explique…',o:['Mouvement continents','Formation nuages','Évolution espèces','Rotation Lune'],a:0},en:{q:'Plate tectonics explains…',o:['Continental movement','Cloud formation','Evolution','Lunar rotation'],a:0},es:{q:'La tectónica de placas explica…',o:['Movimiento continentes','Formación nubes','Evolución','Rotación Luna'],a:0}},
+  {u:'🌍',fr:{q:'Énergie du Soleil par…',o:['Fusion nucléaire','Combustion','Fission','Réactions chimiques'],a:0},en:{q:'Sun\'s energy through…',o:['Nuclear fusion','Combustion','Fission','Chemical reactions'],a:0},es:{q:'Energía del Sol mediante…',o:['Fusión nuclear','Combustión','Fisión','Reacciones químicas'],a:0}},
+  {u:'🌍',fr:{q:'Roches sédimentaires contiennent…',o:['Fossiles','Magma cristallisé','Minéraux métamorphiques','Aucun minéral'],a:0},en:{q:'Sedimentary rocks contain…',o:['Fossils','Crystallised magma','Metamorphic minerals','No minerals'],a:0},es:{q:'Las rocas sedimentarias contienen…',o:['Fósiles','Magma cristalizado','Minerales metamórficos','Ningún mineral'],a:0}},
+  {u:'⚙️',fr:{q:'P = F/A se mesure en…',o:['Pascals','Newtons','Mètres','Kilogrammes'],a:0},en:{q:'P = F/A measured in…',o:['Pascals','Newtons','Metres','Kilograms'],a:0},es:{q:'P = F/A se mide en…',o:['Pascales','Newtons','Metros','Kilogramos'],a:0}},
+  {u:'⚙️',fr:{q:'Loi d\'Ohm : V = ?',o:['R × I','R + I','R ÷ I','R − I'],a:0},en:{q:'Ohm\'s Law: V = ?',o:['R × I','R + I','R ÷ I','R − I'],a:0},es:{q:'Ley de Ohm: V = ?',o:['R × I','R + I','R ÷ I','R − I'],a:0}},
+  {u:'⚙️',fr:{q:'Circuit série → intensité ?',o:['Identique partout','Différente partout','Nulle','Somme I₁+I₂'],a:0},en:{q:'Series circuit → current?',o:['Same everywhere','Different everywhere','Zero','Sum I₁+I₂'],a:0},es:{q:'Circuito serie → ¿intensidad?',o:['Igual en todas partes','Diferente','Nula','Suma I₁+I₂'],a:0}},
+  {u:'⚙️',fr:{q:'Échelle 1:2 = dessin…',o:['2× plus petit','2× plus grand','Taille réelle','10× plus petit'],a:0},en:{q:'Scale 1:2 = drawing is…',o:['2× smaller','2× larger','Full size','10× smaller'],a:0},es:{q:'Escala 1:2 = dibujo…',o:['2× más pequeño','2× más grande','Tamaño real','10× más pequeño'],a:0}},
+  {u:'⚗️',fr:{q:'Sublimation = ?',o:['Solide → Gaz','Liquide → Gaz','Gaz → Solide','Solide → Liquide'],a:0},en:{q:'Sublimation = ?',o:['Solid → Gas','Liquid → Gas','Gas → Solid','Solid → Liquid'],a:0},es:{q:'Sublimación = ?',o:['Sólido → Gas','Líquido → Gas','Gas → Sólido','Sólido → Líquido'],a:0}},
+  {u:'🧬',fr:{q:'Méiose produit…',o:['4 cellules haploïdes','2 cellules identiques','1 cellule','3 cellules'],a:0},en:{q:'Meiosis produces…',o:['4 haploid cells','2 identical cells','1 cell','3 cells'],a:0},es:{q:'La meiosis produce…',o:['4 células haploides','2 células idénticas','1 célula','3 células'],a:0}},
+  {u:'🌍',fr:{q:'Noyau interne Terre = ?',o:['Fer solide ~5000°C','Fer liquide','Roche légère','Vide'],a:0},en:{q:'Earth\'s inner core = ?',o:['Solid iron ~5000°C','Liquid iron','Light rock','Vacuum'],a:0},es:{q:'Núcleo interno Tierra = ?',o:['Hierro sólido ~5000°C','Hierro líquido','Roca ligera','Vacío'],a:0}},
+  {u:'⚙️',fr:{q:'Puissance électrique P = ?',o:['V × I','V + I','V ÷ I','V − I'],a:0},en:{q:'Electrical power P = ?',o:['V × I','V + I','V ÷ I','V − I'],a:0},es:{q:'Potencia eléctrica P = ?',o:['V × I','V + I','V ÷ I','V − I'],a:0}},
+];
+
+function buildQ(){
+  return Q_RAW.map(raw=>{
+    const q={u:raw.u};
+    ['fr','en','es'].forEach(l=>{
+      const d=raw[l];
+      const idx=d.o.map((o,i)=>({t:o,c:i===d.a})).sort(()=>Math.random()-.5);
+      q[l]={q:d.q,opts:idx.map(x=>x.t),ans:idx.findIndex(x=>x.c)};
+    });
+    return q;
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let lang='fr',diff='med',questions=[],current=0,score=0,streak=0,maxStreak=0,
+    answered=false,timerVal=0,timerInterval=null,totalTime=0,avgTimes=[],motivIdx=0;
+
+const KEYS=['A','B','C','D'];
+const KEY_COLORS=['opt-a','opt-b','opt-c','opt-d'];
+const CIRCUMFERENCE=176;
+
+function t(k){return TX[lang][k]}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
+
+// ═══════════════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════════════
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lb').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
+  renderMenu();
+}
+
+// ═══════════════════════════════════════════════
+//  BG PARTICLES
+// ═══════════════════════════════════════════════
+function spawnParticles(){
+  const bg=document.getElementById('bg');
+  const colors=['#00d4ff','#9f5afd','#ff5f6d','#ffd166','#4ddc8a'];
+  for(let i=0;i<20;i++){
+    const p=document.createElement('div');
+    p.className='bg-particle';
+    const s=Math.random()*6+2;
+    const c=colors[Math.floor(Math.random()*colors.length)];
+    p.style.cssText=`width:${s}px;height:${s}px;background:${c};left:${Math.random()*100}%;bottom:-10px;animation-duration:${Math.random()*8+6}s;animation-delay:${Math.random()*8}s;filter:blur(${Math.random()*2}px)`;
+    bg.appendChild(p);
+  }
+}
+spawnParticles();
+
+// ═══════════════════════════════════════════════
+//  MENU
+// ═══════════════════════════════════════════════
+function renderMenu(){
+  const tx=TX[lang];
+  document.getElementById('mb-badge').textContent=tx.badge;
+  document.getElementById('mt1').textContent=tx.t1;
+  document.getElementById('mt2').textContent=tx.t2;
+  document.getElementById('msub').textContent=tx.sub;
+  document.getElementById('mmotiv').textContent=rand(tx.motivMenu);
+  document.getElementById('btn-play').textContent=tx.play;
+  document.getElementById('diff-easy').textContent=tx.diffs.easy;
+  document.getElementById('diff-med').textContent=tx.diffs.med;
+  document.getElementById('diff-hard').textContent=tx.diffs.hard;
+
+  // key legend
+  const kc=[{k:'A',c:'#00d4ff'},{k:'B',c:'#9f5afd'},{k:'C',c:'#ff5f6d'},{k:'D',c:'#ffd166'}];
+  document.getElementById('key-legend').innerHTML=kc.map(x=>`
+    <div class="key-item">
+      <div class="key-badge" style="background:${x.c};color:${x.k==='D'?'#000':'#fff'}">${x.k}</div>
+    </div>`).join('');
+}
+
+function setDiff(d){
+  diff=d;
+  ['easy','med','hard'].forEach(x=>{
+    const btn=document.getElementById('diff-'+x);
+    btn.className='diff-btn '+x+(x===d?' active':'');
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  GAME
+// ═══════════════════════════════════════════════
+function startGame(){
+  questions=shuffle(buildQ()).slice(0,20);
+  current=0;score=0;streak=0;maxStreak=0;answered=false;avgTimes=[];
+  showScreen('screen-game');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  answered=false;
+  const q=questions[current];const d=q[lang];
+  const tx=TX[lang];
+  document.getElementById('hud-univ').textContent=q.u+' '+`${current+1}/${questions.length}`;
+  document.getElementById('hud-q').textContent=`${tx.q}${current+1} / ${questions.length}`;
+  document.getElementById('hud-score').innerHTML=`${score} <span>${tx.pts}</span>`;
+  document.getElementById('hud-streak').textContent=streak>0?'🔥'.repeat(Math.min(streak,5)):'';
+  document.getElementById('motiv-flash').textContent='';
+  document.getElementById('feedback-strip').className='feedback-strip';
+  document.getElementById('question-box').textContent=d.q;
+  document.getElementById('kh-left').textContent=tx.khLeft;
+  document.getElementById('kh-right').textContent=tx.khRight;
+
+  document.getElementById('options-grid').innerHTML=d.opts.map((o,i)=>`
+    <button class="opt-big ${KEY_COLORS[i]}" id="opt-${i}" onclick="answer(${i})">
+      <span class="key-tag">${KEYS[i]}</span>
+      <span class="opt-text">${o}</span>
+    </button>`).join('');
+
+  startTimer();
+}
+
+function startTimer(){
+  if(timerInterval) clearInterval(timerInterval);
+  const maxTime=TX[lang].timers[diff];
+  timerVal=maxTime;
+  updateTimerUI(maxTime,maxTime);
+  const start=Date.now();
+  timerInterval=setInterval(()=>{
+    timerVal=maxTime-((Date.now()-start)/1000);
+    if(timerVal<=0){
+      clearInterval(timerInterval);
+      if(!answered) timeOut();
+    } else {
+      updateTimerUI(timerVal,maxTime);
+    }
+  },50);
+}
+
+function updateTimerUI(val,max){
+  const pct=val/max;
+  const offset=CIRCUMFERENCE*(1-pct);
+  const ring=document.getElementById('timer-ring');
+  const num=document.getElementById('timer-num');
+  ring.style.strokeDashoffset=offset;
+  const color=pct>.6?'var(--a)':pct>.3?'var(--d)':'var(--c)';
+  ring.style.stroke=color;
+  num.textContent=Math.ceil(val);
+  num.style.color=color;
+}
+
+function answer(i){
+  if(answered)return;
+  answered=true;
+  clearInterval(timerInterval);
+  const q=questions[current];const d=q[lang];const ok=i===d.ans;
+  const tx=TX[lang];
+  const timeUsed=TX[lang].timers[diff]-timerVal;
+  avgTimes.push(timeUsed);
+
+  document.querySelectorAll('.opt-big').forEach(b=>b.disabled=true);
+
+  if(ok){
+    const timeBonus=Math.round((timerVal/TX[lang].timers[diff])*50);
+    const pts=100+timeBonus+(streak*10);
+    score+=pts;streak++;maxStreak=Math.max(streak,maxStreak);
+    document.getElementById(`opt-${i}`).classList.add('correct');
+    const fb=document.getElementById('feedback-strip');
+    fb.className='feedback-strip show ok';
+    fb.textContent=rand(tx.motivCorrect)+' +'+pts+' pts';
+    if(streak>=3){
+      const mf=document.getElementById('motiv-flash');
+      mf.textContent=rand(tx.motivStreak);
+      setTimeout(()=>mf.textContent='',1500);
+    }
+  } else {
+    streak=0;
+    document.getElementById(`opt-${i}`).classList.add('wrong');
+    document.getElementById(`opt-${d.ans}`).classList.add('reveal');
+    const fb=document.getElementById('feedback-strip');
+    fb.className='feedback-strip show bad';
+    fb.textContent=rand(tx.motivWrong);
+  }
+  document.getElementById('hud-score').innerHTML=`${score} <span>${tx.pts}</span>`;
+  document.getElementById('hud-streak').textContent=streak>0?'🔥'.repeat(Math.min(streak,5)):'';
+
+  setTimeout(()=>{
+    current++;
+    if(current>=questions.length) showResults();
+    else renderQuestion();
+  },ok?800:1200);
+}
+
+function timeOut(){
+  answered=true;
+  const q=questions[current];const d=q[lang];
+  streak=0;
+  document.querySelectorAll('.opt-big').forEach(b=>b.disabled=true);
+  document.getElementById(`opt-${d.ans}`).classList.add('reveal');
+  const fb=document.getElementById('feedback-strip');
+  fb.className='feedback-strip show bad';
+  fb.textContent='⏱ TEMPS !';
+  setTimeout(()=>{current++;if(current>=questions.length)showResults();else renderQuestion();},1000);
+}
+
+function showResults(){
+  const tx=TX[lang];
+  const total=questions.length;
+  const correct=questions.filter((q,i)=>true).length; // approximate
+  const pct=Math.round((score/(total*150))*100);
+  const pctClamped=Math.min(100,pct);
+  const v=tx.verdicts.find(x=>pctClamped>=x.min);
+  const avgT=avgTimes.length?Math.round(avgTimes.reduce((a,b)=>a+b,0)/avgTimes.length*10)/10:0;
+
+  document.getElementById('res-icon').textContent=v.icon;
+  document.getElementById('res-pct').textContent=score+' pts';
+  document.getElementById('res-msg').textContent=v.msg;
+  document.getElementById('res-motiv').textContent=v.motiv;
+  document.getElementById('rs-score').textContent=score;
+  document.getElementById('rs-correct').textContent=`${current}/${total}`;
+  document.getElementById('rs-streak').textContent=maxStreak;
+  document.getElementById('rs-time').textContent=avgT+'s';
+  document.getElementById('rs-lbl-score').textContent=tx.rsLbls.score;
+  document.getElementById('rs-lbl-correct').textContent=tx.rsLbls.correct;
+  document.getElementById('rs-lbl-streak').textContent=tx.rsLbls.streak;
+  document.getElementById('rs-lbl-time').textContent=tx.rsLbls.time;
+  document.getElementById('btn-again').textContent=tx.again;
+  document.getElementById('btn-back').textContent=tx.back;
+  showScreen('screen-results');
+}
+
+function goMenu(){showScreen('screen-menu');renderMenu()}
+
+function showScreen(id){
+  // flash transition
+  const ov=document.getElementById('trans-overlay');
+  ov.style.opacity='1';
+  setTimeout(()=>{
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    ov.style.opacity='0';
+  },150);
+}
+
+// ═══════════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  const k=e.key.toUpperCase();
+  if(document.getElementById('screen-game').classList.contains('active')){
+    const idx={A:0,B:1,C:2,D:3}[k];
+    if(idx!==undefined && !answered) answer(idx);
+  }
+  if(e.key==='Escape') goMenu();
+  if(e.key==='Enter' && document.getElementById('screen-menu').classList.contains('active')) startGame();
+});
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+renderMenu();
+
+// rotate motiv every 4s
+setInterval(()=>{
+  const el=document.getElementById('mmotiv');
+  if(el&&document.getElementById('screen-menu').classList.contains('active')){
+    const arr=TX[lang].motivMenu;
+    el.style.opacity='0';
+    setTimeout(()=>{el.textContent=rand(arr);el.style.opacity='1'},300);
+  }
+},4000);
+</script>
+</body>
+</html>

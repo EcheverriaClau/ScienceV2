@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mode Guitar Hero · STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#04060c;--bg2:#090d18;--text:#f0f6ff;--muted:#3a5070;
+  --a:#ff4488;--b:#00eeff;--c:#aaff00;--d:#ff9900;--e:#cc44ff;
+  --font:'Russo One',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:var(--font);color:var(--text)}
+
+#lang-bar{position:fixed;top:0;right:0;z-index:300;display:flex;gap:4px;padding:.5rem .8rem;background:rgba(4,6,12,.92);border-bottom:1px solid rgba(255,255,255,.07);border-left:1px solid rgba(255,255,255,.07);border-radius:0 0 0 8px}
+.lb{font-family:var(--mono);font-size:10px;padding:4px 9px;border-radius:3px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.lb.active{background:var(--a);color:#fff;border-color:var(--a)}
+
+/* ── SCREENS ── */
+.screen{display:none;position:fixed;inset:0;z-index:1;flex-direction:column;align-items:center;justify-content:center}
+.screen.active{display:flex}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── MENU ── */
+#screen-menu{background:radial-gradient(ellipse at 50% 100%,rgba(170,255,0,.08),transparent 60%),var(--bg);animation:fadeUp .3s ease}
+.menu-glow{position:absolute;inset:0;background:radial-gradient(circle at 50% 80%,rgba(170,255,0,.06),transparent 50%);pointer-events:none}
+.menu-content{position:relative;z-index:2;text-align:center;padding:1.5rem}
+.menu-title{font-size:clamp(3.5rem,12vw,7rem);letter-spacing:-.02em;line-height:.9;margin-bottom:.5rem}
+.menu-title .l1{color:var(--c);text-shadow:0 0 60px rgba(170,255,0,.6),0 0 20px rgba(170,255,0,.4)}
+.menu-title .l2{color:var(--text);font-size:60%;letter-spacing:.05em}
+.menu-sub{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.5rem}
+.menu-motiv{font-size:15px;color:var(--d);font-style:italic;margin-bottom:2rem;font-family:var(--mono);min-height:20px}
+
+.strings{display:flex;gap:10px;justify-content:center;margin-bottom:1.5rem}
+.string-dot{width:16px;height:16px;border-radius:50%;box-shadow:0 0 12px currentColor,0 0 4px currentColor}
+
+.speed-row{display:flex;gap:8px;justify-content:center;margin-bottom:1.5rem}
+.speed-btn{font-family:var(--font);font-size:13px;padding:8px 20px;border-radius:6px;border:2px solid;cursor:pointer;transition:all .2s;background:transparent}
+.speed-btn.s1{border-color:var(--c);color:var(--c)}
+.speed-btn.s2{border-color:var(--d);color:var(--d)}
+.speed-btn.s3{border-color:var(--a);color:var(--a)}
+.speed-btn.active{color:#000}
+.speed-btn.s1.active{background:var(--c)}
+.speed-btn.s2.active{background:var(--d)}
+.speed-btn.s3.active{background:var(--a)}
+
+.btn-start-gh{
+  font-family:var(--font);font-size:20px;letter-spacing:.08em;
+  padding:15px 48px;border:none;border-radius:8px;cursor:pointer;
+  background:var(--c);color:#000;
+  box-shadow:0 0 40px rgba(170,255,0,.5),0 5px 0 rgba(0,0,0,.5);
+  transition:all .15s;
+}
+.btn-start-gh:hover{transform:translateY(-3px);box-shadow:0 0 60px rgba(170,255,0,.7),0 8px 0 rgba(0,0,0,.5)}
+.btn-start-gh:active{transform:translateY(2px);box-shadow:0 0 20px rgba(170,255,0,.3),0 2px 0 rgba(0,0,0,.5)}
+
+/* ── GAME ── */
+#screen-game{background:var(--bg);padding:0;justify-content:flex-start;overflow:hidden}
+#game-canvas{display:block;width:100%;height:100%}
+
+/* overlays on canvas */
+#game-hud{
+  position:absolute;top:0;left:0;right:0;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:.6rem 1rem;
+  background:linear-gradient(to bottom,rgba(4,6,12,.9),transparent);
+  pointer-events:none;z-index:10;
+
+}
+.hud-score{font-size:28px;color:var(--c);text-shadow:0 0 16px rgba(170,255,0,.5)}
+.hud-score span{font-family:var(--mono);font-size:11px;color:var(--muted);display:block}
+.hud-mid{text-align:center}
+.hud-streak-gh{font-size:18px;color:var(--d);min-height:26px}
+.hud-question{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.hud-right{text-align:right}
+.hud-combo{font-size:16px;color:var(--a)}
+
+#question-overlay{
+  position:absolute;left:0;right:0;
+  pointer-events:none;z-index:10;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.q-band{
+  background:rgba(9,13,24,.92);
+  border-top:2px solid rgba(255,255,255,.08);
+  border-bottom:2px solid rgba(255,255,255,.08);
+  width:100%;padding:.75rem 1.25rem;
+  text-align:center;font-size:clamp(14px,2.5vw,18px);
+  line-height:1.4;
+}
+.hint-band{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  text-align:center;
+}
+
+#motiv-overlay{
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-size:22px;font-weight:700;letter-spacing:.1em;
+  pointer-events:none;z-index:20;
+  opacity:0;transition:opacity .2s;
+  text-shadow:0 0 20px currentColor;
+  white-space:nowrap;
+}
+
+/* strike zone */
+#strike-zone{
+  position:absolute;bottom:0;left:0;right:0;
+  height:80px;
+  background:linear-gradient(to top,rgba(170,255,0,.06),transparent);
+  border-top:2px solid rgba(170,255,0,.2);
+  pointer-events:none;z-index:5;
+}
+.strike-line{position:absolute;bottom:40px;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(170,255,0,.6),transparent)}
+
+/* ── RESULTS ── */
+#screen-results{
+  background:radial-gradient(ellipse at 50% 100%,rgba(170,255,0,.06),transparent 60%),var(--bg);
+  animation:fadeUp .3s ease;text-align:center;gap:.75rem;padding:1.5rem;
+}
+.res-title-gh{font-size:clamp(2rem,8vw,4rem);color:var(--c);text-shadow:0 0 40px rgba(170,255,0,.5);line-height:1}
+.res-score-gh{font-size:clamp(3rem,12vw,6rem);color:var(--text);line-height:1}
+.res-verdict{font-size:18px;color:var(--d)}
+.res-motiv-gh{font-family:var(--mono);font-size:13px;color:var(--muted);font-style:italic}
+.res-stats-gh{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.rsg{background:rgba(255,255,255,.05);border-radius:10px;padding:.75rem 1.25rem;text-align:center;min-width:80px}
+.rsg-num{font-size:2rem;display:block}
+.rsg-lbl{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.btn-play-again{font-family:var(--font);font-size:18px;padding:12px 36px;border:none;border-radius:8px;background:var(--c);color:#000;cursor:pointer;box-shadow:0 0 30px rgba(170,255,0,.4);transition:all .2s}
+.btn-play-again:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(170,255,0,.6)}
+.btn-back-gh{font-family:var(--font);font-size:14px;padding:9px 24px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.btn-back-gh:hover{color:var(--text);border-color:var(--text)}
+</style>
+</head>
+<body>
+<div id="lang-bar">
+  <button class="lb active" onclick="setLang('fr')">FR</button>
+  <button class="lb" onclick="setLang('en')">EN</button>
+  <button class="lb" onclick="setLang('es')">ES</button>
+</div>
+
+<!-- MENU -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-glow"></div>
+  <div class="menu-content">
+    <div class="menu-title">
+      <div class="l1" id="mt1">GUITAR</div>
+      <div class="l2" id="mt2">HERO QUIZ</div>
+    </div>
+    <p class="menu-sub" id="msub">Touche la bonne réponse avant qu'elle disparaisse</p>
+    <p class="menu-motiv" id="mmotiv"></p>
+    <div class="strings">
+      <div class="string-dot" style="color:var(--a);background:var(--a)"></div>
+      <div class="string-dot" style="color:var(--b);background:var(--b)"></div>
+      <div class="string-dot" style="color:var(--c);background:var(--c)"></div>
+      <div class="string-dot" style="color:var(--d);background:var(--d)"></div>
+      <div class="string-dot" style="color:var(--e);background:var(--e)"></div>
+    </div>
+    <div class="speed-row">
+      <button class="speed-btn s1" id="spd1" onclick="setSpeed(1)"></button>
+      <button class="speed-btn s2 active" id="spd2" onclick="setSpeed(2)"></button>
+      <button class="speed-btn s3" id="spd3" onclick="setSpeed(3)"></button>
+    </div>
+    <button class="btn-start-gh" id="btn-start" onclick="startGame()"></button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen" style="position:relative">
+  <canvas id="game-canvas"></canvas>
+  <div id="game-hud">
+    <div>
+      <div class="hud-score" id="hud-score">0 <span id="hud-pts">pts</span></div>
+    </div>
+    <div class="hud-mid">
+      <div class="hud-streak-gh" id="hud-streak-gh"></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-combo" id="hud-combo"></div>
+      <div class="hud-question" id="hud-q-num"></div>
+    </div>
+  </div>
+  <div id="question-overlay" style="top:56px">
+    <div class="q-band" id="q-band"></div>
+    <div class="hint-band" id="hint-band"></div>
+  </div>
+  <div id="motiv-overlay"></div>
+  <div id="strike-zone"><div class="strike-line"></div></div>
+</div>
+
+<!-- RESULTS -->
+<div id="screen-results" class="screen">
+  <div class="res-title-gh" id="res-title-gh">SCORE</div>
+  <div class="res-score-gh" id="res-score-gh">0</div>
+  <div class="res-verdict" id="res-verdict"></div>
+  <div class="res-motiv-gh" id="res-motiv-gh"></div>
+  <div class="res-stats-gh">
+    <div class="rsg"><span class="rsg-num" id="rs-hit" style="color:var(--c)">0</span><span class="rsg-lbl" id="rsl-hit">Hits</span></div>
+    <div class="rsg"><span class="rsg-num" id="rs-miss" style="color:var(--a)">0</span><span class="rsg-lbl" id="rsl-miss">Miss</span></div>
+    <div class="rsg"><span class="rsg-num" id="rs-combo" style="color:var(--d)">0</span><span class="rsg-lbl" id="rsl-combo">Combo</span></div>
+    <div class="rsg"><span class="rsg-num" id="rs-acc" style="color:var(--b)">0%</span><span class="rsg-lbl" id="rsl-acc">Précision</span></div>
+  </div>
+  <button class="btn-play-again" id="btn-again" onclick="startGame()"></button>
+  <button class="btn-back-gh" id="btn-back" onclick="goMenu()"></button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════════════
+const TX={
+  fr:{t1:'GUITAR',t2:'HERO QUIZ',sub:'Touche la bonne réponse avant qu\'elle disparaisse',
+    speeds:['LENT','NORMAL','RAPIDE'],play:'JOUER !',pts:'pts',
+    hint:'Clique ou touche la bonne réponse !',
+    motivMenu:['🎸 Prêt à rocker la science ?','🎵 Joue vite, pense fort !','🏆 Bats ton high score !','⚡ Vitesse + précision = victoire !'],
+    motivHit:['🎸 PERFECT !','⭐ GREAT !','✓ GOOD !','🔥 HOT !','💥 BOOM !'],
+    motivMiss:['✗ Miss !','⚠ Raté !','💀 Oops !'],
+    motivCombo:['🔥 COMBO ×','⚡ ON FIRE ×','🚀 UNSTOPPABLE ×'],
+    verdicts:[{min:90,icon:'👑',v:'LÉGENDAIRE',m:'Performance parfaite. Rockstar de la science !'},{min:70,icon:'🎸',v:'ROCKSTAR',m:'Incroyable précision. Continue !'},{min:50,icon:'⭐',v:'SOLID',m:'Bon jeu ! Tu progresses vite.'},{min:0,icon:'🎮',v:'ROOKIE',m:'Rejoue et bats ce score !'}],
+    rsLbls:{hits:'Hits',miss:'Miss',combo:'Combo max',acc:'Précision'},
+    again:'REJOUER',back:'← Accueil',qLabel:'Q',
+  },
+  en:{t1:'GUITAR',t2:'HERO QUIZ',sub:'Hit the correct answer before it disappears',
+    speeds:['SLOW','NORMAL','FAST'],play:'PLAY !',pts:'pts',
+    hint:'Click or tap the correct answer!',
+    motivMenu:['🎸 Ready to rock science?','🎵 Play fast, think hard!','🏆 Beat your high score!','⚡ Speed + accuracy = victory!'],
+    motivHit:['🎸 PERFECT!','⭐ GREAT!','✓ GOOD!','🔥 HOT!','💥 BOOM!'],
+    motivMiss:['✗ Miss!','⚠ Missed!','💀 Oops!'],
+    motivCombo:['🔥 COMBO ×','⚡ ON FIRE ×','🚀 UNSTOPPABLE ×'],
+    verdicts:[{min:90,icon:'👑',v:'LEGENDARY',m:'Perfect performance. Science rockstar!'},{min:70,icon:'🎸',v:'ROCKSTAR',m:'Incredible accuracy. Keep going!'},{min:50,icon:'⭐',v:'SOLID',m:'Good game! You\'re improving fast.'},{min:0,icon:'🎮',v:'ROOKIE',m:'Play again and beat that score!'}],
+    rsLbls:{hits:'Hits',miss:'Miss',combo:'Max combo',acc:'Accuracy'},
+    again:'PLAY AGAIN',back:'← Home',qLabel:'Q',
+  },
+  es:{t1:'GUITAR',t2:'HERO QUIZ',sub:'Toca la respuesta correcta antes de que desaparezca',
+    speeds:['LENTO','NORMAL','RÁPIDO'],play:'¡JUGAR !',pts:'pts',
+    hint:'¡Haz clic o toca la respuesta correcta!',
+    motivMenu:['🎸 ¿Listo para rockear la ciencia?','🎵 ¡Juega rápido, piensa fuerte!','🏆 ¡Supera tu récord!','⚡ ¡Velocidad + precisión = victoria!'],
+    motivHit:['🎸 ¡PERFECTO!','⭐ ¡GENIAL!','✓ ¡BIEN!','🔥 ¡HOT!','💥 ¡BOOM!'],
+    motivMiss:['✗ ¡Fallaste!','⚠ ¡Errado!','💀 ¡Oops!'],
+    motivCombo:['🔥 COMBO ×','⚡ EN LLAMAS ×','🚀 IMPARABLE ×'],
+    verdicts:[{min:90,icon:'👑',v:'¡LEGENDARIO!',m:'¡Rendimiento perfecto. Rockstar de la ciencia!'},{min:70,icon:'🎸',v:'¡ROCKSTAR!',m:'¡Precisión increíble. Continúa!'},{min:50,icon:'⭐',v:'SÓLIDO',m:'¡Buen juego! Mejoras rápido.'},{min:0,icon:'🎮',v:'NOVATO',m:'¡Vuelve a jugar y supera ese puntaje!'}],
+    rsLbls:{hits:'Hits',miss:'Miss',combo:'Combo máx',acc:'Precisión'},
+    again:'JUGAR DE NUEVO',back:'← Inicio',qLabel:'P',
+  },
+};
+
+// ═══════════════════════════════════════════════
+//  QUESTIONS
+// ═══════════════════════════════════════════════
+const Q_RAW=[
+  {u:'⚗️',fr:{q:'Formule de l\'eau ?',correct:'H₂O',wrong:['CO₂','NaCl','O₂']},en:{q:'Formula for water?',correct:'H₂O',wrong:['CO₂','NaCl','O₂']},es:{q:'¿Fórmula del agua?',correct:'H₂O',wrong:['CO₂','NaCl','O₂']}},
+  {u:'⚗️',fr:{q:'Solution acide → pH ?',correct:'pH < 7',wrong:['pH = 7','pH > 7','pH = 14']},en:{q:'Acidic solution → pH?',correct:'pH < 7',wrong:['pH = 7','pH > 7','pH = 14']},es:{q:'¿Solución ácida → pH?',correct:'pH < 7',wrong:['pH = 7','pH > 7','pH = 14']}},
+  {u:'⚗️',fr:{q:'Masse volumique eau ?',correct:'1 g/mL',wrong:['0,5 g/mL','5 g/mL','10 g/mL']},en:{q:'Density of water?',correct:'1 g/mL',wrong:['0.5 g/mL','5 g/mL','10 g/mL']},es:{q:'¿Masa volumétrica agua?',correct:'1 g/mL',wrong:['0,5 g/mL','5 g/mL','10 g/mL']}},
+  {u:'⚗️',fr:{q:'Fusion = changement…',correct:'Solide→Liquide',wrong:['Liquide→Gaz','Gaz→Liquide','Liquide→Solide']},en:{q:'Melting = change…',correct:'Solid→Liquid',wrong:['Liquid→Gas','Gas→Liquid','Liquid→Solid']},es:{q:'Fusión = cambio…',correct:'Sólido→Líquido',wrong:['Líquido→Gas','Gas→Líquido','Líquido→Sólido']}},
+  {u:'⚗️',fr:{q:'Concentration C = ?',correct:'m ÷ V',wrong:['V ÷ m','m × V','m + V']},en:{q:'Concentration C = ?',correct:'m ÷ V',wrong:['V ÷ m','m × V','m + V']},es:{q:'Concentración C = ?',correct:'m ÷ V',wrong:['V ÷ m','m × V','m + V']}},
+  {u:'🧬',fr:{q:'Organite = ATP ?',correct:'Mitochondrie',wrong:['Noyau','Ribosome','Vacuole']},en:{q:'Organelle = ATP?',correct:'Mitochondrion',wrong:['Nucleus','Ribosome','Vacuole']},es:{q:'¿Orgánulo = ATP?',correct:'Mitocondria',wrong:['Núcleo','Ribosoma','Vacuola']}},
+  {u:'🧬',fr:{q:'ADN situé dans…',correct:'Noyau',wrong:['Cytoplasme','Membrane','Ribosome']},en:{q:'DNA located in…',correct:'Nucleus',wrong:['Cytoplasm','Membrane','Ribosome']},es:{q:'ADN ubicado en…',correct:'Núcleo',wrong:['Citoplasma','Membrana','Ribosoma']}},
+  {u:'🧬',fr:{q:'Mitose → résultat ?',correct:'2 cellules identiques',wrong:['4 cellules','1 cellule','3 cellules']},en:{q:'Mitosis → result?',correct:'2 identical cells',wrong:['4 cells','1 cell','3 cells']},es:{q:'Mitosis → resultado ?',correct:'2 células idénticas',wrong:['4 células','1 célula','3 células']}},
+  {u:'🧬',fr:{q:'Photosynthèse dans…',correct:'Chloroplastes',wrong:['Mitochondries','Noyau','Golgi']},en:{q:'Photosynthesis in…',correct:'Chloroplasts',wrong:['Mitochondria','Nucleus','Golgi']},es:{q:'Fotosíntesis en…',correct:'Cloroplastos',wrong:['Mitocondrias','Núcleo','Golgi']}},
+  {u:'🧬',fr:{q:'Absorption nutriments via…',correct:'Intestin grêle',wrong:['Estomac','Gros intestin','Foie']},en:{q:'Nutrient absorption via…',correct:'Small intestine',wrong:['Stomach','Large intestine','Liver']},es:{q:'Absorción nutrientes via…',correct:'Intestino delgado',wrong:['Estómago','Intestino grueso','Hígado']}},
+  {u:'🌍',fr:{q:'Couche rigide externe ?',correct:'Lithosphère',wrong:['Asthénosphère','Manteau','Noyau']},en:{q:'Rigid outer layer?',correct:'Lithosphere',wrong:['Asthenosphere','Mantle','Core']},es:{q:'¿Capa externa rígida?',correct:'Litosfera',wrong:['Astenosfera','Manto','Núcleo']}},
+  {u:'🌍',fr:{q:'Énergie du Soleil par…',correct:'Fusion nucléaire',wrong:['Fission','Combustion','Chimie']},en:{q:'Sun\'s energy by…',correct:'Nuclear fusion',wrong:['Fission','Combustion','Chemistry']},es:{q:'Energía del Sol por…',correct:'Fusión nuclear',wrong:['Fisión','Combustión','Química']}},
+  {u:'🌍',fr:{q:'Roches avec fossiles ?',correct:'Sédimentaires',wrong:['Ignées','Métamorphiques','Volcanique']},en:{q:'Rocks with fossils?',correct:'Sedimentary',wrong:['Igneous','Metamorphic','Volcanic']},es:{q:'¿Rocas con fósiles?',correct:'Sedimentarias',wrong:['Ígneas','Metamórficas','Volcánicas']}},
+  {u:'⚙️',fr:{q:'Pression P = ?',correct:'F ÷ A',wrong:['A ÷ F','F × A','F + A']},en:{q:'Pressure P = ?',correct:'F ÷ A',wrong:['A ÷ F','F × A','F + A']},es:{q:'Presión P = ?',correct:'F ÷ A',wrong:['A ÷ F','F × A','F + A']}},
+  {u:'⚙️',fr:{q:'Loi d\'Ohm V = ?',correct:'R × I',wrong:['R + I','R ÷ I','R − I']},en:{q:'Ohm\'s Law V = ?',correct:'R × I',wrong:['R + I','R ÷ I','R − I']},es:{q:'Ley Ohm V = ?',correct:'R × I',wrong:['R + I','R ÷ I','R − I']}},
+  {u:'⚙️',fr:{q:'Puissance P = ?',correct:'V × I',wrong:['V + I','V ÷ I','V − I']},en:{q:'Power P = ?',correct:'V × I',wrong:['V + I','V ÷ I','V − I']},es:{q:'Potencia P = ?',correct:'V × I',wrong:['V + I','V ÷ I','V − I']}},
+  {u:'⚙️',fr:{q:'Échelle 1:2 = dessin ?',correct:'2× plus petit',wrong:['2× plus grand','Taille réelle','10× agrandi']},en:{q:'Scale 1:2 = drawing?',correct:'2× smaller',wrong:['2× larger','Full size','10× enlarged']},es:{q:'Escala 1:2 = dibujo ?',correct:'2× más pequeño',wrong:['2× más grande','Tamaño real','10× ampliado']}},
+  {u:'🧬',fr:{q:'Méiose → résultat ?',correct:'4 cellules haploïdes',wrong:['2 cellules','1 cellule','8 cellules']},en:{q:'Meiosis → result?',correct:'4 haploid cells',wrong:['2 cells','1 cell','8 cells']},es:{q:'Meiosis → resultado ?',correct:'4 células haploides',wrong:['2 células','1 célula','8 células']}},
+  {u:'⚗️',fr:{q:'Sublimation = ?',correct:'Solide→Gaz',wrong:['Liquide→Gaz','Gaz→Solide','Gaz→Liquide']},en:{q:'Sublimation = ?',correct:'Solid→Gas',wrong:['Liquid→Gas','Gas→Solid','Gas→Liquid']},es:{q:'Sublimación = ?',correct:'Sólido→Gas',wrong:['Líquido→Gas','Gas→Sólido','Gas→Líquido']}},
+  {u:'🌍',fr:{q:'Noyau interne = ?',correct:'Fer solide ~5000°C',wrong:['Fer liquide','Roche légère','Vide']},en:{q:'Inner core = ?',correct:'Solid iron ~5000°C',wrong:['Liquid iron','Light rock','Vacuum']},es:{q:'Núcleo interno = ?',correct:'Hierro sólido ~5000°C',wrong:['Hierro líquido','Roca ligera','Vacío']}},
+];
+
+// ═══════════════════════════════════════════════
+//  STATE & CONFIG
+// ═══════════════════════════════════════════════
+let lang='fr',speed=2,questions=[],currentQ=0;
+let score=0,hits=0,misses=0,combo=0,maxCombo=0;
+let bubbles=[],animFrame=null,gameActive=false;
+let canvas,ctx,W,H;
+let motivIdx=0;
+
+const SPEEDS={1:{fall:18,spawn:4500,count:3},2:{fall:28,spawn:3500,count:4},3:{fall:130,spawn:1800,count:4}};
+const COLORS=['#ff4488','#00eeff','#aaff00','#ff9900','#cc44ff','#ff6644','#44aaff'];
+
+function t(k){return TX[lang][k]}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function shuffle(arr){return [...arr].sort(()=>Math.random()-.5)}
+
+// ═══════════════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════════════
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lb').forEach(b=>b.classList.toggle('active',b.textContent===l.toUpperCase()));
+  renderMenu();
+}
+
+// ═══════════════════════════════════════════════
+//  MENU
+// ═══════════════════════════════════════════════
+function renderMenu(){
+  const tx=TX[lang];
+  document.getElementById('mt1').textContent=tx.t1;
+  document.getElementById('mt2').textContent=tx.t2;
+  document.getElementById('msub').textContent=tx.sub;
+  document.getElementById('mmotiv').textContent=rand(tx.motivMenu);
+  document.getElementById('btn-start').textContent=tx.play;
+  ['spd1','spd2','spd3'].forEach((id,i)=>{
+    document.getElementById(id).textContent=tx.speeds[i];
+  });
+}
+
+function setSpeed(s){
+  speed=s;
+  ['spd1','spd2','spd3'].forEach((id,i)=>{
+    const btn=document.getElementById(id);
+    btn.className='speed-btn s'+(i+1)+(i+1===s?' active':'');
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  GAME SETUP
+// ═══════════════════════════════════════════════
+function startGame(){
+  if(animFrame) cancelAnimationFrame(animFrame);
+  questions=shuffle(Q_RAW.map(q=>{
+    const d=q[lang];
+    const opts=shuffle([{t:d.correct,c:true},...d.wrong.map(w=>({t:w,c:false}))]);
+    return {u:q.u,q:d.q,opts,correct:d.correct};
+  }));
+  currentQ=0;score=0;hits=0;misses=0;combo=0;maxCombo=0;bubbles=[];gameActive=true;
+
+  showScreen('screen-game');
+  setupCanvas();
+  loadQuestion();
+  gameLoop();
+}
+
+function setupCanvas(){
+  canvas=document.getElementById('game-canvas');
+  ctx=canvas.getContext('2d');
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+  canvas.addEventListener('click',onCanvasClick);
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];onCanvasClick({clientX:t.clientX,clientY:t.clientY})},{passive:false});
+}
+
+let spawnTimeout=null;
+function loadQuestion(){
+  if(currentQ>=questions.length){endGame();return}
+  const q=questions[currentQ];
+  bubbles=[];
+  document.getElementById('q-band').textContent=q.u+' '+q.q;
+  document.getElementById('hint-band').textContent=TX[lang].hint;
+  document.getElementById('hud-q-num').textContent=`${TX[lang].qLabel}${currentQ+1}/${questions.length}`;
+  spawnBubbles(q);
+}
+
+function spawnBubbles(q){
+  const cfg=SPEEDS[speed];
+  const cols=Math.min(q.opts.length,cfg.count);
+  const margin=80;
+  const spacing=(W-margin*2)/(cols-1||1);
+
+  q.opts.slice(0,cols).forEach((opt,i)=>{
+    const x=cols===1?W/2:margin+i*spacing;
+    const color=COLORS[Math.floor(Math.random()*COLORS.length)];
+    const r=Math.max(44,Math.min(64,Math.min(W,H)*0.09));
+    bubbles.push({
+      x,y:-r-Math.random()*200,
+      r,text:opt.t,correct:opt.c,color,
+      vy:cfg.fall*(0.8+Math.random()*0.4)/60,
+      vx:(Math.random()-.5)*0.4,
+      alpha:1,dead:false,hit:false,
+      pulse:Math.random()*Math.PI*2,
+      fontSize:Math.max(11,Math.min(16,r*0.35)),
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  GAME LOOP
+// ═══════════════════════════════════════════════
+function gameLoop(){
+  if(!gameActive){return}
+  update();
+  draw();
+  animFrame=requestAnimationFrame(gameLoop);
+}
+
+function update(){
+  const strikeY=H-40;
+  bubbles.forEach(b=>{
+    if(b.dead)return;
+    b.y+=b.vy*2;
+    b.x+=b.vx;
+    b.pulse+=0.05;
+    // bounce off walls
+    if(b.x-b.r<0){b.x=b.r;b.vx=Math.abs(b.vx)}
+    if(b.x+b.r>W){b.x=W-b.r;b.vx=-Math.abs(b.vx)}
+    // fell past strike zone
+    if(b.y-b.r>H+20){
+      b.dead=true;
+      if(b.correct&&!b.hit){
+        // missed correct answer
+        misses++;combo=0;
+        document.getElementById('hud-combo').textContent='';
+        flashMotiv(rand(TX[lang].motivMiss),'var(--a)');
+        setTimeout(()=>nextQuestion(),400);
+      }
+    }
+  });
+  // remove dead
+  bubbles=bubbles.filter(b=>!(b.dead&&!b.hit));
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // background grid
+  ctx.strokeStyle='rgba(255,255,255,0.03)';
+  ctx.lineWidth=1;
+  for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+
+  // moving background lines (guitar strings effect)
+  const t=Date.now()/1000;
+  for(let i=0;i<5;i++){
+    const x=W*(i+1)/6+Math.sin(t*0.5+i)*20;
+    const grad=ctx.createLinearGradient(x,0,x,H);
+    grad.addColorStop(0,'transparent');
+    grad.addColorStop(0.5,COLORS[i]+'22');
+    grad.addColorStop(1,'transparent');
+    ctx.strokeStyle=grad;
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+  }
+
+  // draw bubbles
+  bubbles.forEach(b=>{
+    if(b.dead&&!b.hit)return;
+    if(b.hit){
+      b.alpha-=0.08;
+      b.y-=3;b.r+=2;
+      if(b.alpha<=0){b.dead=true}
+    }
+    ctx.save();
+    ctx.globalAlpha=Math.max(0,b.alpha);
+
+    // glow
+    const glow=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r*1.5);
+    glow.addColorStop(0,b.color+'55');
+    glow.addColorStop(1,'transparent');
+    ctx.fillStyle=glow;
+    ctx.beginPath();ctx.arc(b.x,b.y,b.r*1.5,0,Math.PI*2);ctx.fill();
+
+    // bubble
+    const pulse=b.correct?1+Math.sin(b.pulse)*0.05:1;
+    ctx.beginPath();
+    ctx.arc(b.x,b.y,b.r*pulse,0,Math.PI*2);
+    ctx.fillStyle=b.color+'33';
+    ctx.fill();
+    ctx.strokeStyle=b.color;
+    ctx.lineWidth=b.correct?3:2;
+    ctx.stroke();
+
+    // correct indicator
+    if(b.correct){
+      ctx.beginPath();
+      ctx.arc(b.x,b.y,b.r*pulse+4,0,Math.PI*2);
+      ctx.strokeStyle=b.color+'66';
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+    }
+
+    // text
+    ctx.fillStyle='#fff';
+    ctx.font=`700 ${b.fontSize}px 'Russo One', sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    // wrap text
+    const words=b.text.split(' ');
+    if(words.length>2&&b.r>50){
+      const mid=Math.ceil(words.length/2);
+      ctx.fillText(words.slice(0,mid).join(' '),b.x,b.y-b.fontSize*0.6);
+      ctx.fillText(words.slice(mid).join(' '),b.x,b.y+b.fontSize*0.6);
+    } else {
+      ctx.fillText(b.text,b.x,b.y);
+    }
+    ctx.restore();
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  INTERACTION
+// ═══════════════════════════════════════════════
+function onCanvasClick(e){
+  if(!gameActive)return;
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left;
+  const my=e.clientY-rect.top;
+  // generous hitbox: 1.3× radius
+  let hit=null;
+  bubbles.forEach(b=>{
+    if(b.dead||b.hit)return;
+    const d=Math.hypot(mx-b.x,my-b.y);
+    if(d<b.r*1.3)hit=b;
+  });
+  if(!hit)return;
+  processHit(hit);
+}
+
+function processHit(bubble){
+  if(bubble.correct){
+    bubble.hit=true;
+    hits++;combo++;maxCombo=Math.max(combo,maxCombo);
+    const pts=100+combo*20;
+    score+=pts;
+    flashMotiv(rand(TX[lang].motivHit)+` +${pts}`,'var(--c)');
+    if(combo>=3){
+      const comboMsg=rand(TX[lang].motivCombo)+combo;
+      document.getElementById('hud-combo').textContent=comboMsg;
+      document.getElementById('hud-combo').style.color='var(--d)';
+    }
+    // kill all bubbles for next question
+    setTimeout(()=>nextQuestion(),300);
+  } else {
+    // wrong answer — flash bubble red and shrink
+    bubble.color='#ff5f6d';
+    bubble.vy*=1.5;
+    misses++;combo=0;
+    document.getElementById('hud-combo').textContent='';
+    flashMotiv(rand(TX[lang].motivMiss),'var(--a)');
+    // continue — correct bubble still falling
+  }
+  document.getElementById('hud-score').innerHTML=`${score} <span>${TX[lang].pts}</span>`;
+  document.getElementById('hud-streak-gh').textContent=combo>0?'🎸'.repeat(Math.min(combo,5)):'';
+}
+
+function nextQuestion(){
+  currentQ++;
+  if(currentQ>=questions.length){endGame();return}
+  bubbles=[];
+  loadQuestion();
+}
+
+function flashMotiv(text,color){
+  const el=document.getElementById('motiv-overlay');
+  el.textContent=text;
+  el.style.color=color;
+  el.style.opacity='1';
+  const topPct=20+Math.random()*40;
+  el.style.top=topPct+'%';
+  clearTimeout(el._timeout);
+  el._timeout=setTimeout(()=>el.style.opacity='0',900);
+}
+
+// ═══════════════════════════════════════════════
+//  END GAME
+// ═══════════════════════════════════════════════
+function endGame(){
+  gameActive=false;
+  cancelAnimationFrame(animFrame);
+  canvas.removeEventListener('click',onCanvasClick);
+  const tx=TX[lang];
+  const total=hits+misses;
+  const acc=total?Math.round((hits/total)*100):0;
+  const v=tx.verdicts.find(x=>acc>=x.min);
+
+  document.getElementById('res-title-gh').textContent=tx.t1;
+  document.getElementById('res-score-gh').textContent=score+' pts';
+  document.getElementById('res-verdict').textContent=v.icon+' '+v.v;
+  document.getElementById('res-motiv-gh').textContent=v.m;
+  document.getElementById('rs-hit').textContent=hits;
+  document.getElementById('rs-miss').textContent=misses;
+  document.getElementById('rs-combo').textContent=maxCombo;
+  document.getElementById('rs-acc').textContent=acc+'%';
+  document.getElementById('rsl-hit').textContent=tx.rsLbls.hits;
+  document.getElementById('rsl-miss').textContent=tx.rsLbls.miss;
+  document.getElementById('rsl-combo').textContent=tx.rsLbls.combo;
+  document.getElementById('rsl-acc').textContent=tx.rsLbls.acc;
+  document.getElementById('btn-again').textContent=tx.again;
+  document.getElementById('btn-back').textContent=tx.back;
+  showScreen('screen-results');
+}
+
+function goMenu(){
+  gameActive=false;if(animFrame)cancelAnimationFrame(animFrame);
+  showScreen('screen-menu');renderMenu();
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+window.addEventListener('resize',()=>{if(gameActive&&canvas){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}});
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+renderMenu();
+setInterval(()=>{
+  const el=document.getElementById('mmotiv');
+  if(el&&document.getElementById('screen-menu').classList.contains('active')){
+    const arr=TX[lang].motivMenu;
+    el.style.opacity='0';
+    setTimeout(()=>{motivIdx=(motivIdx+1)%arr.length;el.textContent=arr[motivIdx];el.style.opacity='1'},300);
+  }
+},4000);
+</script>
+</body>
+</html>

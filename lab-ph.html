@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Laboratoire pH — STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET & BASE ─────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e14;
+  --bg2:#111620;
+  --bg3:#181f2e;
+  --border:rgba(255,255,255,0.08);
+  --border2:rgba(255,255,255,0.16);
+  --text:#dce8f5;
+  --muted:#556a88;
+  --mono:'Space Mono',monospace;
+  --display:'Unbounded',sans-serif;
+}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--mono);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* grid noise texture */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;z-index:0;
+}
+
+/* ── LANG BAR ─────────────────────────────────────────── */
+#lang-bar{
+  position:relative;z-index:10;
+  display:flex;gap:6px;justify-content:flex-end;
+  padding:1rem 1.25rem 0;
+}
+.lang-btn{
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  padding:5px 12px;border-radius:3px;
+  border:1px solid var(--border2);
+  background:transparent;color:var(--muted);
+  cursor:pointer;transition:all .2s;text-transform:uppercase;
+}
+.lang-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.3)}
+.lang-btn.active{
+  background:var(--text);color:var(--bg);border-color:var(--text);
+}
+
+/* ── WRAPPER ──────────────────────────────────────────── */
+#app{
+  position:relative;z-index:1;
+  max-width:700px;margin:0 auto;
+  padding:1.5rem 1.25rem 4rem;
+}
+
+/* ── SCREEN transitions ───────────────────────────────── */
+.screen{display:none;animation:fadeUp .4s ease}
+.screen.active{display:block}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* ── HERO HEADER ──────────────────────────────────────── */
+.hero{text-align:center;padding:1.5rem 0 2rem;position:relative}
+.hero-tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--muted);
+  margin-bottom:.75rem;display:block;
+}
+.hero h1{
+  font-family:var(--display);
+  font-size:clamp(2.2rem,7vw,3.5rem);
+  font-weight:900;letter-spacing:-.03em;line-height:1;
+  margin-bottom:.5rem;
+}
+/* animated pH gradient title */
+.hero h1 span{
+  background:linear-gradient(90deg,#ff4444,#ff9800,#ffeb3b,#4caf50,#2196f3,#9c27b0);
+  background-size:300%;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:rainbow 4s linear infinite;
+}
+@keyframes rainbow{0%{background-position:0%}100%{background-position:300%}}
+.hero p{font-size:12px;color:var(--muted);letter-spacing:.05em}
+
+/* ── SECTION LABEL ────────────────────────────────────── */
+.sec-label{
+  font-family:var(--mono);font-size:10px;
+  color:var(--muted);letter-spacing:.15em;
+  text-transform:uppercase;
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:.9rem;
+}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── PH SCALE STRIP ───────────────────────────────────── */
+.ph-strip-wrap{margin-bottom:1.75rem}
+.ph-strip{
+  height:28px;border-radius:4px;
+  background:linear-gradient(90deg,
+    #cc0000 0%,#e53935 5%,#e64a19 11%,
+    #ff7043 16%,#ffa726 22%,#ffca28 27%,
+    #fff176 33%,#a5d6a7 40%,
+    #66bb6a 50%,#43a047 58%,
+    #1e88e5 66%,#1565c0 75%,
+    #6a1b9a 84%,#4a148c 92%,#311b92 100%
+  );
+  position:relative;margin-bottom:6px;
+  border:1px solid var(--border2);
+}
+.ph-strip-marker{
+  position:absolute;top:-8px;
+  width:3px;height:44px;
+  background:#fff;border-radius:2px;
+  box-shadow:0 0 8px rgba(255,255,255,0.8);
+  transition:left .1s;
+  transform:translateX(-50%);
+}
+.ph-strip-nums{
+  display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  padding:0 2px;
+}
+
+/* ── MAIN LAB LAYOUT ──────────────────────────────────── */
+.lab-grid{
+  display:grid;
+  grid-template-columns:1fr 260px;
+  gap:1.25rem;
+  margin-bottom:1.5rem;
+  align-items:start;
+}
+@media(max-width:580px){
+  .lab-grid{grid-template-columns:1fr}
+}
+
+/* ── BEAKER SVG ───────────────────────────────────────── */
+.beaker-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:1rem;
+}
+.beaker-svg-wrap{position:relative;width:180px;height:220px}
+.beaker-svg-wrap svg{width:100%;height:100%}
+
+/* bubbles in beaker */
+.bubble{
+  position:absolute;
+  border-radius:50%;
+  background:rgba(255,255,255,0.15);
+  border:1px solid rgba(255,255,255,0.25);
+  animation:rise linear infinite;
+  pointer-events:none;
+}
+@keyframes rise{
+  0%{transform:translateY(0) scale(1);opacity:.7}
+  100%{transform:translateY(-140px) scale(1.4);opacity:0}
+}
+
+/* ── SLIDER PANEL ─────────────────────────────────────── */
+.slider-panel{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:1.25rem;
+}
+.ph-display{
+  text-align:center;margin-bottom:1.25rem;
+}
+.ph-number{
+  font-family:var(--display);
+  font-size:4rem;font-weight:900;
+  line-height:1;letter-spacing:-.04em;
+  transition:color .3s;
+}
+.ph-category{
+  font-family:var(--mono);font-size:11px;
+  letter-spacing:.12em;text-transform:uppercase;
+  margin-top:4px;transition:color .3s;
+}
+
+/* custom slider */
+input[type=range]{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:8px;border-radius:4px;
+  outline:none;cursor:pointer;
+  margin-bottom:1.25rem;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 0 10px rgba(255,255,255,0.5);
+  cursor:pointer;border:2px solid var(--bg);
+  transition:transform .1s;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+
+/* ── INFO CARDS ───────────────────────────────────────── */
+.info-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.info-card{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;padding:.75rem;
+  font-size:12px;
+}
+.info-card .label{color:var(--muted);font-size:10px;letter-spacing:.08em;margin-bottom:4px}
+.info-card .val{font-weight:700;font-size:14px;transition:color .3s}
+
+/* examples list */
+.examples-box{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;padding:.9rem;margin-bottom:1rem;
+}
+.examples-box .label{
+  color:var(--muted);font-size:10px;letter-spacing:.08em;
+  margin-bottom:.6rem;display:block;
+}
+.example-item{
+  display:flex;align-items:center;gap:8px;
+  font-size:12px;padding:3px 0;
+  border-bottom:1px solid var(--border);
+}
+.example-item:last-child{border:none}
+.example-dot{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+}
+.example-name{flex:1}
+.example-ph{color:var(--muted);font-size:11px}
+
+/* indicator color bands */
+.indicator-strip{
+  height:10px;border-radius:3px;
+  background:linear-gradient(90deg,
+    #f44336 0%,#ff9800 20%,#ffeb3b 40%,
+    #8bc34a 55%,#2196f3 70%,#9c27b0 90%
+  );
+  position:relative;margin:.75rem 0 .4rem;
+  border:1px solid var(--border);
+}
+.indicator-cursor{
+  position:absolute;top:-4px;
+  width:4px;height:18px;
+  background:#fff;border-radius:2px;
+  box-shadow:0 0 6px rgba(255,255,255,0.8);
+  transform:translateX(-50%);
+  transition:left .2s;
+}
+.indicator-label{
+  font-size:10px;color:var(--muted);
+  display:flex;justify-content:space-between;
+}
+
+/* ── THEORY BOX ───────────────────────────────────────── */
+.theory-box{
+  background:var(--bg2);border:1px solid var(--border);
+  border-left:3px solid #6a1b9a;
+  border-radius:0 12px 12px 0;
+  padding:1.1rem 1.25rem;
+  margin-bottom:1.5rem;
+  font-size:13px;line-height:1.8;
+  color:rgba(220,232,245,0.85);
+}
+.theory-box h3{
+  font-family:var(--display);font-size:13px;font-weight:700;
+  color:var(--text);margin-bottom:.6rem;letter-spacing:.02em;
+}
+
+/* add substance buttons */
+.sub-btns{
+  display:flex;flex-wrap:wrap;gap:6px;
+  margin-bottom:1.5rem;
+}
+.sub-btn{
+  font-family:var(--mono);font-size:11px;
+  padding:7px 13px;border-radius:20px;
+  border:1px solid var(--border2);
+  background:transparent;color:var(--text);
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;gap:5px;
+}
+.sub-btn:hover{background:rgba(255,255,255,0.07);transform:translateY(-1px)}
+.sub-btn .dot{width:8px;height:8px;border-radius:50%}
+
+/* ── QUIZ SECTION ─────────────────────────────────────── */
+.quiz-section{margin-top:2rem}
+.quiz-title{
+  font-family:var(--display);font-size:18px;font-weight:700;
+  margin-bottom:1.25rem;letter-spacing:-.02em;
+}
+.q-block{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;padding:1.25rem;
+  margin-bottom:1rem;
+  transition:border-color .2s;
+}
+.q-block.correct-block{border-color:#43a047}
+.q-block.wrong-block{border-color:#e53935}
+.q-num{
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:.12em;margin-bottom:.5rem;
+}
+.q-text{font-size:14px;line-height:1.65;margin-bottom:1rem}
+.q-opts{display:grid;gap:7px}
+.q-opt{
+  display:block;width:100%;text-align:left;
+  padding:10px 14px;
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:8px;
+  font-family:var(--mono);font-size:13px;
+  color:var(--text);cursor:pointer;
+  transition:border-color .15s,background .15s,transform .1s;
+}
+.q-opt:hover:not(:disabled){
+  border-color:var(--border2);
+  background:rgba(255,255,255,0.05);
+  transform:translateX(3px);
+}
+.q-opt:disabled{cursor:default}
+.q-opt.correct{background:rgba(67,160,71,.15);border-color:#43a047;color:#a5d6a7}
+.q-opt.wrong{background:rgba(229,57,53,.1);border-color:#e53935;color:#ef9a9a}
+.q-opt.reveal{background:rgba(67,160,71,.08);border-color:rgba(67,160,71,.5);color:#a5d6a7}
+.q-feedback{
+  display:none;margin-top:.75rem;padding:.75rem 1rem;
+  border-radius:8px;font-size:12.5px;line-height:1.7;
+}
+.q-feedback.show{display:block;animation:fadeUp .2s ease}
+.q-feedback.ok{background:rgba(67,160,71,.1);color:#a5d6a7;border-left:3px solid #43a047}
+.q-feedback.bad{background:rgba(229,57,53,.08);color:#ef9a9a;border-left:3px solid #e53935}
+
+/* results */
+.result-box{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;padding:2rem;
+  text-align:center;margin-top:1.5rem;display:none;
+}
+.result-box.show{display:block;animation:fadeUp .4s ease}
+.result-pct{
+  font-family:var(--display);font-size:4rem;font-weight:900;
+  letter-spacing:-.04em;margin-bottom:.5rem;
+}
+.result-msg{font-size:13px;color:var(--muted);margin-bottom:1.5rem}
+.btn-primary{
+  font-family:var(--display);font-size:13px;font-weight:700;
+  padding:13px 28px;border:none;border-radius:8px;
+  background:#fff;color:var(--bg);
+  cursor:pointer;letter-spacing:.02em;
+  transition:transform .15s,box-shadow .2s;
+  display:inline-block;margin:4px;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-outline{
+  font-family:var(--display);font-size:13px;font-weight:700;
+  padding:13px 28px;border:1px solid var(--border2);border-radius:8px;
+  background:transparent;color:var(--text);
+  cursor:pointer;letter-spacing:.02em;
+  transition:all .15s;display:inline-block;margin:4px;
+}
+.btn-outline:hover{background:rgba(255,255,255,.07)}
+
+/* score bar */
+.score-bar-wrap{
+  display:flex;gap:4px;justify-content:center;margin-bottom:1rem;
+}
+.score-pip{
+  width:28px;height:6px;border-radius:3px;
+  background:var(--border2);transition:background .3s;
+}
+.score-pip.ok{background:#43a047}
+.score-pip.bad{background:#e53935}
+</style>
+</head>
+<body>
+
+<div id="lang-bar">
+  <button class="lang-btn active" onclick="setLang('fr')">FR</button>
+  <button class="lang-btn" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" onclick="setLang('es')">ES</button>
+</div>
+
+<div id="app">
+
+  <!-- ===== LAB SCREEN ===== -->
+  <div id="screen-lab" class="screen active">
+
+    <div class="hero">
+      <span class="hero-tag" id="tag-subtitle">Laboratoire virtuel · STE Secondaire 3</span>
+      <h1><span id="hero-title">pH</span></h1>
+      <p id="hero-desc">Acides · Neutres · Bases</p>
+    </div>
+
+    <!-- pH STRIP -->
+    <div class="ph-strip-wrap">
+      <div class="ph-strip" id="ph-strip">
+        <div class="ph-strip-marker" id="strip-marker"></div>
+      </div>
+      <div class="ph-strip-nums">
+        <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+        <span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span>
+        <span>12</span><span>13</span><span>14</span>
+      </div>
+    </div>
+
+    <!-- SUBSTANCE QUICK-PICK -->
+    <p class="sec-label" id="label-substances">Substances</p>
+    <div class="sub-btns" id="sub-btns"></div>
+
+    <!-- MAIN LAB GRID -->
+    <div class="lab-grid">
+
+      <!-- BEAKER -->
+      <div class="beaker-wrap">
+        <div class="beaker-svg-wrap" id="beaker-wrap">
+          <svg viewBox="0 0 180 220" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <clipPath id="liquid-clip">
+                <rect x="28" y="60" width="124" height="145" rx="2"/>
+              </clipPath>
+              <!-- glass sheen -->
+              <linearGradient id="glass-sheen" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.12)"/>
+                <stop offset="40%" stop-color="rgba(255,255,255,0.04)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+              </linearGradient>
+            </defs>
+
+            <!-- liquid fill -->
+            <rect id="liquid-rect" x="29" y="80" width="122" height="125"
+              fill="#4caf50" opacity="0.75" clip-path="url(#liquid-clip)"
+              style="transition:fill .5s,y .5s,height .5s"/>
+
+            <!-- foam/bubbles on top of liquid -->
+            <ellipse id="liquid-foam" cx="90" cy="80" rx="61" ry="7"
+              fill="rgba(255,255,255,0.15)" clip-path="url(#liquid-clip)"
+              style="transition:cy .5s"/>
+
+            <!-- beaker glass outline -->
+            <path d="M30,30 L30,205 Q30,210 35,210 L145,210 Q150,210 150,205 L150,30"
+              fill="none" stroke="rgba(180,210,255,0.35)" stroke-width="2.5"
+              stroke-linecap="round"/>
+            <!-- beaker rim/top -->
+            <line x1="20" y1="30" x2="160" y2="30"
+              stroke="rgba(180,210,255,0.4)" stroke-width="3" stroke-linecap="round"/>
+            <!-- pour spout -->
+            <path d="M150,30 L165,15" stroke="rgba(180,210,255,0.4)"
+              stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+            <!-- glass sheen overlay -->
+            <rect x="30" y="30" width="120" height="180" rx="2"
+              fill="url(#glass-sheen)"/>
+
+            <!-- graduation marks -->
+            <line x1="28" y1="100" x2="38" y2="100" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+            <line x1="28" y1="130" x2="38" y2="130" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+            <line x1="28" y1="160" x2="38" y2="160" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+            <line x1="28" y1="190" x2="38" y2="190" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+            <text x="41" y="104" fill="rgba(255,255,255,0.25)" font-size="8" font-family="monospace">75</text>
+            <text x="41" y="134" fill="rgba(255,255,255,0.25)" font-size="8" font-family="monospace">50</text>
+            <text x="41" y="164" fill="rgba(255,255,255,0.25)" font-size="8" font-family="monospace">25</text>
+          </svg>
+          <!-- bubbles injected by JS -->
+        </div>
+
+        <!-- indicator strip under beaker -->
+        <div style="width:180px">
+          <p class="sec-label" id="label-indicator" style="font-size:9px">Indicateur universel</p>
+          <div class="indicator-strip">
+            <div class="indicator-cursor" id="ind-cursor"></div>
+          </div>
+          <div class="indicator-label">
+            <span id="lbl-acid">Acide</span><span id="lbl-neutral">Neutre</span><span id="lbl-base">Base</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLIDER PANEL -->
+      <div class="slider-panel">
+        <div class="ph-display">
+          <div class="ph-number" id="ph-number">7.0</div>
+          <div class="ph-category" id="ph-category">Neutre</div>
+        </div>
+
+        <input type="range" min="0" max="14" step="0.1" value="7"
+          id="ph-slider" oninput="updatePh(+this.value)"/>
+
+        <div class="info-row">
+          <div class="info-card">
+            <div class="label" id="lbl-ions">Ions H⁺</div>
+            <div class="val" id="info-ions">10⁻⁷ mol/L</div>
+          </div>
+          <div class="info-card">
+            <div class="label" id="lbl-prop">Propriété</div>
+            <div class="val" id="info-prop">Neutre</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="info-card">
+            <div class="label" id="lbl-smell">Sensation</div>
+            <div class="val" id="info-smell" style="font-size:12px">—</div>
+          </div>
+          <div class="info-card">
+            <div class="label" id="lbl-react">Réactivité</div>
+            <div class="val" id="info-react" style="font-size:12px">—</div>
+          </div>
+        </div>
+
+        <!-- Examples -->
+        <div class="examples-box" id="examples-box">
+          <span class="label" id="lbl-ex">Exemples à ce pH</span>
+          <div id="examples-list"></div>
+        </div>
+
+        <!-- Go to quiz -->
+        <button class="btn-primary" style="width:100%;margin:0"
+          onclick="startQuiz()" id="btn-quiz">
+          → Commencer le quiz
+        </button>
+      </div>
+
+    </div><!-- /lab-grid -->
+
+    <!-- THEORY BOX -->
+    <p class="sec-label" id="label-theory">Théorie</p>
+    <div class="theory-box" id="theory-box"></div>
+
+  </div><!-- /screen-lab -->
+
+
+  <!-- ===== QUIZ SCREEN ===== -->
+  <div id="screen-quiz" class="screen">
+
+    <div class="hero" style="padding:1rem 0 1.5rem">
+      <span class="hero-tag" id="qhero-tag">Quiz · pH</span>
+      <h1 style="font-size:2rem" id="qhero-title">Questions</h1>
+    </div>
+
+    <div id="quiz-body"></div>
+
+    <div class="result-box" id="result-box">
+      <div class="score-bar-wrap" id="score-pips"></div>
+      <div class="result-pct" id="result-pct"></div>
+      <div class="result-msg" id="result-msg"></div>
+      <button class="btn-primary" onclick="retryQuiz()" id="btn-retry">Réessayer</button>
+      <button class="btn-outline" onclick="goLab()" id="btn-back">← Laboratoire</button>
+    </div>
+
+  </div><!-- /screen-quiz -->
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════════════════════
+const L = {
+  fr: {
+    subtitle:'Laboratoire virtuel · STE Secondaire 3',
+    heroTitle:'pH',
+    heroDesc:'Acides · Neutres · Bases',
+    substances:'Substances',
+    indicator:'Indicateur universel',
+    acid:'Acide', neutral:'Neutre', base:'Base',
+    ions:'Ions H⁺', prop:'Propriété',
+    smell:'Sensation', react:'Réactivité',
+    exLabel:'Exemples à ce pH',
+    theoryLabel:'Théorie',
+    btnQuiz:'→ Commencer le quiz',
+    qTag:'Quiz · pH', qTitle:'Questions',
+    btnRetry:'Réessayer', btnBack:'← Laboratoire',
+    categories:{
+      0:'Acide fort',1:'Acide fort',2:'Acide fort',
+      3:'Acide modéré',4:'Acide modéré',5:'Acide faible',
+      6:'Légèrement acide',7:'Neutre',8:'Légèrement basique',
+      9:'Base faible',10:'Base modérée',11:'Base modérée',
+      12:'Base forte',13:'Base forte',14:'Base forte',
+    },
+    smells:{
+      acid:'Piquante, corrosive',
+      neutral:'Inodore, douce',
+      base:'Savonneuse, âcre',
+    },
+    reacts:{
+      acid:'Corrode les métaux, libère H₂',
+      neutral:'Stable, pas de réaction',
+      base:'Neutralise les acides, saponification',
+    },
+    theory:`<h3>L'échelle de pH</h3>
+Le pH mesure l'acidité d'une solution aqueuse. Il va de <strong>0</strong> (très acide) à <strong>14</strong> (très basique), avec <strong>7</strong> comme valeur neutre.
+
+<br><br>📌 <strong>Acide (pH < 7)</strong> : concentration élevée en ions H⁺. Plus le pH est bas, plus l'acide est concentré. Chaque unité = ×10 en concentration.
+<br>📌 <strong>Neutre (pH = 7)</strong> : l'eau pure à 25°C. Les ions H⁺ et OH⁻ sont en équilibre.
+<br>📌 <strong>Base (pH > 7)</strong> : concentration élevée en ions OH⁻. Plus le pH est élevé, plus la base est forte.
+
+<br><br>🧪 <strong>Indicateur universel</strong> : substance qui change de couleur selon le pH. Le papier tournesol vire au rouge en milieu acide et au bleu en milieu basique.
+
+<br><br>⚠️ <strong>Neutralisation</strong> : Acide + Base → Sel + Eau. Réaction exothermique qui produit un sel et de l'eau.`,
+    questions:[
+      {q:"Quel pH correspond à une solution neutre ?",opts:["pH = 0","pH = 7","pH = 14","pH = 5"],ans:1,
+       exp:"Le pH 7 correspond à la neutralité, comme l'eau pure à 25°C. Les ions H⁺ et OH⁻ y sont en quantités égales."},
+      {q:"Un jus de citron a un pH d'environ 2. C'est…",opts:["Une base forte","Un acide faible","Un acide fort","Une solution neutre"],ans:2,
+       exp:"pH 2 est très bas — c'est un acide fort. L'acide citrique libère beaucoup d'ions H⁺ dans la solution."},
+      {q:"Plus le pH diminue en dessous de 7, la concentration en ions H⁺…",opts:["Diminue","Reste la même","Augmente","Devient nulle"],ans:2,
+       exp:"Chaque unité de pH en moins multiplie la concentration en H⁺ par 10. pH 5 = 100x plus acide que pH 7."},
+      {q:"Le bicarbonate de soude a un pH de 9. C'est…",opts:["Un acide","Une solution neutre","Une base faible","Une base forte"],ans:2,
+       exp:"pH 9 est au-dessus de 7 : c'est une base faible, légèrement alcaline. On l'utilise pour neutraliser les acides."},
+      {q:"Qu'est-ce qu'un indicateur universel ?",opts:["Un instrument qui mesure la masse","Une substance qui change de couleur selon le pH","Une solution toujours neutre","Un type d'acide fort"],ans:1,
+       exp:"L'indicateur universel change de couleur en fonction du pH : rouge pour les acides forts, vert pour le neutre, violet pour les bases fortes."},
+      {q:"Lors d'une neutralisation, un acide et une base produisent…",opts:["De l'oxygène et du carbone","Un sel et de l'eau","Un acide plus fort","Des ions H⁺ supplémentaires"],ans:1,
+       exp:"Acide + Base → Sel + Eau. Par exemple HCl + NaOH → NaCl (sel de table) + H₂O. C'est une réaction exothermique."},
+      {q:"L'eau de Javel a un pH de 12. Quelle propriété a-t-elle ?",opts:["Acide fort","Légèrement acide","Neutre","Base forte"],ans:3,
+       exp:"pH 12 = base forte. L'hypochlorite de sodium (eau de Javel) est très alcalin et corrosif — il faut l'utiliser avec précaution."},
+      {q:"Le sang humain normal a un pH de ~7,4. C'est…",opts:["Légèrement acide","Neutre exactement","Légèrement basique","Une base forte"],ans:2,
+       exp:"pH 7,4 est légèrement au-dessus de 7 — légèrement basique. Le corps maintient ce pH très précisément pour le bon fonctionnement des enzymes."},
+    ],
+    verdicts:[
+      {min:87,icon:'🏆',msg:'Parfait ! Tu maîtrises le pH !'},
+      {min:62,icon:'👍',msg:'Très bien ! Relis la théorie et réessaie.'},
+      {min:0,icon:'📚',msg:'Continue ! Explore le labo et réessaie.'},
+    ],
+  },
+  en: {
+    subtitle:'Virtual Lab · STE Grade 9 Québec',
+    heroTitle:'pH',
+    heroDesc:'Acids · Neutral · Bases',
+    substances:'Substances',
+    indicator:'Universal indicator',
+    acid:'Acid', neutral:'Neutral', base:'Base',
+    ions:'H⁺ ions', prop:'Property',
+    smell:'Sensation', react:'Reactivity',
+    exLabel:'Examples at this pH',
+    theoryLabel:'Theory',
+    btnQuiz:'→ Start the quiz',
+    qTag:'Quiz · pH', qTitle:'Questions',
+    btnRetry:'Try again', btnBack:'← Laboratory',
+    categories:{
+      0:'Strong acid',1:'Strong acid',2:'Strong acid',
+      3:'Moderate acid',4:'Moderate acid',5:'Weak acid',
+      6:'Slightly acidic',7:'Neutral',8:'Slightly basic',
+      9:'Weak base',10:'Moderate base',11:'Moderate base',
+      12:'Strong base',13:'Strong base',14:'Strong base',
+    },
+    smells:{
+      acid:'Sharp, corrosive',
+      neutral:'Odorless, gentle',
+      base:'Soapy, harsh',
+    },
+    reacts:{
+      acid:'Corrodes metals, releases H₂',
+      neutral:'Stable, no reaction',
+      base:'Neutralises acids, saponification',
+    },
+    theory:`<h3>The pH scale</h3>
+pH measures the acidity of an aqueous solution. It ranges from <strong>0</strong> (very acidic) to <strong>14</strong> (very basic), with <strong>7</strong> as neutral.
+
+<br><br>📌 <strong>Acid (pH < 7)</strong>: high concentration of H⁺ ions. Each unit lower = ×10 in concentration.
+<br>📌 <strong>Neutral (pH = 7)</strong>: pure water at 25°C. H⁺ and OH⁻ ions are in balance.
+<br>📌 <strong>Base (pH > 7)</strong>: high concentration of OH⁻ ions. Higher pH = stronger base.
+
+<br><br>🧪 <strong>Universal indicator</strong>: a substance that changes colour with pH. Litmus paper turns red in acid and blue in base.
+
+<br><br>⚠️ <strong>Neutralisation</strong>: Acid + Base → Salt + Water. An exothermic reaction that produces a salt and water.`,
+    questions:[
+      {q:"Which pH corresponds to a neutral solution?",opts:["pH = 0","pH = 7","pH = 14","pH = 5"],ans:1,
+       exp:"pH 7 is neutral, like pure water at 25°C. H⁺ and OH⁻ ions are in equal amounts."},
+      {q:"Lemon juice has a pH of about 2. This is…",opts:["A strong base","A weak acid","A strong acid","A neutral solution"],ans:2,
+       exp:"pH 2 is very low — a strong acid. Citric acid releases many H⁺ ions into solution."},
+      {q:"As pH decreases below 7, the H⁺ ion concentration…",opts:["Decreases","Stays the same","Increases","Becomes zero"],ans:2,
+       exp:"Each pH unit lower multiplies H⁺ concentration by 10. pH 5 = 100× more acidic than pH 7."},
+      {q:"Baking soda has a pH of 9. It is…",opts:["An acid","A neutral solution","A weak base","A strong base"],ans:2,
+       exp:"pH 9 is above 7: a weak base, slightly alkaline. It is used to neutralise acids."},
+      {q:"What is a universal indicator?",opts:["An instrument that measures mass","A substance that changes colour with pH","A permanently neutral solution","A type of strong acid"],ans:1,
+       exp:"A universal indicator changes colour based on pH: red for strong acids, green for neutral, purple for strong bases."},
+      {q:"In a neutralisation reaction, an acid and a base produce…",opts:["Oxygen and carbon","A salt and water","A stronger acid","Extra H⁺ ions"],ans:1,
+       exp:"Acid + Base → Salt + Water. E.g. HCl + NaOH → NaCl (table salt) + H₂O. This is an exothermic reaction."},
+      {q:"Bleach has a pH of 12. What is its property?",opts:["Strong acid","Slightly acidic","Neutral","Strong base"],ans:3,
+       exp:"pH 12 = strong base. Sodium hypochlorite (bleach) is highly alkaline and corrosive — handle with care."},
+      {q:"Human blood has a pH of ~7.4. This is…",opts:["Slightly acidic","Exactly neutral","Slightly basic","A strong base"],ans:2,
+       exp:"pH 7.4 is just above 7 — slightly basic. The body maintains this pH very precisely for enzyme function."},
+    ],
+    verdicts:[
+      {min:87,icon:'🏆',msg:'Perfect! You master pH!'},
+      {min:62,icon:'👍',msg:'Good! Review the theory and try again.'},
+      {min:0,icon:'📚',msg:'Keep going! Explore the lab and retry.'},
+    ],
+  },
+  es: {
+    subtitle:'Laboratorio virtual · STE Secundaria 3',
+    heroTitle:'pH',
+    heroDesc:'Ácidos · Neutros · Bases',
+    substances:'Sustancias',
+    indicator:'Indicador universal',
+    acid:'Ácido', neutral:'Neutro', base:'Base',
+    ions:'Iones H⁺', prop:'Propiedad',
+    smell:'Sensación', react:'Reactividad',
+    exLabel:'Ejemplos a este pH',
+    theoryLabel:'Teoría',
+    btnQuiz:'→ Iniciar el quiz',
+    qTag:'Quiz · pH', qTitle:'Preguntas',
+    btnRetry:'Intentar de nuevo', btnBack:'← Laboratorio',
+    categories:{
+      0:'Ácido fuerte',1:'Ácido fuerte',2:'Ácido fuerte',
+      3:'Ácido moderado',4:'Ácido moderado',5:'Ácido débil',
+      6:'Ligeramente ácido',7:'Neutro',8:'Ligeramente básico',
+      9:'Base débil',10:'Base moderada',11:'Base moderada',
+      12:'Base fuerte',13:'Base fuerte',14:'Base fuerte',
+    },
+    smells:{
+      acid:'Picante, corrosiva',
+      neutral:'Inodora, suave',
+      base:'Jabonosa, acre',
+    },
+    reacts:{
+      acid:'Corroe metales, libera H₂',
+      neutral:'Estable, sin reacción',
+      base:'Neutraliza ácidos, saponificación',
+    },
+    theory:`<h3>La escala de pH</h3>
+El pH mide la acidez de una solución acuosa. Va de <strong>0</strong> (muy ácido) a <strong>14</strong> (muy básico), con <strong>7</strong> como valor neutro.
+
+<br><br>📌 <strong>Ácido (pH < 7)</strong>: concentración elevada de iones H⁺. Cada unidad menos = ×10 en concentración.
+<br>📌 <strong>Neutro (pH = 7)</strong>: agua pura a 25°C. Los iones H⁺ y OH⁻ están en equilibrio.
+<br>📌 <strong>Base (pH > 7)</strong>: concentración elevada de iones OH⁻. Mayor pH = base más fuerte.
+
+<br><br>🧪 <strong>Indicador universal</strong>: sustancia que cambia de color según el pH. El papel de tornasol se vuelve rojo en ácido y azul en base.
+
+<br><br>⚠️ <strong>Neutralización</strong>: Ácido + Base → Sal + Agua. Reacción exotérmica que produce sal y agua.`,
+    questions:[
+      {q:"¿Qué pH corresponde a una solución neutra?",opts:["pH = 0","pH = 7","pH = 14","pH = 5"],ans:1,
+       exp:"El pH 7 corresponde a la neutralidad, como el agua pura a 25°C. Los iones H⁺ y OH⁻ están en cantidades iguales."},
+      {q:"El jugo de limón tiene un pH de aproximadamente 2. Es…",opts:["Una base fuerte","Un ácido débil","Un ácido fuerte","Una solución neutra"],ans:2,
+       exp:"pH 2 es muy bajo — es un ácido fuerte. El ácido cítrico libera muchos iones H⁺ en solución."},
+      {q:"A medida que el pH disminuye por debajo de 7, la concentración de H⁺…",opts:["Disminuye","Permanece igual","Aumenta","Se vuelve cero"],ans:2,
+       exp:"Cada unidad de pH menos multiplica la concentración de H⁺ por 10. pH 5 = 100 veces más ácido que pH 7."},
+      {q:"El bicarbonato de sodio tiene un pH de 9. Es…",opts:["Un ácido","Una solución neutra","Una base débil","Una base fuerte"],ans:2,
+       exp:"pH 9 está por encima de 7: es una base débil, ligeramente alcalina. Se usa para neutralizar ácidos."},
+      {q:"¿Qué es un indicador universal?",opts:["Un instrumento que mide la masa","Una sustancia que cambia de color según el pH","Una solución siempre neutra","Un tipo de ácido fuerte"],ans:1,
+       exp:"El indicador universal cambia de color según el pH: rojo para ácidos fuertes, verde para neutro, violeta para bases fuertes."},
+      {q:"En una neutralización, un ácido y una base producen…",opts:["Oxígeno y carbono","Una sal y agua","Un ácido más fuerte","Iones H⁺ adicionales"],ans:1,
+       exp:"Ácido + Base → Sal + Agua. Ej: HCl + NaOH → NaCl (sal de mesa) + H₂O. Es una reacción exotérmica."},
+      {q:"El cloro blanqueador tiene un pH de 12. Su propiedad es…",opts:["Ácido fuerte","Ligeramente ácido","Neutro","Base fuerte"],ans:3,
+       exp:"pH 12 = base fuerte. El hipoclorito de sodio (blanqueador) es muy alcalino y corrosivo — usarlo con cuidado."},
+      {q:"La sangre humana tiene un pH de ~7,4. Esto es…",opts:["Ligeramente ácido","Exactamente neutro","Ligeramente básico","Una base fuerte"],ans:2,
+       exp:"pH 7,4 está justo sobre 7 — ligeramente básico. El cuerpo mantiene este pH muy precisamente para el funcionamiento de las enzimas."},
+    ],
+    verdicts:[
+      {min:87,icon:'🏆',msg:'¡Perfecto! ¡Dominas el pH!'},
+      {min:62,icon:'👍',msg:'¡Muy bien! Repasa la teoría e inténtalo de nuevo.'},
+      {min:0,icon:'📚',msg:'¡Sigue adelante! Explora el laboratorio e inténtalo de nuevo.'},
+    ],
+  },
+};
+
+// substance quick-picks
+const SUBSTANCES = [
+  {name:'Jus de citron / Lemon / Limón', ph:2, color:'#e53935'},
+  {name:'Vinaigre / Vinegar / Vinagre', ph:3, color:'#f4511e'},
+  {name:'Café / Coffee', ph:5, color:'#8d6e63'},
+  {name:'Pluie / Rain / Lluvia', ph:5.6, color:'#78909c'},
+  {name:'Eau pure / Pure water', ph:7, color:'#29b6f6'},
+  {name:'Sang / Blood / Sangre', ph:7.4, color:'#ef5350'},
+  {name:'Bicarbonate', ph:9, color:'#66bb6a'},
+  {name:'Savon / Soap / Jabón', ph:10, color:'#ab47bc'},
+  {name:'Javel / Bleach / Blanqueador', ph:12, color:'#7e57c2'},
+];
+
+// ═══════════════════════════════════════════════════════
+//  PH → COLOR mapping
+// ═══════════════════════════════════════════════════════
+function phToColor(ph){
+  const stops=[
+    [0,'#cc0000'],[1,'#e53935'],[2,'#e64a19'],
+    [3,'#ff7043'],[4,'#ffa726'],[5,'#ffca28'],
+    [6,'#fff176'],[7,'#a5d6a7'],[8,'#66bb6a'],
+    [9,'#43a047'],[10,'#1e88e5'],[11,'#1565c0'],
+    [12,'#6a1b9a'],[13,'#4a148c'],[14,'#311b92'],
+  ];
+  for(let i=0;i<stops.length-1;i++){
+    if(ph>=stops[i][0]&&ph<=stops[i+1][0]){
+      const t=(ph-stops[i][0])/(stops[i+1][0]-stops[i][0]);
+      return lerpColor(stops[i][1],stops[i+1][1],t);
+    }
+  }
+  return stops[stops.length-1][1];
+}
+function lerpColor(a,b,t){
+  const ah=parseInt(a.slice(1),16),bh=parseInt(b.slice(1),16);
+  const ar=(ah>>16)&255,ag=(ah>>8)&255,ab2=ah&255;
+  const br=(bh>>16)&255,bg=(bh>>8)&255,bb2=bh&255;
+  const r=Math.round(ar+(br-ar)*t);
+  const g=Math.round(ag+(bg-ag)*t);
+  const b2=Math.round(ab2+(bb2-ab2)*t);
+  return '#'+[r,g,b2].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+let lang='fr';
+let currentPh=7;
+let quizAnswers=[];
+let bubbleInterval=null;
+
+// ═══════════════════════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════════════════════
+function setLang(l){
+  lang=l;
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    b.classList.toggle('active',b.textContent===l.toUpperCase());
+  });
+  renderTexts();
+  updatePh(currentPh);
+  renderSubstances();
+}
+function t(k){return L[lang][k]||''}
+function renderTexts(){
+  const tx=L[lang];
+  document.getElementById('tag-subtitle').textContent=tx.subtitle;
+  document.getElementById('hero-desc').textContent=tx.heroDesc;
+  document.getElementById('label-substances').textContent=tx.substances;
+  document.getElementById('label-indicator').textContent=tx.indicator;
+  document.getElementById('lbl-acid').textContent=tx.acid;
+  document.getElementById('lbl-neutral').textContent=tx.neutral;
+  document.getElementById('lbl-base').textContent=tx.base;
+  document.getElementById('lbl-ions').textContent=tx.ions;
+  document.getElementById('lbl-prop').textContent=tx.prop;
+  document.getElementById('lbl-smell').textContent=tx.smell;
+  document.getElementById('lbl-react').textContent=tx.react;
+  document.getElementById('lbl-ex').textContent=tx.exLabel;
+  document.getElementById('label-theory').textContent=tx.theoryLabel;
+  document.getElementById('btn-quiz').textContent=tx.btnQuiz;
+  document.getElementById('theory-box').innerHTML=tx.theory;
+}
+
+// ═══════════════════════════════════════════════════════
+//  UPDATE pH
+// ═══════════════════════════════════════════════════════
+function updatePh(ph){
+  currentPh=ph;
+  document.getElementById('ph-slider').value=ph;
+
+  const color=phToColor(ph);
+  const phRound=Math.round(ph*10)/10;
+  const phInt=Math.round(ph);
+
+  // number display
+  document.getElementById('ph-number').textContent=phRound.toFixed(1);
+  document.getElementById('ph-number').style.color=color;
+
+  const catKey=Math.min(14,Math.max(0,phInt));
+  const cat=L[lang].categories[catKey];
+  document.getElementById('ph-category').textContent=cat;
+  document.getElementById('ph-category').style.color=color;
+
+  // strip marker
+  const pct=(ph/14)*100;
+  document.getElementById('strip-marker').style.left=pct+'%';
+  document.getElementById('ind-cursor').style.left=pct+'%';
+
+  // slider gradient
+  const slider=document.getElementById('ph-slider');
+  slider.style.background=`linear-gradient(90deg, ${color} 0%, ${color} ${pct}%, rgba(255,255,255,0.1) ${pct}%, rgba(255,255,255,0.1) 100%)`;
+
+  // beaker liquid
+  const liquid=document.getElementById('liquid-rect');
+  const foam=document.getElementById('liquid-foam');
+  liquid.setAttribute('fill',color);
+  foam.setAttribute('cy', 80);
+
+  // info cards
+  const exp=Math.round(-ph);
+  document.getElementById('info-ions').textContent=`10${supScript(exp)} mol/L`;
+  document.getElementById('info-prop').textContent=cat;
+  document.getElementById('info-prop').style.color=color;
+
+  const zone=ph<6.5?'acid':ph>7.5?'base':'neutral';
+  const smells=L[lang].smells;
+  const reacts=L[lang].reacts;
+  document.getElementById('info-smell').textContent=smells[zone];
+  document.getElementById('info-react').textContent=reacts[zone];
+
+  // examples
+  renderExamples(ph);
+
+  // bubbles speed
+  restartBubbles(ph);
+}
+
+function supScript(n){
+  const map={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+  return String(n).split('').map(c=>map[c]||c).join('');
+}
+
+// ─── examples ──────────────────────────────────────────
+const EXAMPLES_DATA=[
+  {ph:0,name:{fr:'Acide chlorhydrique (concentré)',en:'Concentrated HCl',es:'HCl concentrado'},dot:'#cc0000'},
+  {ph:1,name:{fr:'Acide gastrique',en:'Gastric acid',es:'Ácido gástrico'},dot:'#e53935'},
+  {ph:2,name:{fr:'Jus de citron',en:'Lemon juice',es:'Jugo de limón'},dot:'#e64a19'},
+  {ph:3,name:{fr:'Vinaigre',en:'Vinegar',es:'Vinagre'},dot:'#f4511e'},
+  {ph:4,name:{fr:'Jus de tomate',en:'Tomato juice',es:'Jugo de tomate'},dot:'#fb8c00'},
+  {ph:5,name:{fr:'Café',en:'Coffee',es:'Café'},dot:'#ffa726'},
+  {ph:5.6,name:{fr:'Pluie normale',en:'Normal rain',es:'Lluvia normal'},dot:'#ffca28'},
+  {ph:6,name:{fr:'Lait',en:'Milk',es:'Leche'},dot:'#fff176'},
+  {ph:7,name:{fr:'Eau pure',en:'Pure water',es:'Agua pura'},dot:'#a5d6a7'},
+  {ph:7.4,name:{fr:'Sang humain',en:'Human blood',es:'Sangre humana'},dot:'#ef9a9a'},
+  {ph:8,name:{fr:'Eau de mer',en:'Sea water',es:'Agua de mar'},dot:'#66bb6a'},
+  {ph:9,name:{fr:'Bicarbonate',en:'Baking soda',es:'Bicarbonato'},dot:'#43a047'},
+  {ph:10,name:{fr:'Savon de Marseille',en:'Soap',es:'Jabón'},dot:'#1e88e5'},
+  {ph:11,name:{fr:'Ammoniaque',en:'Ammonia',es:'Amoníaco'},dot:'#1565c0'},
+  {ph:12,name:{fr:'Eau de Javel',en:'Bleach',es:'Blanqueador'},dot:'#6a1b9a'},
+  {ph:13,name:{fr:'Four à chaux',en:'Lime',es:'Cal'},dot:'#4a148c'},
+  {ph:14,name:{fr:'Soude caustique',en:'Caustic soda',es:'Soda cáustica'},dot:'#311b92'},
+];
+
+function renderExamples(ph){
+  const nearby=EXAMPLES_DATA
+    .filter(e=>Math.abs(e.ph-ph)<=1.2)
+    .sort((a,b)=>Math.abs(a.ph-ph)-Math.abs(b.ph-ph))
+    .slice(0,4);
+  const box=document.getElementById('examples-list');
+  if(!nearby.length){box.innerHTML='<div style="font-size:12px;color:var(--muted)">—</div>';return;}
+  box.innerHTML=nearby.map(e=>`
+    <div class="example-item">
+      <div class="example-dot" style="background:${e.dot}"></div>
+      <div class="example-name">${e.name[lang]}</div>
+      <div class="example-ph">pH ${e.ph}</div>
+    </div>
+  `).join('');
+}
+
+// ─── bubbles ───────────────────────────────────────────
+function restartBubbles(ph){
+  if(bubbleInterval)clearInterval(bubbleInterval);
+  const wrap=document.getElementById('beaker-wrap');
+  wrap.querySelectorAll('.bubble').forEach(b=>b.remove());
+
+  // more bubbles for extreme pH (more reactive)
+  const extreme=Math.abs(ph-7);
+  const count=Math.max(1,Math.round(extreme/2));
+  const speed=Math.max(1200,3000-extreme*150);
+
+  function spawnBubble(){
+    const b=document.createElement('div');
+    b.className='bubble';
+    const size=4+Math.random()*8;
+    const x=35+Math.random()*110;
+    const dur=speed+Math.random()*800;
+    b.style.cssText=`
+      width:${size}px;height:${size}px;
+      left:${x}px;bottom:${60+Math.random()*30}px;
+      animation-duration:${dur}ms;
+      animation-delay:${Math.random()*500}ms;
+    `;
+    wrap.appendChild(b);
+    setTimeout(()=>b.remove(),dur+600);
+  }
+  for(let i=0;i<count;i++) setTimeout(spawnBubble,i*200);
+  bubbleInterval=setInterval(()=>{
+    for(let i=0;i<count;i++) setTimeout(spawnBubble,i*150);
+  },speed);
+}
+
+// ─── substance buttons ─────────────────────────────────
+function renderSubstances(){
+  const wrap=document.getElementById('sub-btns');
+  wrap.innerHTML=SUBSTANCES.map(s=>`
+    <button class="sub-btn" onclick="updatePh(${s.ph})">
+      <span class="dot" style="background:${s.color}"></span>
+      ${s.name.split(' / ')[{fr:0,en:1,es:2}[lang]]}
+    </button>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  QUIZ
+// ═══════════════════════════════════════════════════════
+function startQuiz(){
+  quizAnswers=[];
+  document.getElementById('result-box').className='result-box';
+  const tx=L[lang];
+  document.getElementById('qhero-tag').textContent=tx.qTag;
+  document.getElementById('qhero-title').textContent=tx.qTitle;
+  document.getElementById('btn-retry').textContent=tx.btnRetry;
+  document.getElementById('btn-back').textContent=tx.btnBack;
+
+  const body=document.getElementById('quiz-body');
+  body.innerHTML=tx.questions.map((q,i)=>`
+    <div class="q-block" id="qblock-${i}">
+      <div class="q-num">${tx.qTag} · Q${i+1}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-opts">
+        ${q.opts.map((o,j)=>`
+          <button class="q-opt" id="qopt-${i}-${j}" onclick="answerQ(${i},${j})">
+            ${o}
+          </button>
+        `).join('')}
+      </div>
+      <div class="q-feedback" id="qfb-${i}"></div>
+    </div>
+  `).join('');
+
+  showScreen('screen-quiz');
+}
+
+function answerQ(qi,oi){
+  const tx=L[lang];
+  const q=tx.questions[qi];
+  if(quizAnswers[qi]!==undefined) return;
+  quizAnswers[qi]=oi;
+
+  // disable all opts for this question
+  for(let j=0;j<q.opts.length;j++){
+    const btn=document.getElementById(`qopt-${qi}-${j}`);
+    btn.disabled=true;
+    if(j===q.ans) btn.classList.add(oi===q.ans?'correct':'reveal');
+    if(j===oi&&oi!==q.ans) btn.classList.add('wrong');
+  }
+
+  const block=document.getElementById(`qblock-${qi}`);
+  const ok=oi===q.ans;
+  block.classList.add(ok?'correct-block':'wrong-block');
+
+  const fb=document.getElementById(`qfb-${qi}`);
+  fb.className='q-feedback show '+(ok?'ok':'bad');
+  fb.innerHTML=(ok?'✓ ':'✗ ')+q.exp;
+
+  // check if all answered
+  if(quizAnswers.filter(a=>a!==undefined).length===tx.questions.length){
+    setTimeout(showResults,600);
+  }
+}
+
+function showResults(){
+  const tx=L[lang];
+  const correct=quizAnswers.filter((a,i)=>a===tx.questions[i].ans).length;
+  const total=tx.questions.length;
+  const pct=Math.round((correct/total)*100);
+
+  const pips=document.getElementById('score-pips');
+  pips.innerHTML=quizAnswers.map((a,i)=>`
+    <div class="score-pip ${a===tx.questions[i].ans?'ok':'bad'}"></div>
+  `).join('');
+
+  document.getElementById('result-pct').textContent=pct+'%';
+  const v=tx.verdicts.find(v=>pct>=v.min);
+  document.getElementById('result-msg').textContent=v.icon+' '+v.msg;
+  document.getElementById('result-box').className='result-box show';
+  document.getElementById('result-box').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function retryQuiz(){startQuiz()}
+function goLab(){showScreen('screen-lab')}
+
+// ═══════════════════════════════════════════════════════
+//  SCREEN
+// ═══════════════════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+renderTexts();
+renderSubstances();
+updatePh(7);
+</script>
+</body>
+</html>

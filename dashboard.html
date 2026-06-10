@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ScienceLab OS · STE Sec 3</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Syne+Mono&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060910;
+  --glass:rgba(255,255,255,0.06);
+  --glass2:rgba(255,255,255,0.10);
+  --border:rgba(255,255,255,0.10);
+  --border2:rgba(255,255,255,0.20);
+  --text:#e8f1ff;--muted:#6a85a8;
+  --accent:#5bc8ff;--accent2:#a78bfa;
+  --green:#4ddc8a;--yellow:#ffd166;--red:#ff5f6d;--orange:#ff8c42;
+  --font:'DM Sans',sans-serif;--mono:'Syne Mono',monospace;
+}
+html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font)}
+body{background:var(--bg);color:var(--text);position:relative;user-select:none}
+
+/* ── ANIMATED SPACE WALLPAPER ── */
+#wallpaper{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(91,200,255,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(167,139,250,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(77,220,138,0.05) 0%, transparent 40%),
+    #060910;
+}
+#wallpaper canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* ── DESKTOP ── */
+#desktop{
+  position:relative;z-index:1;
+  width:100%;height:100vh;
+  display:flex;flex-direction:column;
+}
+
+/* ── MENUBAR (top) ── */
+#menubar{
+  height:32px;
+  background:rgba(6,9,16,0.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 1rem;gap:1.5rem;
+  flex-shrink:0;z-index:100;
+}
+.menubar-logo{
+  font-family:var(--mono);font-size:12px;
+  color:var(--accent);letter-spacing:.1em;
+  display:flex;align-items:center;gap:6px;
+}
+.menubar-logo span{color:var(--muted)}
+.menubar-items{display:flex;gap:1.25rem;flex:1}
+.menubar-item{
+  font-size:12px;color:var(--muted);
+  cursor:pointer;transition:color .15s;
+  padding:4px 0;
+}
+.menubar-item:hover{color:var(--text)}
+.menubar-right{display:flex;align-items:center;gap:1rem;margin-left:auto}
+#clock{font-family:var(--mono);font-size:11px;color:var(--text)}
+.lang-row{display:flex;gap:4px}
+.lb{
+  font-family:var(--mono);font-size:10px;
+  padding:3px 8px;border-radius:3px;
+  border:1px solid var(--border);
+  background:transparent;color:var(--muted);
+  cursor:pointer;transition:all .15s;
+}
+.lb.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+
+/* ── DESKTOP AREA ── */
+#desktop-area{
+  flex:1;overflow:hidden;position:relative;
+  padding:1.5rem;
+}
+
+/* ── SECTION HEADERS ── */
+.desk-section{margin-bottom:1.5rem}
+.desk-section-label{
+  font-family:var(--mono);font-size:9px;color:var(--muted);
+  letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:.75rem;display:flex;align-items:center;gap:8px;
+}
+.desk-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── ICON GRID ── */
+.icon-grid{display:flex;flex-wrap:wrap;gap:12px}
+
+/* ── APP ICON ── */
+.app-icon{
+  width:90px;display:flex;flex-direction:column;align-items:center;gap:6px;
+  cursor:pointer;padding:8px 4px;border-radius:12px;
+  transition:background .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.app-icon:hover{background:rgba(255,255,255,0.05)}
+.app-icon:active{background:rgba(255,255,255,0.09)}
+
+.icon-body{
+  width:60px;height:60px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;position:relative;
+  border:1px solid var(--border2);
+  transition:transform .2s,box-shadow .2s;
+  backdrop-filter:blur(10px);
+}
+.app-icon:hover .icon-body{transform:scale(1.08) translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.5)}
+.app-icon:active .icon-body{transform:scale(0.96)}
+
+/* color variants */
+.ic-blue{background:linear-gradient(135deg,rgba(91,200,255,.25),rgba(91,200,255,.1))}
+.ic-green{background:linear-gradient(135deg,rgba(77,220,138,.25),rgba(77,220,138,.1))}
+.ic-purple{background:linear-gradient(135deg,rgba(167,139,250,.25),rgba(167,139,250,.1))}
+.ic-orange{background:linear-gradient(135deg,rgba(255,140,66,.25),rgba(255,140,66,.1))}
+.ic-yellow{background:linear-gradient(135deg,rgba(255,209,102,.25),rgba(255,209,102,.1))}
+.ic-red{background:linear-gradient(135deg,rgba(255,95,109,.25),rgba(255,95,109,.1))}
+.ic-pink{background:linear-gradient(135deg,rgba(255,107,157,.25),rgba(255,107,157,.1))}
+.ic-teal{background:linear-gradient(135deg,rgba(0,210,200,.25),rgba(0,210,200,.1))}
+
+/* notification badge */
+.icon-badge{
+  position:absolute;top:-5px;right:-5px;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--red);border:2px solid var(--bg);
+  font-size:9px;font-weight:700;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);
+}
+.icon-label{font-size:11px;color:var(--text);text-align:center;line-height:1.3;max-width:80px}
+.icon-sub{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center}
+
+/* ── DOCK (bottom) ── */
+#dock{
+  position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(30px);
+  border:1px solid var(--border2);
+  border-radius:20px;
+  padding:8px 16px;
+  display:flex;align-items:center;gap:8px;
+  z-index:100;
+}
+.dock-divider{width:1px;height:40px;background:var(--border2);margin:0 4px}
+.dock-icon{
+  width:48px;height:48px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;cursor:pointer;
+  border:1px solid var(--border);
+  transition:transform .2s,box-shadow .2s;
+  position:relative;
+}
+.dock-icon:hover{transform:scale(1.2) translateY(-6px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.dock-icon:hover .dock-tooltip{opacity:1;transform:translateY(-8px)}
+.dock-tooltip{
+  position:absolute;bottom:100%;left:50%;transform:translateX(-50%) translateY(0px);
+  background:rgba(20,25,40,.95);border:1px solid var(--border2);
+  border-radius:6px;padding:4px 10px;
+  font-size:10px;color:var(--text);white-space:nowrap;
+  opacity:0;transition:opacity .15s,transform .15s;
+  pointer-events:none;margin-bottom:6px;font-family:var(--mono);
+}
+
+/* ── MODAL WINDOW ── */
+#modal-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;
+  animation:fadeIn .2s ease;
+}
+#modal-overlay.show{display:flex}
+.modal-window{
+  background:rgba(10,15,26,.97);
+  border:1px solid var(--border2);border-radius:16px;
+  width:min(520px,90vw);
+  box-shadow:0 32px 80px rgba(0,0,0,.7);
+  animation:slideUp .25s ease;
+  overflow:hidden;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.modal-titlebar{
+  display:flex;align-items:center;gap:10px;
+  padding:.85rem 1.1rem;
+  border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,0.03);
+}
+.modal-dots{display:flex;gap:6px}
+.mdot{width:12px;height:12px;border-radius:50%;cursor:pointer;transition:opacity .15s}
+.mdot:hover{opacity:.7}
+.mdot-r{background:#ff5f6d}.mdot-y{background:#ffd166}.mdot-g{background:#4ddc8a}
+.modal-title{font-size:13px;font-weight:600;flex:1;text-align:center;color:var(--muted)}
+.modal-body{padding:1.5rem}
+.modal-icon{font-size:48px;text-align:center;margin-bottom:.75rem}
+.modal-name{font-size:20px;font-weight:700;text-align:center;margin-bottom:.35rem;letter-spacing:-.02em}
+.modal-desc{font-size:13px;color:var(--muted);text-align:center;line-height:1.6;margin-bottom:1.25rem}
+.modal-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:1.25rem}
+.modal-tag{
+  font-family:var(--mono);font-size:10px;
+  padding:3px 10px;border-radius:20px;
+  border:1px solid var(--border2);color:var(--muted);
+}
+.modal-features{
+  background:rgba(255,255,255,.03);border-radius:10px;
+  padding:1rem;margin-bottom:1.25rem;
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;
+}
+.modal-feat{font-size:12px;color:rgba(220,232,248,.8);display:flex;align-items:center;gap:6px}
+.modal-feat::before{content:'✓';color:var(--green);font-weight:700;font-size:11px}
+.modal-btn{
+  display:block;width:100%;padding:13px;
+  border:none;border-radius:10px;
+  font-family:var(--font);font-size:14px;font-weight:700;
+  cursor:pointer;transition:all .2s;text-decoration:none;text-align:center;
+  letter-spacing:.02em;
+}
+.modal-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.modal-btn-sec{
+  display:block;width:100%;padding:10px;margin-top:8px;
+  border:1px solid var(--border2);border-radius:10px;
+  background:transparent;color:var(--muted);
+  font-family:var(--font);font-size:13px;
+  cursor:pointer;transition:all .2s;text-align:center;
+}
+.modal-btn-sec:hover{color:var(--text);border-color:var(--text)}
+
+/* ── PROGRESS WIDGET ── */
+.progress-widget{
+  position:absolute;top:1.5rem;right:1.5rem;
+  width:200px;
+  background:var(--glass);backdrop-filter:blur(16px);
+  border:1px solid var(--border);border-radius:14px;
+  padding:1rem;
+}
+.pw-title{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.15em;margin-bottom:.75rem}
+.pw-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.pw-bar-wrap{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.pw-bar{height:100%;border-radius:2px;transition:width .5s}
+.pw-label{font-size:11px;color:var(--muted);min-width:60px}
+.pw-pct{font-family:var(--mono);font-size:10px;color:var(--text);min-width:28px;text-align:right}
+.pw-total{
+  margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  display:flex;justify-content:space-between;
+}
+.pw-total span{color:var(--green);font-weight:700}
+
+/* ── NOTIFICATIONS ── */
+.notif{
+  position:absolute;top:50px;right:1.5rem;
+  width:240px;
+  background:rgba(10,15,26,.97);
+  border:1px solid var(--border2);border-radius:12px;
+  padding:.85rem 1rem;font-size:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  animation:slideLeft .3s ease;z-index:50;
+  display:flex;gap:10px;align-items:flex-start;
+}
+@keyframes slideLeft{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.notif-icon{font-size:20px;flex-shrink:0}
+.notif-text{flex:1}
+.notif-title{font-weight:600;margin-bottom:2px;color:var(--text)}
+.notif-sub{color:var(--muted);line-height:1.5;font-size:11px}
+
+/* ── SCROLLABLE DESKTOP ── */
+#desktop-scroll{
+  height:100%;overflow-y:auto;overflow-x:hidden;
+  padding-right:.5rem;
+}
+#desktop-scroll::-webkit-scrollbar{width:4px}
+#desktop-scroll::-webkit-scrollbar-track{background:transparent}
+#desktop-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .progress-widget{display:none}
+  .icon-grid{gap:8px}
+  .app-icon{width:72px}
+  .icon-body{width:52px;height:52px;font-size:24px}
+}
+</style>
+</head>
+<body>
+
+<!-- WALLPAPER -->
+<div id="wallpaper"><canvas id="stars-canvas"></canvas></div>
+
+<!-- DESKTOP -->
+<div id="desktop">
+
+  <!-- MENUBAR -->
+  <div id="menubar">
+    <div class="menubar-logo">⚗️ <span id="mb-title">ScienceLab OS</span></div>
+    <div class="menubar-items">
+      <span class="menubar-item" id="mb-file">Fichier</span>
+      <span class="menubar-item" id="mb-view">Affichage</span>
+      <span class="menubar-item" id="mb-help">Aide</span>
+    </div>
+    <div class="menubar-right">
+      <div class="lang-row">
+        <button class="lb active" onclick="setLang('fr')">FR</button>
+        <button class="lb" onclick="setLang('en')">EN</button>
+        <button class="lb" onclick="setLang('es')">ES</button>
+      </div>
+      <div id="clock"></div>
+    </div>
+  </div>
+
+  <!-- DESKTOP AREA -->
+  <div id="desktop-area">
+    <div id="desktop-scroll">
+      <div style="display:grid;grid-template-columns:1fr 200px;gap:1.5rem;max-width:900px">
+        <div>
+          <!-- STE SECTION -->
+          <div class="desk-section">
+            <div class="desk-section-label" id="lbl-ste">STE Secondaire 3 · Québec</div>
+            <div class="icon-grid" id="grid-ste"></div>
+          </div>
+
+          <!-- TOOLS SECTION -->
+          <div class="desk-section">
+            <div class="desk-section-label" id="lbl-tools">Outils de révision</div>
+            <div class="icon-grid" id="grid-tools"></div>
+          </div>
+
+          <!-- COMING SOON -->
+          <div class="desk-section">
+            <div class="desk-section-label" id="lbl-soon">En construction</div>
+            <div class="icon-grid" id="grid-soon"></div>
+          </div>
+        </div>
+
+        <!-- PROGRESS WIDGET -->
+        <div>
+          <div class="progress-widget" style="position:relative;top:0;right:0">
+            <div class="pw-title" id="pw-title">PROGRESSION STE 3</div>
+            <div id="pw-rows"></div>
+            <div class="pw-total">
+              <span id="pw-label-total">Modules complétés</span>
+              <span id="pw-count">6 / 6</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOCK -->
+    <div id="dock"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-window" onclick="e=>e.stopPropagation()">
+    <div class="modal-titlebar">
+      <div class="modal-dots">
+        <div class="mdot mdot-r" onclick="closeModal()"></div>
+        <div class="mdot mdot-y"></div>
+        <div class="mdot mdot-g"></div>
+      </div>
+      <div class="modal-title" id="modal-wintitle">Application</div>
+      <div style="width:48px"></div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-icon" id="modal-icon"></div>
+      <div class="modal-name" id="modal-name"></div>
+      <div class="modal-desc" id="modal-desc"></div>
+      <div class="modal-tags" id="modal-tags"></div>
+      <div class="modal-features" id="modal-features"></div>
+      <a class="modal-btn" id="modal-open-btn" href="#" target="_blank">Ouvrir le laboratoire →</a>
+      <button class="modal-btn-sec" onclick="closeModal()" id="modal-close-btn">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  TRANSLATIONS
+// ═══════════════════════════════════════════
+const TX = {
+  fr:{
+    mbTitle:'ScienceLab OS',mbFile:'Fichier',mbView:'Affichage',mbHelp:'Aide',
+    lblSTE:'STE Secondaire 3 · Québec',lblTools:'Outils de révision',lblSoon:'En construction',
+    pwTitle:'PROGRESSION STE 3',pwTotal:'Modules complétés',
+    modalOpen:'Ouvrir le laboratoire →',modalClose:'Fermer',
+    modalComingSoon:'Bientôt disponible',
+    dockTooltips:{quiz:'Quiz principal',ph:'Labo pH',drag:'Glisser-Ordonner',atom:'Atomes',cell:'Cellule',circuit:'Circuits'},
+    notif:{title:'Système prêt !',sub:'6 laboratoires disponibles. Bonne révision !'},
+  },
+  en:{
+    mbTitle:'ScienceLab OS',mbFile:'File',mbView:'View',mbHelp:'Help',
+    lblSTE:'STE Grade 9 · Québec',lblTools:'Study tools',lblSoon:'Coming soon',
+    pwTitle:'STE 3 PROGRESS',pwTotal:'Completed modules',
+    modalOpen:'Open laboratory →',modalClose:'Close',
+    modalComingSoon:'Coming soon',
+    dockTooltips:{quiz:'Main quiz',ph:'pH Lab',drag:'Drag & Order',atom:'Atoms',cell:'Cell',circuit:'Circuits'},
+    notif:{title:'System ready!',sub:'6 laboratories available. Good luck!'},
+  },
+  es:{
+    mbTitle:'ScienceLab OS',mbFile:'Archivo',mbView:'Vista',mbHelp:'Ayuda',
+    lblSTE:'STE Secundaria 3 · Québec',lblTools:'Herramientas de estudio',lblSoon:'En construcción',
+    pwTitle:'PROGRESO STE 3',pwTotal:'Módulos completados',
+    modalOpen:'Abrir el laboratorio →',modalClose:'Cerrar',
+    modalComingSoon:'Próximamente',
+    dockTooltips:{quiz:'Quiz principal',ph:'Lab pH',drag:'Arrastrar-Ordenar',atom:'Átomos',cell:'Célula',circuit:'Circuitos'},
+    notif:{title:'¡Sistema listo!',sub:'6 laboratorios disponibles. ¡Buena suerte!'},
+  },
+};
+
+// ═══════════════════════════════════════════
+//  APP DATA
+// ═══════════════════════════════════════════
+const APPS = {
+  ste:[
+    {
+      id:'quiz', icon:'⚡', color:'ic-blue', file:'index.html',
+      fr:{name:'Quiz STE',sub:'28 questions',desc:'Quiz interactif couvrant les 4 univers du programme STE Sec 3. Questions à choix multiples avec explications détaillées après chaque réponse.',
+        tags:['4 Univers','28 questions','Trilingüe','Chrono'],
+        feats:['Univers matériel','Univers vivant','Terre & espace','Technologique','Score & racha','Mode révision'],
+      },
+      en:{name:'STE Quiz',sub:'28 questions',desc:'Interactive quiz covering all 4 universes of the STE Sec 3 programme. Multiple choice questions with detailed explanations after each answer.',
+        tags:['4 Universes','28 questions','Trilingual','Timer'],
+        feats:['Material universe','Living universe','Earth & space','Technological','Score & streak','Review mode'],
+      },
+      es:{name:'Quiz STE',sub:'28 preguntas',desc:'Quiz interactivo que cubre los 4 universos del programa STE Sec 3. Preguntas de opción múltiple con explicaciones detalladas.',
+        tags:['4 Universos','28 preguntas','Trilingüe','Cronómetro'],
+        feats:['Universo material','Universo viviente','Tierra y espacio','Tecnológico','Puntuación','Modo repaso'],
+      },
+      progress:100,
+    },
+    {
+      id:'ph', icon:'🧪', color:'ic-green', file:'lab-ph.html',
+      fr:{name:'Labo pH',sub:'Acides & Bases',desc:'Laboratoire interactif de pH avec slider en temps réel, bécher animé avec bulles, 17 substances réelles, indicateur universel et quiz de 8 questions.',
+        tags:['Slider pH 0-14','17 substances','Bécher animé','Quiz 8 q'],
+        feats:['Slider temps réel','Bécher animé','Indicateur universel','17 substances','Ions H⁺','Quiz intégré'],
+      },
+      en:{name:'pH Lab',sub:'Acids & Bases',desc:'Interactive pH lab with real-time slider, animated beaker with bubbles, 17 real substances, universal indicator and 8-question quiz.',
+        tags:['pH Slider 0-14','17 substances','Animated beaker','Quiz 8 q'],
+        feats:['Real-time slider','Animated beaker','Universal indicator','17 substances','H⁺ ions','Built-in quiz'],
+      },
+      es:{name:'Lab pH',sub:'Ácidos y Bases',desc:'Laboratorio interactivo de pH con slider en tiempo real, vaso animado con burbujas, 17 sustancias reales, indicador universal y quiz de 8 preguntas.',
+        tags:['Slider pH 0-14','17 sustancias','Vaso animado','Quiz 8 p'],
+        feats:['Slider tiempo real','Vaso animado','Indicador universal','17 sustancias','Iones H⁺','Quiz integrado'],
+      },
+      progress:100,
+    },
+    {
+      id:'drag', icon:'🧩', color:'ic-purple', file:'lab-drag.html',
+      fr:{name:'Glisser & Ordonner',sub:'4 modules',desc:'4 modules drag & drop : phases de la mitose (6 étapes), trajet de la digestion (7 organes), couches de la Terre (5 couches), changements de phase (6 transformations).',
+        tags:['Mitose','Digestion','Terre','Phases'],
+        feats:['Mitose (6 phases)','Digestion (7 étapes)','Couches Terre (5)','Changements phase','Validation animée','Théorie intégrée'],
+      },
+      en:{name:'Drag & Order',sub:'4 modules',desc:'4 drag & drop modules: mitosis phases (6 steps), digestive pathway (7 organs), Earth layers (5 layers), phase changes (6 transformations).',
+        tags:['Mitosis','Digestion','Earth','Phases'],
+        feats:['Mitosis (6 phases)','Digestion (7 steps)','Earth layers (5)','Phase changes','Animated feedback','Integrated theory'],
+      },
+      es:{name:'Arrastrar & Ordenar',sub:'4 módulos',desc:'4 módulos drag & drop: fases de la mitosis (6 pasos), recorrido digestivo (7 órganos), capas de la Tierra (5 capas), cambios de fase (6 transformaciones).',
+        tags:['Mitosis','Digestión','Tierra','Fases'],
+        feats:['Mitosis (6 fases)','Digestión (7 etapas)','Capas Tierra (5)','Cambios de fase','Validación animada','Teoría integrada'],
+      },
+      progress:100,
+    },
+    {
+      id:'atom', icon:'⚛️', color:'ic-orange', file:'lab-atom.html',
+      fr:{name:'Constructeur d\'atomes',sub:'Canvas interactif',desc:'Construis des atomes en cliquant pour placer protons, neutrons et électrons. Identifie l\'élément, calcule la charge ionique, explore les 18 premiers éléments du tableau périodique.',
+        tags:['18 éléments','Canvas','Tableau périodique','Quiz 8 q'],
+        feats:['Protons neutrons électrons','Tableau périodique','Identification élément','Charge ionique','Couches électroniques','6 presets'],
+      },
+      en:{name:'Atom Builder',sub:'Interactive canvas',desc:'Build atoms by clicking to place protons, neutrons and electrons. Identify the element, calculate ionic charge, explore the first 18 elements of the periodic table.',
+        tags:['18 elements','Canvas','Periodic table','Quiz 8 q'],
+        feats:['Protons neutrons electrons','Periodic table','Element ID','Ionic charge','Electron shells','6 presets'],
+      },
+      es:{name:'Constructor de Átomos',sub:'Canvas interactivo',desc:'Construye átomos haciendo clic para colocar protones, neutrones y electrones. Identifica el elemento, calcula la carga iónica, explora los 18 primeros elementos de la tabla periódica.',
+        tags:['18 elementos','Canvas','Tabla periódica','Quiz 8 p'],
+        feats:['Protones neutrones electrones','Tabla periódica','Identificación elemento','Carga iónica','Capas electrónicas','6 presets'],
+      },
+      progress:100,
+    },
+    {
+      id:'cell', icon:'🦠', color:'ic-teal', file:'lab-cell.html',
+      fr:{name:'Cellule vivante',sub:'Animal & végétale',desc:'Cellule animale et végétale en SVG interactif. Clique sur chaque organite pour voir son nom, sa fonction, un fait scientifique et la formule associée. Quiz de 8 questions intégré.',
+        tags:['Cellule animale','Cellule végétale','10 organites','Quiz 8 q'],
+        feats:['2 types de cellules','10 organites cliquables','Fonctions détaillées','Faits scientifiques','Légende interactive','Quiz intégré'],
+      },
+      en:{name:'Living Cell',sub:'Animal & plant',desc:'Animal and plant cells in interactive SVG. Click each organelle to see its name, function, a scientific fact and the associated formula. Built-in 8-question quiz.',
+        tags:['Animal cell','Plant cell','10 organelles','Quiz 8 q'],
+        feats:['2 cell types','10 clickable organelles','Detailed functions','Scientific facts','Interactive legend','Built-in quiz'],
+      },
+      es:{name:'Célula Viviente',sub:'Animal y vegetal',desc:'Célula animal y vegetal en SVG interactivo. Haz clic en cada orgánulo para ver su nombre, función, un dato científico y la fórmula asociada. Quiz de 8 preguntas integrado.',
+        tags:['Célula animal','Célula vegetal','10 orgánulos','Quiz 8 p'],
+        feats:['2 tipos de células','10 orgánulos clickeables','Funciones detalladas','Datos científicos','Leyenda interactiva','Quiz integrado'],
+      },
+      progress:100,
+    },
+    {
+      id:'circuit', icon:'⚡', color:'ic-yellow', file:'lab-circuit.html',
+      fr:{name:'Circuits électriques',sub:'Loi d\'Ohm',desc:'Explore les circuits série et parallèle avec des sliders interactifs. Visualise le courant animé, calcule tension/intensité/résistance/puissance en temps réel. Loi d\'Ohm visuelle.',
+        tags:['Série','Parallèle','Loi d\'Ohm','Quiz 8 q'],
+        feats:['Circuit série animé','Circuit parallèle animé','Sliders interactifs','Multimètres temps réel','Puissance calculée','Quiz 8 questions'],
+      },
+      en:{name:'Electric Circuits',sub:'Ohm\'s Law',desc:'Explore series and parallel circuits with interactive sliders. Visualise animated current, calculate voltage/current/resistance/power in real time. Visual Ohm\'s Law.',
+        tags:['Series','Parallel','Ohm\'s Law','Quiz 8 q'],
+        feats:['Animated series circuit','Animated parallel circuit','Interactive sliders','Real-time meters','Power calculated','Quiz 8 questions'],
+      },
+      es:{name:'Circuitos Eléctricos',sub:'Ley de Ohm',desc:'Explora circuitos serie y paralelo con sliders interactivos. Visualiza la corriente animada, calcula tensión/intensidad/resistencia/potencia en tiempo real.',
+        tags:['Serie','Paralelo','Ley de Ohm','Quiz 8 p'],
+        feats:['Circuito serie animado','Circuito paralelo animado','Sliders interactivos','Multímetros tiempo real','Potencia calculada','Quiz 8 preguntas'],
+      },
+      progress:100,
+    },
+    {
+      id:'formulas', icon:'🧮', color:'ic-pink', file:'lab-formulas.html',
+      fr:{name:'Formules interactives',sub:'9 formules STE',desc:'Calculateur bidirectionnel pour toutes les formules STE : masse volumique, concentration, dilution, pression, loi d\'Ohm, puissance, circuits série/parallèle, nombre de masse. Entre 2 valeurs → calcule la 3e.',
+        tags:['9 formules','Bidirectionnel','Exemples réels','Trilingüe'],feats:['Masse volumique ρ=m/V','Concentration C=m/V','Dilution C₁V₁=C₂V₂','Pression P=F/A','Loi d\'Ohm V=RI','Puissance P=VI','Série & Parallèle','Nombre de masse A=Z+N'],
+      },
+      en:{name:'Interactive Formulas',sub:'9 STE formulas',desc:'Bidirectional calculator for all STE formulas: density, concentration, dilution, pressure, Ohm\'s law, power, series/parallel circuits, mass number. Enter 2 values → calculate the 3rd.',
+        tags:['9 formulas','Bidirectional','Real examples','Trilingual'],feats:['Density ρ=m/V','Concentration C=m/V','Dilution C₁V₁=C₂V₂','Pressure P=F/A','Ohm\'s Law V=RI','Power P=VI','Series & Parallel','Mass number A=Z+N'],
+      },
+      es:{name:'Fórmulas Interactivas',sub:'9 fórmulas STE',desc:'Calculadora bidireccional para todas las fórmulas STE: masa volumétrica, concentración, dilución, presión, ley de Ohm, potencia, circuitos serie/paralelo, número de masa. Ingresa 2 → calcula la 3a.',
+        tags:['9 fórmulas','Bidireccional','Ejemplos reales','Trilingüe'],feats:['Masa volumétrica ρ=m/V','Concentración C=m/V','Dilución C₁V₁=C₂V₂','Presión P=F/A','Ley de Ohm V=RI','Potencia P=VI','Serie y Paralelo','Número de masa A=Z+N'],
+      },
+      progress:100,
+    },
+  ],
+  tools:[
+    {
+      id:'formulas-x', icon:'🧮', color:'ic-pink', file:'lab-formulas.html',
+      fr:{name:'Formules interactives',sub:'9 formules STE',desc:'Calculateur bidirectionnel pour toutes les formules STE : masse volumique, concentration, dilution, pression, loi d\'Ohm, puissance, circuits série/parallèle, nombre de masse. Entre 2 valeurs → calcule la 3e.',
+        tags:['9 formules','Bidirectionnel','Exemples réels','Trilingüe'],feats:['Masse volumique ρ=m/V','Concentration C=m/V','Dilution C₁V₁=C₂V₂','Pression P=F/A','Loi d\'Ohm V=RI','Puissance P=VI','Série & Parallèle','Nombre de masse A=Z+N'],
+      },
+      en:{name:'Interactive Formulas',sub:'9 STE formulas',desc:'Bidirectional calculator for all STE formulas: density, concentration, dilution, pressure, Ohm\'s law, power, series/parallel circuits, mass number. Enter 2 values → calculate the 3rd.',
+        tags:['9 formulas','Bidirectional','Real examples','Trilingual'],feats:['Density ρ=m/V','Concentration C=m/V','Dilution C₁V₁=C₂V₂','Pressure P=F/A','Ohm\'s Law V=RI','Power P=VI','Series & Parallel','Mass number A=Z+N'],
+      },
+      es:{name:'Fórmulas Interactivas',sub:'9 fórmulas STE',desc:'Calculadora bidireccional para todas las fórmulas STE: masa volumétrica, concentración, dilución, presión, ley de Ohm, potencia, circuitos serie/paralelo, número de masa. Ingresa 2 → calcula la 3a.',
+        tags:['9 fórmulas','Bidireccional','Ejemplos reales','Trilingüe'],feats:['Masa volumétrica ρ=m/V','Concentración C=m/V','Dilución C₁V₁=C₂V₂','Presión P=F/A','Ley de Ohm V=RI','Potencia P=VI','Serie y Paralelo','Número de masa A=Z+N'],
+      },
+      progress:100,
+    },
+    {
+      id:'theory', icon:'📖', color:'ic-blue', file:'#',
+      fr:{name:'Théorie approfondie',sub:'Cours complets',desc:'Fiches de cours complètes pour chaque thème STE : définitions, explications, schémas textuels, exemples réels et points clés pour l\'examen.',
+        tags:['À venir','Cours complets','STE Sec 3','Fiches'],feats:['Univers matériel','Univers vivant','Terre & espace','Technologique','Exemples réels','Points clés examen'],
+      },
+      en:{name:'In-depth Theory',sub:'Full lessons',desc:'Complete lesson sheets for each STE topic: definitions, explanations, text diagrams, real examples and key exam points.',
+        tags:['Coming soon','Full lessons','STE Sec 3','Sheets'],feats:['Material universe','Living universe','Earth & space','Technological','Real examples','Key exam points'],
+      },
+      es:{name:'Teoría Profunda',sub:'Cursos completos',desc:'Fichas de curso completas para cada tema STE: definiciones, explicaciones, esquemas, ejemplos reales y puntos clave para el examen.',
+        tags:['Próximamente','Cursos completos','STE Sec 3','Fichas'],feats:['Universo material','Universo viviente','Tierra y espacio','Tecnológico','Ejemplos reales','Puntos clave examen'],
+      },
+      progress:0, soon:true,
+    },
+  ],
+  soon:[
+    {
+      id:'math4', icon:'📐', color:'ic-purple', file:'#',
+      fr:{name:'Math Sec 4',sub:'PFEQ Québec',desc:'Module de mathématiques pour la Secondaire 4 selon le programme PFEQ officiel du Québec. Algèbre, géométrie, fonctions et statistiques — avec exemples réels et "pourquoi c\'est utile".',
+        tags:['À venir','Sec 4','Maths','PFEQ'],feats:['Algèbre avancée','Géométrie analytique','Fonctions','Trigonométrie','Statistiques','Exemples réels'],
+      },
+      en:{name:'Math Sec 4',sub:'PFEQ Québec',desc:'Mathematics module for Secondary 4 following Québec\'s official PFEQ programme. Algebra, geometry, functions and statistics — with real examples and "why is this useful".',
+        tags:['Coming soon','Sec 4','Maths','PFEQ'],feats:['Advanced algebra','Analytic geometry','Functions','Trigonometry','Statistics','Real examples'],
+      },
+      es:{name:'Matemáticas Sec 4',sub:'PFEQ Québec',desc:'Módulo de matemáticas para Secundaria 4 según el programa oficial PFEQ de Québec. Álgebra, geometría, funciones y estadísticas — con ejemplos reales y "¿para qué sirve?".',
+        tags:['Próximamente','Sec 4','Matemáticas','PFEQ'],feats:['Álgebra avanzada','Geometría analítica','Funciones','Trigonometría','Estadísticas','Ejemplos reales'],
+      },
+      progress:0, soon:true,
+    },
+    {
+      id:'examfinal', icon:'🎯', color:'ic-red', file:'#',
+      fr:{name:'Examen final',sub:'Simulation complète',desc:'Simulation complète de l\'examen final STE Sec 3 : 25 questions chronométrées, mélange des 4 univers, format identique à l\'examen du MEES. Résultats détaillés par thème.',
+        tags:['À venir','25 questions','Chrono','Résultats'],feats:['25 questions','Tous les univers','Chronométré','Format MEES','Résultats détaillés','Analyse par thème'],
+      },
+      en:{name:'Final Exam',sub:'Full simulation',desc:'Complete STE Sec 3 final exam simulation: 25 timed questions, mix of all 4 universes, same format as the MEES exam. Detailed results by topic.',
+        tags:['Coming soon','25 questions','Timer','Results'],feats:['25 questions','All universes','Timed','MEES format','Detailed results','Topic analysis'],
+      },
+      es:{name:'Examen Final',sub:'Simulación completa',desc:'Simulación completa del examen final STE Sec 3: 25 preguntas cronometradas, mezcla de los 4 universos, formato idéntico al examen del MEES. Resultados detallados por tema.',
+        tags:['Próximamente','25 preguntas','Cronómetro','Resultados'],feats:['25 preguntas','Todos los universos','Cronometrado','Formato MEES','Resultados detallados','Análisis por tema'],
+      },
+      progress:0, soon:true,
+    },
+  ],
+};
+
+const PROGRESS_ROWS = {
+  fr:[
+    {label:'Univers matériel',pct:75,color:'#5bc8ff'},
+    {label:'Univers vivant',pct:85,color:'#4ddc8a'},
+    {label:'Terre & espace',pct:70,color:'#ffd166'},
+    {label:'Technologique',pct:80,color:'#ff8c42'},
+  ],
+  en:[
+    {label:'Material universe',pct:75,color:'#5bc8ff'},
+    {label:'Living universe',pct:85,color:'#4ddc8a'},
+    {label:'Earth & space',pct:70,color:'#ffd166'},
+    {label:'Technological',pct:80,color:'#ff8c42'},
+  ],
+  es:[
+    {label:'Universo material',pct:75,color:'#5bc8ff'},
+    {label:'Universo viviente',pct:85,color:'#4ddc8a'},
+    {label:'Tierra y espacio',pct:70,color:'#ffd166'},
+    {label:'Tecnológico',pct:80,color:'#ff8c42'},
+  ],
+};
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let lang = 'fr';
+let currentApp = null;
+
+// ═══════════════════════════════════════════
+//  LANG
+// ═══════════════════════════════════════════
+function setLang(l){
+  lang = l;
+  document.querySelectorAll('.lb').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  applyTexts();
+  renderDesktop();
+}
+
+function applyTexts(){
+  const tx = TX[lang];
+  document.getElementById('mb-title').textContent = tx.mbTitle;
+  document.getElementById('mb-file').textContent = tx.mbFile;
+  document.getElementById('mb-view').textContent = tx.mbView;
+  document.getElementById('mb-help').textContent = tx.mbHelp;
+  document.getElementById('lbl-ste').textContent = tx.lblSTE;
+  document.getElementById('lbl-tools').textContent = tx.lblTools;
+  document.getElementById('lbl-soon').textContent = tx.lblSoon;
+  document.getElementById('pw-title').textContent = tx.pwTitle;
+  document.getElementById('pw-label-total').textContent = tx.pwTotal;
+  document.getElementById('modal-open-btn').textContent = tx.modalOpen;
+  document.getElementById('modal-close-btn').textContent = tx.modalClose;
+  renderProgress();
+}
+
+// ═══════════════════════════════════════════
+//  RENDER DESKTOP
+// ═══════════════════════════════════════════
+function renderDesktop(){
+  renderGrid('grid-ste', APPS.ste);
+  renderGrid('grid-tools', APPS.tools);
+  renderGrid('grid-soon', APPS.soon);
+  renderDock();
+  renderProgress();
+}
+
+function renderGrid(id, apps){
+  const grid = document.getElementById(id);
+  grid.innerHTML = '';
+  apps.forEach(app => {
+    const d = app[lang];
+    const icon = document.createElement('div');
+    icon.className = 'app-icon';
+    icon.innerHTML = `
+      <div class="icon-body ${app.color}" style="color:${app.soon?'var(--muted)':'inherit'}">
+        ${app.icon}
+        ${app.soon ? '' : '<div class="icon-badge" style="background:var(--green)">✓</div>'}
+      </div>
+      <div class="icon-label">${d.name}</div>
+      <div class="icon-sub">${d.sub}</div>
+    `;
+    icon.addEventListener('click', () => openModal(app));
+    grid.appendChild(icon);
+  });
+}
+
+function renderDock(){
+  const dock = document.getElementById('dock');
+  const tx = TX[lang];
+  const dockApps = APPS.ste;
+  dock.innerHTML = '';
+  dockApps.forEach((app,i) => {
+    const tip = tx.dockTooltips[app.id] || app[lang].name;
+    const el = document.createElement('div');
+    el.className = `dock-icon ${app.color}`;
+    el.innerHTML = `${app.icon}<div class="dock-tooltip">${tip}</div>`;
+    el.addEventListener('click', () => openModal(app));
+    dock.appendChild(el);
+    if(i === 2){
+      const div = document.createElement('div');
+      div.className = 'dock-divider';
+      dock.appendChild(div);
+    }
+  });
+}
+
+function renderProgress(){
+  const rows = PROGRESS_ROWS[lang];
+  const wrap = document.getElementById('pw-rows');
+  wrap.innerHTML = rows.map(r => `
+    <div class="pw-row">
+      <div class="pw-label" style="font-size:10px;color:var(--muted)">${r.label}</div>
+      <div class="pw-bar-wrap"><div class="pw-bar" style="width:${r.pct}%;background:${r.color}"></div></div>
+      <div class="pw-pct">${r.pct}%</div>
+    </div>
+  `).join('');
+  document.getElementById('pw-count').textContent = `${APPS.ste.length} / ${APPS.ste.length}`;
+}
+
+// ═══════════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════════
+function openModal(app){
+  currentApp = app;
+  const d = app[lang];
+  const tx = TX[lang];
+
+  document.getElementById('modal-wintitle').textContent = d.name;
+  document.getElementById('modal-icon').textContent = app.icon;
+  document.getElementById('modal-name').textContent = d.name;
+  document.getElementById('modal-desc').textContent = d.desc;
+  document.getElementById('modal-tags').innerHTML = d.tags.map(t =>
+    `<span class="modal-tag">${t}</span>`).join('');
+  document.getElementById('modal-features').innerHTML = d.feats.map(f =>
+    `<div class="modal-feat">${f}</div>`).join('');
+
+  const btn = document.getElementById('modal-open-btn');
+  if(app.soon){
+    btn.textContent = tx.modalComingSoon;
+    btn.style.background = 'rgba(255,255,255,0.06)';
+    btn.style.color = 'var(--muted)';
+    btn.style.cursor = 'not-allowed';
+    btn.removeAttribute('href');
+    btn.onclick = e => e.preventDefault();
+  } else {
+    btn.textContent = tx.modalOpen;
+    btn.style.background = 'linear-gradient(135deg,#2563eb,#7c3aed)';
+    btn.style.color = '#fff';
+    btn.style.cursor = 'pointer';
+    btn.href = app.file;
+    btn.onclick = null;
+  }
+
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal(e){
+  if(e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════
+function updateClock(){
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2,'0');
+  const m = now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}`;
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ═══════════════════════════════════════════
+//  STARFIELD CANVAS
+// ═══════════════════════════════════════════
+(function(){
+  const canvas = document.getElementById('stars-canvas');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  let W, H;
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    stars = Array.from({length:120},()=>({
+      x:Math.random()*W, y:Math.random()*H,
+      r:Math.random()*1.2+0.2,
+      o:Math.random()*0.5+0.1,
+      speed:Math.random()*0.3+0.05,
+      twinkle:Math.random()*Math.PI*2,
+    }));
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const t = Date.now()/1000;
+    stars.forEach(s => {
+      const alpha = s.o * (0.6 + 0.4*Math.sin(t*s.speed+s.twinkle));
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize(); draw();
+})();
+
+// ═══════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('show');
+});
+
+// ═══════════════════════════════════════════
+//  INIT + NOTIFICATION
+// ═══════════════════════════════════════════
+applyTexts();
+renderDesktop();
+
+// Show welcome notification
+setTimeout(()=>{
+  const tx = TX[lang];
+  const n = document.createElement('div');
+  n.className = 'notif';
+  n.innerHTML = `<div class="notif-icon">⚗️</div><div class="notif-text"><div class="notif-title">${tx.notif.title}</div><div class="notif-sub">${tx.notif.sub}</div></div>`;
+  document.getElementById('desktop-area').appendChild(n);
+  setTimeout(()=>n.style.opacity='0', 3500);
+  setTimeout(()=>n.remove(), 4000);
+  n.style.transition='opacity .5s';
+}, 800);
+</script>
+</body>
+</html>
